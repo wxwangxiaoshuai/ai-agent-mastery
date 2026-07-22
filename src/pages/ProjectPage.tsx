@@ -54,7 +54,7 @@ export function ProjectPage() {
           {mod.title}
         </Link>
         <span>/</span>
-        <span className="text-ink-300">实战项目 {project.id}</span>
+        <span className="text-ink-300">{project.title}</span>
       </nav>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_280px]">
