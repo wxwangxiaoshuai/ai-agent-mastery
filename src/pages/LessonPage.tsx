@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { curriculum } from '../data/curriculum'
 import type { Module, Lesson } from '../data/types'
 import { DifficultyBadge, LessonTypeBadge, Tag } from '../components/Badges'
@@ -22,6 +22,7 @@ function getAdjacentLessons(module: Module, index: number) {
 
 export function LessonPage() {
   const { moduleId, lessonId } = useParams<{ moduleId: string; lessonId: string }>()
+  const navigate = useNavigate()
   const modId = Number(moduleId)
   const result = findLesson(modId, lessonId || '')
 
@@ -108,26 +109,6 @@ export function LessonPage() {
                 {lesson.title}
               </h1>
               <p className="mt-2 text-ink-400">{lesson.summary}</p>
-              <div className="mt-5">
-                {done ? (
-                  <button
-                    type="button"
-                    onClick={() => unmarkLessonComplete(lesson.id)}
-                    className="inline-flex items-center gap-2 rounded-xl border border-ink-700 bg-ink-900/40 px-4 py-2 text-sm text-ink-300 transition-colors hover:border-ink-600 hover:text-ink-100"
-                  >
-                    <span className="text-emerald-400">✓</span>
-                    取消完成
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => markLessonComplete(lesson.id)}
-                    className="btn-primary"
-                  >
-                    标记完成
-                  </button>
-                )}
-              </div>
             </div>
           </div>
 
@@ -168,40 +149,120 @@ export function LessonPage() {
             )}
           </div>
 
-          {/* Prev / Next */}
-          <div className="mt-10 flex items-center justify-between border-t border-ink-800 pt-6">
-            {prev ? (
-              <Link
-                to={`/curriculum/${module.id}/${prev.id}`}
-                className="group flex items-center gap-2 text-sm text-ink-400 transition-colors hover:text-brand-400"
-              >
-                <span className="text-lg">←</span>
-                <div>
-                  <div className="text-[11px] text-ink-500">上一节</div>
-                  <div className="font-medium text-ink-200 group-hover:text-brand-300">
-                    {prev.title}
+          {/* End-of-lesson: complete + navigate */}
+          <div className="mt-10 border-t border-ink-800 pt-6">
+            <div className="rounded-xl border border-ink-700/60 bg-ink-900/40 p-5 sm:p-6">
+              {done ? (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-sm text-emerald-400">
+                    <span aria-hidden>✓</span>
+                    <span className="font-medium">已完成本节</span>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => unmarkLessonComplete(lesson.id)}
+                    className="text-xs text-ink-500 underline-offset-2 hover:text-ink-300 hover:underline"
+                  >
+                    撤销标记
+                  </button>
                 </div>
-              </Link>
-            ) : (
-              <div />
-            )}
-            {next ? (
-              <Link
-                to={`/curriculum/${module.id}/${next.id}`}
-                className="group flex items-center gap-2 text-right text-sm text-ink-400 transition-colors hover:text-brand-400"
-              >
-                <div>
-                  <div className="text-[11px] text-ink-500">下一节</div>
-                  <div className="font-medium text-ink-200 group-hover:text-brand-300">
-                    {next.title}
+              ) : (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-ink-100">学完本节了吗？</div>
+                    <p className="mt-0.5 text-xs text-ink-500">
+                      标记完成后进度会保存在本机，刷新不丢失。
+                    </p>
                   </div>
+                  {next ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        markLessonComplete(lesson.id)
+                        navigate(`/curriculum/${module.id}/${next.id}`)
+                      }}
+                      className="btn-primary shrink-0"
+                    >
+                      完成本节并继续
+                      <span aria-hidden>→</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => markLessonComplete(lesson.id)}
+                      className="btn-primary shrink-0"
+                    >
+                      完成本节
+                    </button>
+                  )}
                 </div>
-                <span className="text-lg">→</span>
-              </Link>
-            ) : (
-              <div />
-            )}
+              )}
+              {done && next && (
+                <div className="mt-4 border-t border-ink-800 pt-4">
+                  <Link
+                    to={`/curriculum/${module.id}/${next.id}`}
+                    className="btn-primary inline-flex"
+                  >
+                    进入下一节
+                    <span aria-hidden>→</span>
+                  </Link>
+                  <span className="ml-3 text-sm text-ink-500">{next.title}</span>
+                </div>
+              )}
+              {done && !next && module.project && (
+                <div className="mt-4 border-t border-ink-800 pt-4">
+                  <Link
+                    to={`/curriculum/${module.id}/project/${module.project.id.toLowerCase()}`}
+                    className="btn-primary inline-flex"
+                  >
+                    去做本模块实战项目
+                    <span aria-hidden>→</span>
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex items-center justify-between">
+              {prev ? (
+                <Link
+                  to={`/curriculum/${module.id}/${prev.id}`}
+                  className="group flex items-center gap-2 text-sm text-ink-400 transition-colors hover:text-brand-400"
+                >
+                  <span className="text-lg">←</span>
+                  <div>
+                    <div className="text-[11px] text-ink-500">上一节</div>
+                    <div className="font-medium text-ink-200 group-hover:text-brand-300">
+                      {prev.title}
+                    </div>
+                  </div>
+                </Link>
+              ) : (
+                <div />
+              )}
+              {!done && next ? (
+                <Link
+                  to={`/curriculum/${module.id}/${next.id}`}
+                  className="group flex items-center gap-2 text-right text-sm text-ink-400 transition-colors hover:text-brand-400"
+                >
+                  <div>
+                    <div className="text-[11px] text-ink-500">跳过 · 下一节</div>
+                    <div className="font-medium text-ink-200 group-hover:text-brand-300">
+                      {next.title}
+                    </div>
+                  </div>
+                  <span className="text-lg">→</span>
+                </Link>
+              ) : !next ? (
+                <Link
+                  to={`/curriculum/${module.id}`}
+                  className="text-sm text-ink-400 transition-colors hover:text-brand-400"
+                >
+                  返回模块概览 →
+                </Link>
+              ) : (
+                <div />
+              )}
+            </div>
           </div>
         </div>
 

@@ -96,26 +96,6 @@ export function ProjectPage() {
                 {project.title}
               </h1>
               <p className="mt-2 leading-relaxed text-ink-300">{project.summary}</p>
-              <div className="mt-5">
-                {done ? (
-                  <button
-                    type="button"
-                    onClick={() => unmarkProjectComplete(project.id)}
-                    className="inline-flex items-center gap-2 rounded-xl border border-ink-700 bg-ink-900/40 px-4 py-2 text-sm text-ink-300 transition-colors hover:border-ink-600 hover:text-ink-100"
-                  >
-                    <span className="text-emerald-400">✓</span>
-                    取消完成
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => markProjectComplete(project.id)}
-                    className="btn-primary"
-                  >
-                    标记完成
-                  </button>
-                )}
-              </div>
             </div>
           </div>
 
@@ -165,6 +145,51 @@ export function ProjectPage() {
                 </p>
               </div>
             )}
+          </div>
+
+          {/* End-of-project: complete */}
+          <div className="mt-10 border-t border-ink-800 pt-6">
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 sm:p-6">
+              {done ? (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-sm text-emerald-400">
+                    <span aria-hidden>✓</span>
+                    <span className="font-medium">已完成本项目</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => unmarkProjectComplete(project.id)}
+                    className="text-xs text-ink-500 underline-offset-2 hover:text-ink-300 hover:underline"
+                  >
+                    撤销标记
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-ink-100">项目做完了吗？</div>
+                    <p className="mt-0.5 text-xs text-ink-500">
+                      标记完成后进度会保存在本机，刷新不丢失。
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => markProjectComplete(project.id)}
+                    className="btn-primary shrink-0"
+                  >
+                    完成项目
+                  </button>
+                </div>
+              )}
+              {done && (
+                <div className="mt-4 border-t border-ink-800 pt-4">
+                  <Link to={`/curriculum/${mod.id}`} className="btn-primary inline-flex">
+                    返回模块概览
+                    <span aria-hidden>→</span>
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
