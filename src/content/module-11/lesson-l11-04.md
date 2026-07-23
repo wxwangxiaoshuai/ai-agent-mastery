@@ -30,7 +30,7 @@ Debate：固定对抗
 AutoGen 一切围绕"能对话的 Agent"。每个 Agent 有 system message（角色）、能收发消息、能配工具。关键机制——**谁给谁发消息，由发起者显式指定，或由 group chat 管理器动态决定**：
 
 ```python
-# pip install autogen ag2
+# pip install ag2   # 包名 ag2；代码里仍 import autogen
 import autogen
 
 # 配置 LLM
@@ -41,11 +41,13 @@ coder = autogen.ConversableAgent(
     name="Coder",
     system_message="你是程序员，负责实现代码。完成后说 TERMINATE。",
     llm_config={"config_list": config_list},
+    is_termination_msg=lambda m: "TERMINATE" in (m.get("content") or ""),
 )
 reviewer = autogen.ConversableAgent(
     name="Reviewer",
     system_message="你是代码审查员，审 Coder 的代码，指出问题或认可。完成后说 TERMINATE。",
     llm_config={"config_list": config_list},
+    is_termination_msg=lambda m: "TERMINATE" in (m.get("content") or ""),
 )
 
 # 2. 显式编排对话：谁跟谁聊
@@ -64,6 +66,13 @@ coder.initiate_chat(
 
 ```python
 # Group Chat Manager：决定下一个谁发言
+pm = autogen.ConversableAgent(
+    name="PM",
+    system_message="你是产品经理，拆需求并推动协作完成。完成后说 TERMINATE。",
+    llm_config={"config_list": config_list},
+    is_termination_msg=lambda m: "TERMINATE" in (m.get("content") or ""),
+)
+
 groupchat = autogen.GroupChat(
     agents=[coder, reviewer, pm],
     messages=[],                    # 群聊历史
@@ -73,6 +82,13 @@ groupchat = autogen.GroupChat(
 manager = autogen.GroupChatManager(
     groupchat=groupchat,
     llm_config={"config_list": config_list},
+    system_message=(
+        "你是群聊管理者。职责："
+        "1. 每轮看历史，指定下一个发言者（最相关的角色）"
+        "2. 发现跑题/重复/绕圈，提示拉回主题"
+        "3. 任务完成或明显卡住，结束对话"
+        "只做调度，不亲自给方案。"
+    ),
 )
 
 # 发起群聊
@@ -108,7 +124,7 @@ groupchat = autogen.GroupChat(
     max_round=6,   # 手段2：硬上限（安全阀，必设）
 )
 # 手段1：Agent system message 里要求完成说 TERMINATE
-# 手段3：可配 is_termination_msg=lambda msg: "完成" in msg["content"]
+# 手段3：is_termination_msg 配在 Agent 构造参数上（见上文），检测 TERMINATE
 ```
 
 > 反模式：**只靠 Agent 自觉说 TERMINATE，不设 max_round**。某天 Agent 没说终止词，群聊无限转，烧 token 烧到天亮。**max_round 是对话式的安全带，不可不系**。
@@ -131,20 +147,7 @@ groupchat = autogen.GroupChat(
   4. 终止条件：发散了也到 max_round 强制停
 ```
 
-```python
-# manager 引导收敛的 system message
-manager = autogen.ConversableAgent(
-    name="ChatManager",
-    system_message=(
-        "你是群聊管理者。职责："
-        "1. 每轮看历史，指定下一个发言者（最相关的角色）"
-        "2. 发现跑题/重复/绕圈，提示拉回主题"
-        "3. 任务完成或明显卡住，结束对话"
-        "只做调度，不亲自给方案。"
-    ),
-    llm_config={"config_list": config_list},
-)
-```
+**给 GroupChatManager 配收敛引导**：把引导写进 `GroupChatManager` 的 `system_message`（见上一节示例），不要另起一个普通 `ConversableAgent` 冒充 manager——**只有 `GroupChatManager` 才负责群聊发言权调度**。
 
 **收敛的本质**：对话式要靠**强 manager + 明确角色 + 结构化产出 + 硬终止**把"涌现"约束在"有用"的轨道里。不约束的对话式会发散成废话——这是它和 supervisor 的差距：supervisor 天然收敛（主管拍板），对话式要人为加收敛压力。
 
@@ -170,7 +173,7 @@ manager = autogen.ConversableAgent(
 
 ### AutoGen 的工具集成与人类介入
 
-AutoGen 的 Agent 也��配工具、也能让人参与：
+AutoGen 的 Agent 也能配工具、也能让人参与：
 
 ```python
 # Agent 配工具（衔接 M6）

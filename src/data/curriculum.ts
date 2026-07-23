@@ -1181,7 +1181,7 @@ export const curriculum: Curriculum = {
       subtitle: '协作、辩论、监督——构建 Agent 团队',
       description:
         '单个 Agent 能力有上限。本章进入多智能体领域：探讨 Agent 间的通信、协作模式、' +
-        '角色分工与监督机制。理解 debate、supervisor、swarm 等拓扑，并直面多 Agent 的协调成本与失败模式。',
+        '角色分工与监督机制。理解 debate、supervisor、层级与网状等拓扑，并直面多 Agent 的协调成本与失败模式。',
       difficulty: '高级',
       hours: 10,
       icon: '👥',
@@ -1198,7 +1198,7 @@ export const curriculum: Curriculum = {
             '评估通信复杂度 O(n²) 的风险',
             '为任务选择合适的协作结构',
           ],
-          tags: ['Topology', 'Supervisor', 'Swarm', 'Networked'],
+          tags: ['Topology', 'Supervisor', 'Hierarchy', 'Networked'],
           prerequisites: ['L10-02'],
           competency: '多 Agent 架构',
         },

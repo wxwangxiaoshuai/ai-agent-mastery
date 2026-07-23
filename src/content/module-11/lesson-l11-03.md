@@ -83,17 +83,16 @@ DEBATE_ROUNDS = 3
 
 def debate(question, positions):
     """多立场辩论"""
-    history = [{"role": "user", "content": f"辩题：{question}"}]
+    # transcript 用带说话人标签的字符串列表；真正调 API 时再组装 messages
+    transcript = [f"辩题：{question}"]
     arguments = {pos: [] for pos in positions}   # 每方论点
 
     for round_idx in range(DEBATE_ROUNDS):
         for pos in positions:
-            # 让每方基于历史论点发言
-            reply = agent_debate(pos, history, round_idx)
+            reply = agent_debate(pos, transcript, round_idx)
             arguments[pos].append(reply)
-            history.append({"role": "user", "content": f"[{pos}] {reply}"})
+            transcript.append(f"[{pos}] {reply}")  # 勿一律标 role=user，避免污染对话角色
 
-    # 裁判综合
     verdict = judge_agent(question, arguments)
     return {"arguments": arguments, "verdict": verdict}
 ```
@@ -145,8 +144,12 @@ def devil_advocate_round(consensus, history):
     prompt = ("你是魔鬼代言人。当前共识是：{consensus}。"
               "你的职责是找出至少两个反对这个共识的理由，"
               "哪怕牵强也要找——确保决策经过对抗检验。").format(consensus=consensus)
-    objections = llm(history, prompt)
-    return objections
+    resp = client.chat.completions.create(
+        model="gpt-4o-mini", temperature=0.7,
+        messages=[{"role": "system", "content": prompt},
+                  {"role": "user", "content": f"辩论历史：{history}"}],
+    )
+    return resp.choices[0].message.content
 ```
 
 > 这是 debate 工程化最关键的一点：**默认 LLM 会坍缩到附和**，你必须主动设计"对抗压力"——强制对立 prompt、轮换、魔鬼代言人。不做这些，debate 只是浪费算力的附和会。
@@ -186,7 +189,7 @@ def judge_agent(question, arguments):
   · 复杂度：轮次多+角色多 → 控制流复杂，易跑偏
 
 边界：
-  · 简单任务别用（杀鸡牛刀）
+  · 简单任务别用（杀鸡用牛刀）
   · 辩论太多轮会跑偏/翻脸（L11-05）
   · 群体思维不防就坍缩（白花钱）
 ```
@@ -196,7 +199,7 @@ def judge_agent(question, arguments):
 ### 要点总结
 
 - debate 解决单视角决策毛病（确认偏误/过度自信/盲点），用"多花算力换决策质量"
-- 该用：方案选型、争议判断、高风险决策、需多视角补盲；不该用：简单查询、流程执行（重武器杀鸡牛刀）
+- 该用：方案选型、争议判断、高风险决策、需多视角补盲；不该用：简单查询、流程执行（重武器杀鸡用牛刀）
 - 角色设计三种：正反双方、多立场圆桌、提议+质疑+裁判——关键是立场真正对立
 - 轮次 2-3 轮为宜：太少没交锋，太多跑偏翻脸；每轮 prompt 要递进（亮观点→反驳→修正）
 - 群体思维坍缩是最大失败：LLM 天生讨好附和，几轮就一致

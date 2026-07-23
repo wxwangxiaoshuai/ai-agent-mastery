@@ -192,12 +192,12 @@ def supervisor_route(state):
 第二层：限制（constrain）
   · max_round / recursion_limit（硬上限）
   · 修改次数上限
-  · 角色职责边界���确
+  · 角色职责边界明确
   · 强制对立 prompt（防坍缩）
 
 第三层：降级（degrade）
   · 超限强制终止，输出当前最佳
-  · 循环不上报人工（L10-03 HITL）
+  · 循环不止则上报人工（L10-03 HITL）
   · 退回单 Agent 或 supervisor 兜底
   · 记录失败模式供后续优化
 ```
@@ -221,8 +221,10 @@ class MultiAgentGuardrails:
         if h in self.history_hashes[-3:]:
             return {"action": "force_end", "reason": "内容重复疑似循环"}
         self.history_hashes.append(h)
-        # 限制：修改次数
-        # （ConvergenceGuard 之前已实现）
+        # 限制：修改次数（ConvergenceGuard 按 artifact 计数）
+        artifact_id = state.get("artifact_id", "default")
+        if state.get("wants_revise") and not self.convergence.can_revise(artifact_id):
+            return {"action": "force_end", "reason": "超修改次数上限"}
         return {"action": "continue"}
 ```
 
