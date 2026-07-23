@@ -151,7 +151,7 @@ Agent 一定会错——UX 要让"错了"不变成灾难，而是顺畅的恢复
 
 3. 让失败有出路
    · Agent 做不到时明确说"我做不到X，但能做Y"
-   · 转人工（L15-04 客服转人工的 UX）
+   · 转人工（L15-03 转人工率 + 客服 UX）
    · 提供替代方案而非干瘪报错
 
 4. 错误不丢上下文
@@ -169,7 +169,7 @@ function errorRecovery(agentAnswer) {
 // 用户纠正
 function onUserCorrect(correctInput) {
   // 记住纠正，基于它重答，不重置上下文
-  agent.regenerateBasedOn(correctInput, keepContext=true)
+  agent.regenerateBasedOn(correctInput, { keepContext: true })
 }
 ```
 

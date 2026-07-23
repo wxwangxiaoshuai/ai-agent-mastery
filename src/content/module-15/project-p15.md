@@ -86,23 +86,25 @@ class StatelessAgent:
 
 ```python
 # gateway.py（或用 Kong/APISIX 配置）
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 app = FastAPI()
 
 @app.post("/agent/run")
 async def gateway(req: Request):
     # 1. 认证
     user = auth(req)
-    if not user: return 401
+    if not user:
+        raise HTTPException(status_code=401, detail="未认证")
     # 2. 限流（令牌桶，按租户/用户）
-    if not rate_limiter.allow(user.id): return 429
-    # 3. 路由：慢任务入队，快请求直达
+    if not rate_limiter.allow(user.id):
+        raise HTTPException(status_code=429, detail="Too Many Requests")
     body = await req.json()
+    # 3. 计费/日志（同步/异步路径都要记）
+    log_access(user, body)
+    # 4. 路由：慢任务入队，快请求直达
     if is_long_task(body["question"]):
         task = long_task.delay(body["question"], user.id)
         return {"task_id": task.id, "status": "queued"}
-    # 4. 计费/日志
-    log_access(user, body)
     # 5. 转发 Agent 服务
     return route_to_agent_service(body, user)
 ```
@@ -130,6 +132,9 @@ def long_task(self, question, user_id):
 
 ```python
 # cache.py
+class RateLimitError(Exception):
+    pass
+
 class SemanticCache:
     def __init__(self, threshold=0.95):
         self.store = redis_client  # 生产用向量库
@@ -140,7 +145,8 @@ class SemanticCache:
         # 相似度命中
         return find_similar(question, tenant_id, self.threshold)
     def set(self, question, answer, tenant_id, ttl=3600):
-        self.store.set(..., ex=ttl)   # TTL 防过时
+        key = f"{tenant_id}:{hash_question(question)}"
+        self.store.set(key, answer, ex=ttl)   # TTL 防过时
 
 # 限流（L15-01）
 from threading import Semaphore
@@ -159,14 +165,16 @@ def call_llm_limited(messages):
 
 ```python
 # metrics.py：四类指标采集
+import random
 from prometheus_client import Counter, Histogram, Gauge
 
 # 性能
+requests_total = Counter("agent_requests_total", "请求数", ["endpoint"])
 latency = Histogram("agent_latency_ms", "请求延迟", ["endpoint"])
 error_rate = Counter("agent_errors_total", "错误数", ["type"])
 # 成本
 tokens_per_req = Histogram("agent_tokens_per_request", "每请求token")
-cost_per_req = Histogram("agent_cost_per_request", "每请求成本")
+cost_per_req = Gauge("agent_cost_per_request", "每请求成本（滚动）")
 cache_hit_rate = Gauge("agent_cache_hit_rate", "缓存命中率")
 model_dist = Counter("agent_model_calls_total", "模型调用", ["model"])
 # 行为
@@ -177,16 +185,17 @@ guardrail_triggers = Counter("agent_guardrail_total", "护栏触发", ["type"])
 quality_score = Histogram("agent_quality_score", "LLM-Judge质量分")
 feedback_pos = Counter("agent_feedback", "用户反馈", ["sentiment"])
 
-def collect_metrics(trace, response):
-    latency.observe(trace.duration_ms)
+def collect_metrics(trace, response, endpoint="/agent/run"):
+    requests_total.labels(endpoint=endpoint).inc()
+    latency.labels(endpoint=endpoint).observe(trace.duration_ms)
     tokens_per_req.observe(trace.total_tokens)
-    cost_per_req.observe(estimate_cost(trace))
+    cost_per_req.set(estimate_cost(trace))
     avg_steps.observe(trace.step_count)
-    if random.random() < 0.05:  # 5% LLM-Judge 抽样
-        quality_score.observe(llm_judge(response)["score"])
+    if random.random() < 0.05:
+        quality_score.observe(llm_judge_sample(trace, response))
 ```
 
-```yaml
+```text
 # Grafana 仪表盘布局（L15-03）
 顶层：SLA 状态（绿/黄/红）
 行1：性能（QPS/p99延迟/错误率）
@@ -203,25 +212,27 @@ groups:
 - name: agent
   rules:
   - alert: HighLatency
-    expr: histogram_quantile(0.99, agent_latency_ms) > 5000
+    expr: histogram_quantile(0.99, sum(rate(agent_latency_ms_bucket[5m])) by (le)) > 5000
     for: 5m
     labels: {severity: warning}
     annotations: {summary: "p99延迟>5s"}
   - alert: HighErrorRate
-    expr: rate(agent_errors_total[1m]) > 0.01
+    expr: rate(agent_errors_total[5m]) / rate(agent_requests_total[5m]) > 0.01
     for: 1m
     labels: {severity: critical}
     annotations: {summary: "错误率>1%"}
   - alert: QualityDrop
-    expr: histogram_quantile(0.5, agent_quality_score) < 3.5
+    expr: histogram_quantile(0.5, sum(rate(agent_quality_score_bucket[30m])) by (le)) < 3.5
     for: 30m
     labels: {severity: critical}
     annotations: {summary: "质量分降"}
   - alert: CostSpike
-    expr: agent_cost_per_request increase 30% in 1h
+    expr: (avg_over_time(agent_cost_per_request[1h]) / avg_over_time(agent_cost_per_request[1h] offset 1h)) > 1.3
+    for: 15m
     labels: {severity: warning}
+    annotations: {summary: "每请求成本环比+30%"}
   - alert: StepBloat
-    expr: histogram_quantile(0.5, agent_steps) > 8
+    expr: histogram_quantile(0.5, sum(rate(agent_steps_bucket[10m])) by (le)) > 8
     for: 10m
     labels: {severity: warning}
     annotations: {summary: "步数暴涨可能发散"}
@@ -231,35 +242,37 @@ groups:
 
 ```python
 # canary.py：三维独立灰度 + 一键回滚
+import hashlib
+
 class CanaryManager:
     def __init__(self):
-        self.versions = {"stable": OLD_CONFIG}
-        self.current = {"prompt": "stable", "model": "stable", "tool": "stable"}
+        self.ratios = {"prompt": 0.05, "model": 0.0, "tool": 0.0}  # 可热更新
 
     def get_config(self, user_id):
         cfg = {}
-        # 每维独立按 user_id 分流（不同 salt）
         for dim in ["prompt", "model", "tool"]:
-            ratio = self.canary_ratio(dim)
-            v = "new" if self._hash(user_id, dim) < ratio else "stable"
-            self.current[dim] = v
+            ratio = self.ratios.get(dim, 0.0)
+            v = "new" if self._hash(user_id, dim) < ratio * 100 else "stable"
             cfg[dim] = NEW_CONFIG[dim] if v == "new" else OLD_CONFIG[dim]
+            cfg[f"_{dim}_version"] = v  # 仅返回，不写共享可变状态
         return cfg
 
     def _hash(self, user_id, dim):
-        return hash(user_id + dim + "salt") % 100
+        return int(hashlib.md5(f"{user_id}{dim}salt".encode()).hexdigest(), 16) % 100
 
-    def canary_ratio(self, dim):
-        return {"prompt": 0.05, "model": 0.0, "tool": 0.0}[dim]  # 只灰prompt
+    def set_ratio(self, dim, ratio):
+        self.ratios[dim] = ratio
 
     def rollback(self, dim="all"):
-        """一键回滚"""
+        """一键回滚：把 canary 比例清零，流量全部走 stable"""
         if dim == "all":
-            for d in ["prompt", "model", "tool"]:
-                self.current[d] = "stable"
+            for d in list(self.ratios):
+                self.ratios[d] = 0.0
         else:
-            self.current[dim] = "stable"
-        alert(f"回滚 {dim} 到 stable")
+            self.ratios[dim] = 0.0
+        alert(f"回滚 {dim} 到 stable（ratio=0）")
+
+canary = CanaryManager()
 
 # 自动防护：质量降自动回滚
 def auto_rollback_on_quality_drop():
@@ -271,6 +284,8 @@ def auto_rollback_on_quality_drop():
 
 ```python
 # incident.py：分级降级预案
+SEVERITY = {"P0": 0, "P1": 1, "P2": 2}  # 数值越小越严重
+
 class IncidentResponse:
     def assess(self, metrics):
         """故障分级"""
@@ -292,9 +307,12 @@ class IncidentResponse:
             disable_failing_tool()        # 禁用故障工具
 
     def degrade(self, level):
-        """分层降级预案"""
-        if level >= "P1": disable_non_core_features()  # L1
-        if level >= "P0": switch_to_static_fallback()  # L5 静态兜底
+        """分层降级预案（勿用字符串 >= 比较严重度）"""
+        sev = SEVERITY[level]
+        if sev <= SEVERITY["P1"]:
+            disable_non_core_features()   # L1：P0/P1 都关非核心
+        if sev <= SEVERITY["P0"]:
+            switch_to_static_fallback()   # L5：仅 P0 静态兜底
 ```
 
 **Step 9：故障注入演练（混沌工程）**

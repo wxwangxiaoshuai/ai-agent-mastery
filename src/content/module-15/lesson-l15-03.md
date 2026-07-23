@@ -35,7 +35,7 @@ Agent 监控的立体指标体系：
    · 缓存命中率、模型路由分布
 
 3. 行为指标（Agent 特有）
-   · 平均步数、步数分布（步数暴涨=可能发散 L11-05）
+   · 平均步数、步数分布（步数暴涨=可能发散 L05-03 / L07-01）
    · 工具调用成功率、工具选择准确率
    · 护栏触发率（输入被拦/输出被改写）
 
@@ -76,6 +76,8 @@ Agent 监控的立体指标体系：
 ```
 
 ```python
+import random
+
 def collect_quality_signals(request, response):
     """采集质量信号"""
     signals = {}
@@ -97,7 +99,7 @@ def collect_quality_signals(request, response):
 
 ```
 行为异常 → 对应问题：
-  · 平均步数突涨 → 可能发散/死循环（L11-05）
+  · 平均步数突涨 → 可能发散/死循环（L05-03 / L07-01）
   · 工具成功率骤降 → 某工具/API 挂了（M7 容错）
   · 工具选择准确率降 → prompt/路由出问题
   · 护栏触发率涨 → 被攻击/或护栏过敏感
@@ -108,10 +110,12 @@ def collect_quality_signals(request, response):
 ```python
 def behavior_metrics(trace):
     """从 trace 提取行为指标（L13-03 trace 的聚合）"""
+    n_tools = len(trace.tool_spans)
     return {
         "steps": trace.step_count,
-        "tool_calls": len(trace.tool_spans),
-        "tool_success_rate": successful_tools(trace) / len(trace.tool_spans),
+        "tool_calls": n_tools,
+        "tool_success_rate": (
+            successful_tools(trace) / n_tools if n_tools else None),
         "tools_used": set(t.name for t in trace.tool_spans),
         "repeated_tool_calls": detect_repeats(trace),
         "hit_max_steps": trace.hit_limit,

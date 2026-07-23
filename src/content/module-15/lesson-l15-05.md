@@ -46,11 +46,17 @@ Agent 变更（prompt/模型/工具）：
 ```
 
 ```python
+import hashlib
+
 # 灰度路由（L14-06 讲过，这里运维视角）
-def canary_route(user_id, new_ratio=0.05):
-    """按用户稳定分流到新旧版本"""
-    h = hash(user_id + "salt") % 100   # salt 防猜
+def canary_route(user_id, new_ratio=0.05, salt="default"):
+    """按用户稳定分流到新旧版本（md5 跨进程一致，勿用内置 hash）"""
+    h = int(hashlib.md5(f"{user_id}{salt}".encode()).hexdigest(), 16) % 100
     return "new" if h < new_ratio * 100 else "old"
+
+def canary(user_id, salt, ratio):
+    """三维灰度用：带独立 salt 的分流"""
+    return canary_route(user_id, new_ratio=ratio, salt=salt) == "new"
 
 def agent_run(user_id, question):
     version = canary_route(user_id)
@@ -114,9 +120,11 @@ A/B：新版 vs 老版，哪个质量/成本/延迟更优 → 数据驱动决策
 ```
 
 ```python
+import hashlib
+
 def ab_test(user_id, question):
     """A/B 测试：新老分流，记录指标对比"""
-    variant = "B" if hash(user_id) % 2 == 0 else "A"   # 50/50 分流
+    variant = "B" if int(hashlib.md5(str(user_id).encode()).hexdigest(), 16) % 2 == 0 else "A"
     config = NEW_CONFIG if variant == "B" else OLD_CONFIG
     result = run_with(config, question)
     
@@ -228,7 +236,7 @@ def automated_canary(new_config, schedule):
 完整链路：评测→灰度→监控→（回滚/A/B）→全量
 ```
 
-> 这四节（L15-01/02/03/04/05）其实是**一套质量运维体系**：基础设施(L01)→优化(L02)→监控(L03)→应急(L04)→发布(L05)。环环相扣，缺一个发布都不安全。
+> 这五节（L15-01/02/03/04/05）其实是**一套质量运维体系**：基础设施(L01)→优化(L02)→监控(L03)→应急(L04)→发布(L05)。环环相扣，缺一个发布都不安全。
 
 ### 发布的反模式
 
