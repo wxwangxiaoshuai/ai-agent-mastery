@@ -2,6 +2,10 @@
 
 当外部 API 挂了，你的 Agent 会怎样？如果没有保护，它会反复重试 → 每次等 30 秒超时 → 耗尽线程池 → 整个系统卡死。Circuit Breaker（熔断器）就是防止这种"级联故障"的——**当某个服务连续失败到一定程度，直接停止调用它，给它"休息"的时间**。
 
+用监控面板再看一遍三态转换（可把故障率调高，观察 Closed → Open → Half-Open）：
+
+::interactive{type="harnessMonitor"}
+
 ### Circuit Breaker：三态转换
 
 ```

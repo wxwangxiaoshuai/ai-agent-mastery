@@ -8,6 +8,7 @@ import { TemperatureSampler } from './interactive/TemperatureSampler'
 import { PromptTemplateTester } from './interactive/PromptTemplateTester'
 import { AgentLoopVisualizer } from './interactive/AgentLoopVisualizer'
 import { EmbeddingExplorer } from './interactive/EmbeddingExplorer'
+import { HarnessMonitor } from './interactive/HarnessMonitor'
 
 const componentMap: Record<string, React.ComponentType<Record<string, string>>> = {
   tokenizer: TokenizerDemo,
@@ -15,6 +16,7 @@ const componentMap: Record<string, React.ComponentType<Record<string, string>>> 
   promptTester: PromptTemplateTester,
   agentLoop: AgentLoopVisualizer,
   embedding: EmbeddingExplorer,
+  harnessMonitor: HarnessMonitor,
 }
 
 function parseInteractiveDirective(
