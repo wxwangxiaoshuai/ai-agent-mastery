@@ -12,9 +12,11 @@ Token 是 Agent 的"货币"——每次 API 调用都消耗 token，而你的上
 ├── 对话历史预算           ~20-30%   （随对话增长，需要裁剪）
 ├── 工具结果预算           ~15-25%   （工具返回可能很长）
 ├── 检索知识预算           ~20-30%   （RAG 召回的文档片段）
-├── 用户输入预算           ~5-10%   （通常较短）
+├── 用户输入预算           ~10-15%   （通常较短）
 └── 输出预留              ~15-25%   （必须给模型留生成空间！）
 ```
+
+> 下文 `allocate()` 在扣掉 System Prompt 与输出预留后，将剩余输入预算按 **历史 30% / 工具 25% / 检索 30% / 用户 15%** 分配（合计 100%）。上表百分比是相对整窗的量级参考。
 
 **最常犯的错误**：忘记给输出预留 token。如果 200K 窗口塞了 195K 的输入，模型只剩 5K 生成回复——可能话没说完就被截断了。
 
@@ -33,10 +35,10 @@ class TokenBudgetManager:
 
         return {
             "system_prompt": system_prompt_tokens,
-            "history": int(remaining * 0.25),       # 25%
-            "tool_results": int(remaining * 0.20),   # 20%
-            "retrieved_docs": int(remaining * 0.25), # 25%
-            "user_input": int(remaining * 0.10),     # 10%
+            "history": int(remaining * 0.30),        # 30%
+            "tool_results": int(remaining * 0.25),    # 25%
+            "retrieved_docs": int(remaining * 0.30),  # 30%
+            "user_input": int(remaining * 0.15),      # 15%
             "output_reserve": self.output_reserve,    # 输出预留
             "total": self.context_window,
         }
@@ -122,34 +124,42 @@ class OverflowHandler:
     """超限处理器：逐级降级"""
 
     @staticmethod
+    def _count_list(items: list) -> int:
+        """统一把 list 序列化后再计 token"""
+        return TokenCounter.count(str(items))
+
+    @staticmethod
     def handle(history: list, tool_results: list, retrieved_docs: list,
                budget: dict) -> tuple:
         """按优先级从低到高裁剪，直到满足预算"""
 
         # Level 1：裁剪对话历史——从最早的开始删除
-        while TokenCounter.count(history) > budget["history"] and history:
+        while OverflowHandler._count_list(history) > budget["history"] and history:
             removed = history.pop(0)
             print(f"[降级] 删除最早的历史: {removed['content'][:30]}...")
 
-        # Level 2：截断工具结果——长输出截断为摘要
+        # Level 2：截断工具结果——按 token 预算截断长输出
         for result in tool_results:
+            output = result["output"]
+            while TokenCounter.count(output) > 500 and len(output) > 20:
+                output = output[: int(len(output) * 0.8)]
             if TokenCounter.count(result["output"]) > 500:
-                result["output"] = result["output"][:500] + "\n...(已截断)"
+                result["output"] = output + "\n...(已截断)"
                 print("[降级] 截断工具结果")
 
         # Level 3：减少检索文档数量——只保留 top-1
-        if TokenCounter.count(retrieved_docs) > budget["retrieved_docs"]:
+        if OverflowHandler._count_list(retrieved_docs) > budget["retrieved_docs"]:
             retrieved_docs = retrieved_docs[:1] if retrieved_docs else []
             print("[降级] 只保留最相关的 1 个文档")
 
         # Level 4：用摘要替代完整历史
-        if TokenCounter.count(history) > budget["history"] and len(history) > 2:
+        if OverflowHandler._count_list(history) > budget["history"] and len(history) > 2:
             summary = summarize_history(history[:-2])  # 用 LLM 摘要旧历史
             history = [{"role": "system", "content": f"之前对话摘要：{summary}"}] + history[-2:]
             print("[降级] 用摘要替代旧历史")
 
         # Level 5：放弃非核心内容
-        if TokenCounter.count(tool_results) > budget["tool_results"]:
+        if OverflowHandler._count_list(tool_results) > budget["tool_results"]:
             tool_results = []  # 完全放弃工具结果
             print("[降级] 放弃所有工具结果")
 
@@ -206,7 +216,7 @@ print(monitor.report())
 
 ### 要点总结
 
-- Token 预算分配模型：System 5-10% / 历史 20-30% / 工具 15-25% / 检索 20-30% / 用户 5-10% / 输出预留 15-25%
+- Token 预算分配模型：扣掉 System 与输出预留后，剩余按历史 30% / 工具 25% / 检索 30% / 用户 15% 分配
 - 最常犯的错误：忘记给输出预留 token，导致回复被截断
 - Token 计数必须用目标模型的 tokenizer，OpenAI 和 Anthropic 的 token 数不同
 - 超限处理采用逐级降级：删历史 → 截工具 → 减文档 → 摘要替代 → 放弃非核心

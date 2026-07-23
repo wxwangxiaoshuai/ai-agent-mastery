@@ -1,5 +1,7 @@
 ## 上下文工程的测试与调试
 
+> 本节代码依赖 L03-02 的 `ContextAssembler` 与 L03-03 的 `TokenBudgetManager` / `count_tokens`。建议先完成这两节再动手。
+
 你设计了精心的 System Prompt，实现了动态 Context 组装，配置了 Token 预算管理——但它真的按预期工作吗？Agent 的 bug 有 80% 不是代码逻辑错误，而是**上下文出了问题**：该放的信息没放、不该放的放了、信息顺序错了、token 超限了……
 
 ### Context 调试的常见 Bug 类型
@@ -29,7 +31,7 @@ class ContextDebugger:
 
         for i, msg in enumerate(messages):
             role = msg["role"]
-            content = msg["content"]
+            content = msg["content"] if isinstance(msg["content"], str) else str(msg["content"])
             tokens = count_tokens(content)
             total_tokens += tokens
 
@@ -65,8 +67,9 @@ class ContextDebugger:
         """将完整 context 写入文件，便于离线分析"""
         with open(filepath, "w") as f:
             for i, msg in enumerate(messages):
+                content = msg["content"] if isinstance(msg["content"], str) else str(msg["content"])
                 f.write(f"=== Message {i} [{msg['role']}] ===\n")
-                f.write(f"{msg['content']}\n\n")
+                f.write(f"{content}\n\n")
             f.write(f"=== Total: {count_tokens(str(messages))} tokens ===\n")
 ```
 

@@ -25,7 +25,7 @@ P1 和 P2 解决了"能对话"和"能结构化"，但都假设上下文窗口是
 - [ ] 总 token 数不超过预算上限（可配置）
 - [ ] 超出预算时按优先级裁剪：历史 → 文档 → 工具结果 → 用户输入 → System
 - [ ] 长文本自动压缩到预算内（支持摘要压缩）
-- [ ] System Prompt 放在最前面，支持标记 cache_control（Claude）
+- [ ] System Prompt 放在最前面；`enable_cache=True` 时写入 Claude `cache_control`（OpenAI 保持 False）
 - [ ] 提供可视化方法，打印每条消息的角色、token 数、内容摘要
 - [ ] 提供成本统计方法，累计输入/输出 token 和费用
 - [ ] 通过 pytest 测试验证裁剪逻辑
@@ -60,14 +60,15 @@ class TokenCounter:
     @classmethod
     def count_messages(cls, messages: list, model: str = "gpt-4o") -> int:
         """计算 messages 列表的总 token 数（含格式开销）"""
-        total = 3  # 基础开销
+        total = 0
         for msg in messages:
             total += 3  # 每条消息的格式开销
             for key, value in msg.items():
                 total += cls.count(str(value), model)
                 if key == "role":
                     total += 1
-        return total + 3  # 结尾开销
+        total += 3  # 结尾开销
+        return total
 ```
 
 **Step 3：实现预算分配器**
@@ -97,10 +98,10 @@ class BudgetManager:
         remaining = self.input_budget - system_prompt_tokens
         return BudgetAllocation(
             system_prompt=system_prompt_tokens,
-            history=int(remaining * 0.25),
-            tool_results=int(remaining * 0.20),
-            retrieved_docs=int(remaining * 0.25),
-            user_input=int(remaining * 0.10),
+            history=int(remaining * 0.30),
+            tool_results=int(remaining * 0.25),
+            retrieved_docs=int(remaining * 0.30),
+            user_input=int(remaining * 0.15),
             output_reserve=self.output_reserve,
             total=self.context_window,
         )
@@ -133,9 +134,10 @@ class ContextAssembler:
         alloc = self.budget.allocate(self.system_tokens)
 
         # 1. System Prompt（最高优先级，不裁剪）
+        # enable_cache=True 时生成 Claude 风格的 cache_control（OpenAI 请保持 False）
         messages = []
         if enable_cache:
-            # Claude 风格的 cache_control 标记
+            # 仅 Anthropic Claude 支持；发给 OpenAI 会报参数错误
             messages.append({
                 "role": "system",
                 "content": [{"type": "text", "text": self.system_prompt,
@@ -184,24 +186,29 @@ class ContextAssembler:
     def _trim_tools(self, results: list, budget: int) -> str:
         if not results:
             return ""
-        per_item = budget // len(results)
+        per_item = max(1, budget // len(results))
         parts = []
         for r in results:
             content = str(r.get("output", ""))
-            if TokenCounter.count(content, self.model) > per_item:
-                content = content[:per_item * 3] + "\n...(已截断)"
+            original = content
+            while TokenCounter.count(content, self.model) > per_item and len(content) > 20:
+                content = content[: int(len(content) * 0.8)]
+            if TokenCounter.count(original, self.model) > per_item:
+                content = content + "\n...(已截断)"
             parts.append(f"[{r.get('tool', 'unknown')}] {content}")
         return "\n\n".join(parts)
 ```
 
 **Step 5：实现压缩管道**
 
+主路径用摘要压缩即可验收；LLMLingua 作为可选进阶（见文末挑战）。
+
 ```python
 class CompressionPipeline:
     """上下文压缩：摘要压缩 → 选择性压缩"""
 
     @staticmethod
-    def summarize_text(text: str, target_tokens: int, client) -> str:
+    def summarize_text(text: str, target_tokens: int, client=None) -> str:
         """用 LLM 将长文本压缩到目标 token 数"""
         from openai import OpenAI
         client = client or OpenAI()
@@ -348,7 +355,8 @@ class TestContextAssembler:
         long_history = [{"role": "user", "content": f"消息 {i} " * 50} for i in range(20)]
         messages = self.assembler.assemble(user_input="最新", history=long_history)
         total = TokenCounter.count_messages(messages)
-        assert total <= 4000  # 不超过窗口
+        input_budget = 4000 - 1024  # 窗口 - 输出预留
+        assert total <= input_budget  # 输入部分不得超过输入预算
 
     def test_cache_control(self):
         messages = self.assembler.assemble(user_input="test", enable_cache=True)
@@ -367,7 +375,7 @@ class TestContextAssembler:
 ### 进阶挑战
 
 1. **Claude 集成**：接入 Anthropic API，实现分段缓存（System Rules + Documents 两级缓存）
-2. **压缩管道升级**：集成 LLMLingua 做 token 级压缩，对比摘要压缩的效果差异
+2. **压缩管道升级**：集成 LLMLingua 做 token 级压缩，对比摘要压缩的效果差异（主路径验收不要求）
 3. **实时监控仪表盘**：用 Streamlit/Gradio 做一个 Web 界面，实时显示每次调用的 token 分布
 4. **自动预算调优**：根据历史调用数据自动调整预算分配比例（如历史越长，history 预算占比越大）
 5. **多模型路由**：根据 token 预算自动选择模型（预算紧张用 mini，预算充足用 4o）
@@ -377,8 +385,8 @@ class TestContextAssembler:
 **Q: 为什么要做成"中间件"而不是直接写在 Agent 里？**
 A: 上下文管理是跨 Agent 复用的能力。做成独立模块，P4（ReAct Agent）、P7（LangGraph Agent）、P10（深度研究 Agent）都能直接 import 使用，不用重复实现。
 
-**Q: 预算分配比例（25%/20%/25%/10%）是固定的吗？**
-A: 不是。这只是默认值。实际场景中，RAG 重度应用应该调高 retrieved_docs 比例；工具密集型 Agent 应该调高 tool_results 比例。进阶挑战中的"自动预算调优"就是解决这个问题。
+**Q: 预算分配比例（30%/25%/30%/15%）是固定的吗？**
+A: 不是。这只是默认值（合计占满「剩余输入预算」）。实际场景中，RAG 重度应用应该调高 retrieved_docs 比例；工具密集型 Agent 应该调高 tool_results 比例。进阶挑战中的"自动预算调优"就是解决这个问题。
 
 **Q: Prompt Caching 值得做吗？**
 A: 如果你的 Agent 每分钟调用超过 10 次，System Prompt 超过 1000 token，缓存节省通常超过 50%。如果调用频率很低（如每小时一次），缓存可能频繁 miss，收益不大。

@@ -38,22 +38,18 @@ class ContextAssembler:
         # 1. 静态底座：System Prompt（永远在最前面，可被 Prompt Caching 缓存）
         messages.append({"role": "system", "content": self.system_prompt})
 
-        # 2. 动态注入：按优先级从高到低排列
-        # 优先级：用户输入 > 工具结果 > 检索知识 > 对话历史
+        # 动态注入：按预算比例分配（历史 / 工具 / 检索）
+        # 裁剪优先级（从低到高）：对话历史 → 检索知识 → 工具结果 → 用户输入 → System
         budget = self.max_tokens - count_tokens(self.system_prompt)
 
         # 用户输入：最高优先级，必须完整保留
         user_tokens = count_tokens(user_input)
         budget -= user_tokens
 
-        # 对话历史：最低优先级，超出预算时从最早的开始裁剪
-        history = self._trim_history(history or [], budget * 0.3)
-
-        # 工具结果：中等优先级，可截断长输出
-        tool_content = self._format_tool_results(tool_results or [], budget * 0.3)
-
-        # 检索知识：中等优先级，按相关性排序后取 top-k
-        docs_content = self._format_retrieved_docs(retrieved_docs or [], budget * 0.4 - user_tokens)
+        # 剩余预算按比例分配：历史 30% / 工具 30% / 检索 40%
+        history = self._trim_history(history or [], int(budget * 0.3))
+        tool_content = self._format_tool_results(tool_results or [], int(budget * 0.3))
+        docs_content = self._format_retrieved_docs(retrieved_docs or [], int(budget * 0.4))
 
         # 组装顺序：历史 → 知识 → 工具结果 → 用户输入
         # 用户输入放最后，确保模型"最先看到"最新的信息
@@ -74,12 +70,17 @@ class ContextAssembler:
         return trimmed
 
     def _format_tool_results(self, results: list, token_budget: int) -> str:
-        """格式化工具结果，超长时截断"""
+        """格式化工具结果，超长时按 token 截断"""
+        if not results:
+            return ""
         parts = []
+        per_item = max(1, token_budget // len(results))
         for r in results:
             content = str(r.get("output", ""))
-            if count_tokens(content) > token_budget // len(results or [1]):
-                content = content[:500] + "\n...(已截断)"
+            while count_tokens(content) > per_item and len(content) > 20:
+                content = content[: int(len(content) * 0.8)]
+            if count_tokens(str(r.get("output", ""))) > per_item:
+                content = content + "\n...(已截断)"
             parts.append(f"[{r.get('tool', 'unknown')}] {content}")
         return "\n\n".join(parts)
 

@@ -315,7 +315,7 @@ export const curriculum: Curriculum = {
             '量化缓存命中率对成本的改善',
           ],
           tags: ['Prompt Caching', 'Cost Optimization', 'Cache Hit'],
-          prerequisites: ['L03-01'],
+          prerequisites: ['L03-01', 'L03-02'],
           competency: '成本工程',
         },
         {
@@ -330,7 +330,7 @@ export const curriculum: Curriculum = {
             '调试"Context 污染"导致的输出异常',
           ],
           tags: ['Testing', 'Debugging', 'Visualization'],
-          prerequisites: ['L03-02'],
+          prerequisites: ['L03-02', 'L03-03'],
           competency: '上下文工程',
         },
       ],
@@ -346,11 +346,11 @@ export const curriculum: Curriculum = {
         deliverables: [
           'Token 预算分配与实时计量引擎',
           '动态 Context 组装与优先级裁剪',
-          '上下文压缩管道（LLMLingua/摘要）',
+          '上下文压缩管道（摘要；LLMLingua 可选）',
           'Prompt Caching 命中率优化',
           'Context 可视化调试面板',
         ],
-        stack: ['Python', 'tiktoken', 'LLMLingua', 'Prompt Caching'],
+        stack: ['Python', 'tiktoken', 'OpenAI/Anthropic SDK', 'Prompt Caching'],
       },
     },
 

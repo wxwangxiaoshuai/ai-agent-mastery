@@ -49,30 +49,27 @@ import re
 from collections import Counter
 
 def selective_compress(text: str, keep_ratio: float = 0.5) -> str:
-    """基于词频的选择性压缩：保留信息量高的句子"""
+    """基于词频的选择性压缩：保留信息量高的句子，并保持原文顺序"""
     sentences = re.split(r'(?<=[。！？.!?])\s*', text)
 
     # 计算每个句子的"信息量"——用罕见词比例衡量
     all_words = re.findall(r'\w+', text.lower())
     word_freq = Counter(all_words)
-    total_words = len(all_words)
 
     scored_sentences = []
-    for sent in sentences:
+    for idx, sent in enumerate(sentences):
         words = re.findall(r'\w+', sent.lower())
         if not words:
             continue
         # 信息量 = 句子中罕见词的平均比例（越罕见信息量越高）
         info_score = sum(1 / word_freq[w] for w in words) / len(words)
-        scored_sentences.append((info_score, sent))
+        scored_sentences.append((info_score, idx, sent))
 
-    # 按信息量排序，保留 top-k
-    scored_sentences.sort(reverse=True)
+    # 按信息量选出 top-k，再按原文下标还原顺序
+    scored_sentences.sort(key=lambda x: x[0], reverse=True)
     keep_count = max(1, int(len(scored_sentences) * keep_ratio))
-    kept = [sent for _, sent in scored_sentences[:keep_count]]
-
-    # 保持原始顺序
-    return " ".join(kept)
+    kept = sorted(scored_sentences[:keep_count], key=lambda x: x[1])
+    return " ".join(sent for _, _, sent in kept)
 ```
 
 **原理**：高频词（"的"、"是"、"在"）信息量低，低频词（具体名词、数据、结论）信息量高。保留含低频词多的句子。

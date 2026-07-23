@@ -136,7 +136,7 @@ class SystemPromptBuilder:
         return self
 
     def add_rule(self, priority: str, rule: str):
-        self.rules.append(f"{priority}】{rule}")
+        self.rules.append(f"{priority} {rule}")
         return self
 
     def set_format(self, schema: str):
@@ -144,7 +144,8 @@ class SystemPromptBuilder:
         return self
 
     def build(self) -> str:
-        rules_text = "# 规则\n## 行为规则（按优先级排列）\n" + "\n".join(self.rules)
+        numbered = [f"{i}. {r}" for i, r in enumerate(self.rules, 1)]
+        rules_text = "# 规则\n## 行为规则（按优先级排列）\n" + "\n".join(numbered)
         return f"{self.identity}\n\n{rules_text}\n\n{self.format}"
 
 # 使用
