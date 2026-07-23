@@ -34,14 +34,14 @@ pnpm preview     # 预览构建产物
 
 GitHub **不会**自动开启 Pages，必须手动启用一次：
 
-1. 打开 https://github.com/wxwangxiaoshuai/ai-agent-book/settings/pages
+1. 打开 https://github.com/wxwangxiaoshuai/ai-agent-mastery/settings/pages
 2. 找到 **Build and deployment → Source**
 3. 从下拉框选择 **GitHub Actions**（不要选 “Deploy from a branch”）
 4. 保存后，到 **Actions** 页重新运行 **Deploy to GitHub Pages**
 
 > 若仓库是**私有**的，需要 GitHub Pro 及以上套餐才支持 Pages；公开仓库免费可用。
 
-部署完成后访问：`https://wxwangxiaoshuai.github.io/ai-agent-book/`
+部署完成后访问：`https://wxwangxiaoshuai.github.io/ai-agent-mastery/`
 
 ### 常见错误
 
@@ -59,7 +59,7 @@ GitHub **不会**自动开启 Pages，必须手动启用一次：
 curl -X POST \
   -H "Authorization: Bearer <你的PAT>" \
   -H "Accept: application/vnd.github+json" \
-  https://api.github.com/repos/wxwangxiaoshuai/ai-agent-book/pages \
+  https://api.github.com/repos/wxwangxiaoshuai/ai-agent-mastery/pages \
   -d '{"build_type":"workflow","source":{"branch":"main","path":"/"}}'
 ```
 
@@ -67,7 +67,7 @@ curl -X POST \
 
 ### 本地预览 Pages 构建
 
-若仓库名不是 `ai-agent-book`，构建时需指定 base path：
+若仓库名不是 `ai-agent-mastery`，构建时需指定 base path：
 
 ```bash
 VITE_BASE_PATH=/你的仓库名/ pnpm build:pages
