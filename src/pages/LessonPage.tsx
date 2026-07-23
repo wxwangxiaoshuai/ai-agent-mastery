@@ -3,6 +3,7 @@ import { curriculum } from '../data/curriculum'
 import type { Module, Lesson } from '../data/types'
 import { DifficultyBadge, LessonTypeBadge, Tag } from '../components/Badges'
 import { MarkdownRenderer } from '../components/MarkdownRenderer'
+import { useProgress } from '../components/ProgressProvider'
 import { useState, useEffect } from 'react'
 
 function findLesson(moduleId: number, lessonId: string): { module: Module; lesson: Lesson; index: number } | null {
@@ -26,6 +27,12 @@ export function LessonPage() {
 
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(true)
+  const {
+    isLessonComplete,
+    markLessonComplete,
+    unmarkLessonComplete,
+    setLastVisited,
+  } = useProgress()
 
   // Load markdown content
   useEffect(() => {
@@ -44,6 +51,12 @@ export function LessonPage() {
       })
   }, [moduleId, lessonId])
 
+  // Record last visited (do not auto-complete)
+  useEffect(() => {
+    if (!result) return
+    setLastVisited({ moduleId: result.module.id, lessonId: result.lesson.id })
+  }, [result?.module.id, result?.lesson.id, setLastVisited])
+
   if (!result) {
     return (
       <div className="container-page py-20 text-center">
@@ -57,6 +70,7 @@ export function LessonPage() {
 
   const { module, lesson, index } = result
   const { prev, next } = getAdjacentLessons(module, index)
+  const done = isLessonComplete(lesson.id)
 
   return (
     <div className="container-page py-12 sm:py-16">
@@ -84,11 +98,36 @@ export function LessonPage() {
                 <span className="font-mono text-xs text-ink-500">{lesson.id}</span>
                 <LessonTypeBadge type={lesson.type} />
                 <span className="text-xs text-ink-500">{lesson.duration} 分钟</span>
+                {done && (
+                  <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-400">
+                    已完成
+                  </span>
+                )}
               </div>
               <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-ink-50 sm:text-3xl">
                 {lesson.title}
               </h1>
               <p className="mt-2 text-ink-400">{lesson.summary}</p>
+              <div className="mt-5">
+                {done ? (
+                  <button
+                    type="button"
+                    onClick={() => unmarkLessonComplete(lesson.id)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-ink-700 bg-ink-900/40 px-4 py-2 text-sm text-ink-300 transition-colors hover:border-ink-600 hover:text-ink-100"
+                  >
+                    <span className="text-emerald-400">✓</span>
+                    取消完成
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => markLessonComplete(lesson.id)}
+                    className="btn-primary"
+                  >
+                    标记完成
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -193,6 +232,7 @@ export function LessonPage() {
             <div className="space-y-1">
               {module.lessons.map((l, i) => {
                 const isActive = l.id === lesson.id
+                const isDone = isLessonComplete(l.id)
                 return (
                   <Link
                     key={l.id}
@@ -203,8 +243,16 @@ export function LessonPage() {
                         : 'text-ink-400 hover:bg-ink-800/50 hover:text-ink-200'
                     }`}
                   >
-                    <span className={`font-mono text-xs ${isActive ? 'text-brand-400' : 'text-ink-600'}`}>
-                      {i + 1}
+                    <span
+                      className={`font-mono text-xs ${
+                        isDone
+                          ? 'text-emerald-400'
+                          : isActive
+                            ? 'text-brand-400'
+                            : 'text-ink-600'
+                      }`}
+                    >
+                      {isDone ? '✓' : i + 1}
                     </span>
                     <span className="min-w-0 flex-1 truncate">{l.title}</span>
                     <span className="shrink-0 font-mono text-[11px] text-ink-500">

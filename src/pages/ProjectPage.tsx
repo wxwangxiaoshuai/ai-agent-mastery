@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { curriculum } from '../data/curriculum'
 import { MarkdownRenderer } from '../components/MarkdownRenderer'
 import { DifficultyBadge, Tag } from '../components/Badges'
+import { useProgress } from '../components/ProgressProvider'
 
 export function ProjectPage() {
   const { moduleId, projectId } = useParams<{ moduleId: string; projectId: string }>()
@@ -13,6 +14,13 @@ export function ProjectPage() {
 
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(true)
+  const {
+    isLessonComplete,
+    isProjectComplete,
+    markProjectComplete,
+    unmarkProjectComplete,
+    setLastVisited,
+  } = useProgress()
 
   // Load project markdown content
   useEffect(() => {
@@ -31,6 +39,12 @@ export function ProjectPage() {
       })
   }, [moduleId, projectId])
 
+  // Record last visited
+  useEffect(() => {
+    if (!mod || !project) return
+    setLastVisited({ moduleId: mod.id, projectId: project.id })
+  }, [mod?.id, project?.id, setLastVisited])
+
   if (!mod || !project) {
     return (
       <div className="container-page py-20 text-center">
@@ -41,6 +55,8 @@ export function ProjectPage() {
       </div>
     )
   }
+
+  const done = isProjectComplete(project.id)
 
   return (
     <div className="container-page py-12 sm:py-16">
@@ -70,11 +86,36 @@ export function ProjectPage() {
                 <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-300">
                   实战项目
                 </span>
+                {done && (
+                  <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-400">
+                    已完成
+                  </span>
+                )}
               </div>
               <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-ink-50 sm:text-3xl">
                 {project.title}
               </h1>
               <p className="mt-2 leading-relaxed text-ink-300">{project.summary}</p>
+              <div className="mt-5">
+                {done ? (
+                  <button
+                    type="button"
+                    onClick={() => unmarkProjectComplete(project.id)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-ink-700 bg-ink-900/40 px-4 py-2 text-sm text-ink-300 transition-colors hover:border-ink-600 hover:text-ink-100"
+                  >
+                    <span className="text-emerald-400">✓</span>
+                    取消完成
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => markProjectComplete(project.id)}
+                    className="btn-primary"
+                  >
+                    标记完成
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -152,19 +193,24 @@ export function ProjectPage() {
               课程列表 · {mod.lessons.length} 节
             </div>
             <div className="space-y-1">
-              {mod.lessons.map((l, i) => (
-                <Link
-                  key={l.id}
-                  to={`/curriculum/${mod.id}/${l.id}`}
-                  className="flex items-center gap-3 rounded-lg p-2.5 text-sm text-ink-400 transition-colors hover:bg-ink-800/50 hover:text-ink-200"
-                >
-                  <span className="font-mono text-xs text-ink-600">{i + 1}</span>
-                  <span className="min-w-0 flex-1 truncate">{l.title}</span>
-                  <span className="shrink-0 font-mono text-[11px] text-ink-500">
-                    {l.duration}m
-                  </span>
-                </Link>
-              ))}
+              {mod.lessons.map((l, i) => {
+                const isDone = isLessonComplete(l.id)
+                return (
+                  <Link
+                    key={l.id}
+                    to={`/curriculum/${mod.id}/${l.id}`}
+                    className="flex items-center gap-3 rounded-lg p-2.5 text-sm text-ink-400 transition-colors hover:bg-ink-800/50 hover:text-ink-200"
+                  >
+                    <span className={`font-mono text-xs ${isDone ? 'text-emerald-400' : 'text-ink-600'}`}>
+                      {isDone ? '✓' : i + 1}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">{l.title}</span>
+                    <span className="shrink-0 font-mono text-[11px] text-ink-500">
+                      {l.duration}m
+                    </span>
+                  </Link>
+                )
+              })}
             </div>
           </div>
 

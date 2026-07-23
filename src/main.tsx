@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { ThemeProvider } from './components/ThemeProvider'
+import { ProgressProvider } from './components/ProgressProvider'
 import { routes } from './router'
 import './index.css'
 
@@ -14,7 +15,9 @@ const router = createBrowserRouter(routes, {
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider>
-      <RouterProvider router={router} />
+      <ProgressProvider>
+        <RouterProvider router={router} />
+      </ProgressProvider>
     </ThemeProvider>
   </React.StrictMode>,
 )

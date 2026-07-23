@@ -1,6 +1,9 @@
 import { NavLink, Outlet, Link, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { ThemeToggle } from './ThemeToggle'
+import { useProgress } from './ProgressProvider'
+import { curriculum } from '../data/curriculum'
+import { lessonOverallProgress } from '../lib/progress'
 
 const navItems = [
   { to: '/', label: '首页', end: true },
@@ -25,6 +28,8 @@ function Logo() {
 
 export function Layout() {
   const location = useLocation()
+  const { progress } = useProgress()
+  const overall = lessonOverallProgress(curriculum, progress)
 
   // Scroll to top on route change
   useEffect(() => {
@@ -62,6 +67,12 @@ export function Layout() {
             ))}
           </nav>
           <div className="flex items-center gap-2">
+            <span
+              className="hidden font-mono text-xs text-ink-400 sm:inline"
+              title="学习进度（课节）"
+            >
+              {overall.done}/{overall.total}
+            </span>
             <ThemeToggle />
             <a
               href="https://github.com"

@@ -1,10 +1,13 @@
 import { Link, useParams } from 'react-router-dom'
 import { curriculum } from '../data/curriculum'
 import { DifficultyBadge, LessonTypeBadge, Tag } from '../components/Badges'
+import { useProgress } from '../components/ProgressProvider'
+import { moduleProgress } from '../lib/progress'
 
 export function ModulePage() {
   const { moduleId } = useParams<{ moduleId: string }>()
   const module = curriculum.modules.find((m) => m.id === Number(moduleId))
+  const { progress, isLessonComplete, isProjectComplete } = useProgress()
 
   if (!module) {
     return (
@@ -22,6 +25,7 @@ export function ModulePage() {
   const next = idx < curriculum.modules.length - 1 ? curriculum.modules[idx + 1] : null
 
   const totalMin = module.lessons.reduce((s, l) => s + l.duration, 0)
+  const mp = moduleProgress(module, progress)
 
   return (
     <div className="container-page py-12 sm:py-16">
@@ -55,6 +59,20 @@ export function ModulePage() {
           <p className="mt-5 max-w-3xl leading-relaxed text-ink-400">
             {module.description}
           </p>
+          <div className="mt-6 max-w-md">
+            <div className="mb-2 flex items-center justify-between text-sm">
+              <span className="text-ink-400">学习进度</span>
+              <span className="font-mono text-ink-200">
+                已完成 {mp.done}/{mp.total} · {mp.percent}%
+              </span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-ink-800">
+              <div
+                className="h-full rounded-full bg-brand-500 transition-all"
+                style={{ width: `${mp.percent}%` }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -68,7 +86,9 @@ export function ModulePage() {
             </span>
           </h2>
           <div className="space-y-4">
-            {module.lessons.map((lesson, i) => (
+            {module.lessons.map((lesson, i) => {
+              const lessonDone = isLessonComplete(lesson.id)
+              return (
               <Link
                 to={`/curriculum/${module.id}/${lesson.id}`}
                 key={lesson.id}
@@ -76,8 +96,14 @@ export function ModulePage() {
                 style={{ animationDelay: `${i * 0.05}s` }}
               >
                 <div className="flex items-start gap-4">
-                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-500/15 font-mono text-sm font-bold text-brand-300">
-                    {i + 1}
+                  <div
+                    className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg font-mono text-sm font-bold ${
+                      lessonDone
+                        ? 'bg-emerald-500/15 text-emerald-400'
+                        : 'bg-brand-500/15 text-brand-300'
+                    }`}
+                  >
+                    {lessonDone ? '✓' : i + 1}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -119,7 +145,7 @@ export function ModulePage() {
                   </div>
                 </div>
               </Link>
-            ))}
+            )})}
           </div>
         </div>
 
@@ -133,6 +159,11 @@ export function ModulePage() {
               <div className="mb-3 flex items-center gap-2">
                 <span className="text-2xl">🎯</span>
                 <h3 className="text-base font-bold text-ink-50">本模块实战项目</h3>
+                {isProjectComplete(module.project.id) && (
+                  <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-400">
+                    ✓ 已完成
+                  </span>
+                )}
                 <span className="ml-auto text-xs text-amber-400">查看详情 →</span>
               </div>
               <h4 className="text-lg font-bold text-amber-300">

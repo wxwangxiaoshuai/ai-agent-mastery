@@ -2,8 +2,13 @@ import { Link } from 'react-router-dom'
 import { curriculum, stages } from '../data/curriculum'
 import type { Module } from '../data/types'
 import { DifficultyBadge, LessonTypeBadge } from '../components/Badges'
+import { useProgress } from '../components/ProgressProvider'
+import { moduleProgress } from '../lib/progress'
 
 function ModuleCard({ module }: { module: Module }) {
+  const { progress, isLessonComplete } = useProgress()
+  const mp = moduleProgress(module, progress)
+
   return (
     <div className="card card-hover overflow-hidden">
       <Link
@@ -30,6 +35,20 @@ function ModuleCard({ module }: { module: Module }) {
           <DifficultyBadge level={module.difficulty} />
         </div>
         <p className="mt-4 text-sm leading-relaxed text-ink-400">{module.description}</p>
+        <div className="mt-4">
+          <div className="mb-1.5 flex items-center justify-between text-xs">
+            <span className="text-ink-500">进度</span>
+            <span className="font-mono text-ink-300">
+              {mp.done}/{mp.total} · {mp.percent}%
+            </span>
+          </div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-ink-800">
+            <div
+              className="h-full rounded-full bg-brand-500 transition-all"
+              style={{ width: `${mp.percent}%` }}
+            />
+          </div>
+        </div>
       </Link>
 
       <div className="p-6">
@@ -44,31 +63,38 @@ function ModuleCard({ module }: { module: Module }) {
           )}
         </div>
         <ul className="space-y-2.5">
-          {module.lessons.map((lesson) => (
-            <li
-              key={lesson.id}
-              className="group flex items-start gap-3 rounded-lg p-2.5 transition-colors hover:bg-ink-800/50"
-            >
-              <div className="mt-0.5 font-mono text-[11px] text-ink-600">
-                {lesson.id}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Link
-                    to={`/curriculum/${module.id}/${lesson.id}`}
-                    className="text-sm font-medium text-ink-100 transition-colors hover:text-brand-400"
-                  >
-                    {lesson.title}
-                  </Link>
-                  <LessonTypeBadge type={lesson.type} />
+          {module.lessons.map((lesson) => {
+            const done = isLessonComplete(lesson.id)
+            return (
+              <li
+                key={lesson.id}
+                className="group flex items-start gap-3 rounded-lg p-2.5 transition-colors hover:bg-ink-800/50"
+              >
+                <div
+                  className={`mt-0.5 font-mono text-[11px] ${
+                    done ? 'text-emerald-400' : 'text-ink-600'
+                  }`}
+                >
+                  {done ? '✓' : lesson.id}
                 </div>
-                <p className="mt-0.5 text-xs text-ink-500">{lesson.summary}</p>
-              </div>
-              <div className="shrink-0 text-right">
-                <div className="text-xs font-mono text-ink-400">{lesson.duration}m</div>
-              </div>
-            </li>
-          ))}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      to={`/curriculum/${module.id}/${lesson.id}`}
+                      className="text-sm font-medium text-ink-100 transition-colors hover:text-brand-400"
+                    >
+                      {lesson.title}
+                    </Link>
+                    <LessonTypeBadge type={lesson.type} />
+                  </div>
+                  <p className="mt-0.5 text-xs text-ink-500">{lesson.summary}</p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <div className="text-xs font-mono text-ink-400">{lesson.duration}m</div>
+                </div>
+              </li>
+            )
+          })}
         </ul>
 
         <Link

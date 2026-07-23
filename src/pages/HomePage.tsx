@@ -1,6 +1,12 @@
 import { Link } from 'react-router-dom'
 import { curriculum, totalLessons, totalHours, totalProjects } from '../data/curriculum'
 import { DifficultyBadge } from '../components/Badges'
+import { useProgress } from '../components/ProgressProvider'
+import {
+  getContinuePath,
+  hasStarted,
+  lessonOverallProgress,
+} from '../lib/progress'
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
@@ -34,6 +40,10 @@ function FeatureCard({
 export function HomePage() {
   const firstModule = curriculum.modules[0]
   const lastModule = curriculum.modules[curriculum.modules.length - 1]
+  const { progress } = useProgress()
+  const started = hasStarted(progress)
+  const continuePath = getContinuePath(progress)
+  const overall = lessonOverallProgress(curriculum, progress)
 
   return (
     <div>
@@ -59,15 +69,34 @@ export function HomePage() {
               从大模型基础出发，经过 Prompt 工程、Agent 架构、工具与记忆、多智能体，
               最终掌握架构设计、生产部署与运维，构建可评估、可观测、可信赖的 Agent 系统。
             </p>
+            {started && (
+              <p className="mt-4 animate-fade-up text-sm text-ink-400 [animation-delay:0.15s]">
+                学习进度 {overall.done}/{overall.total} 节 · {overall.percent}%
+              </p>
+            )}
             <div className="mt-9 flex animate-fade-up flex-col items-center justify-center gap-3 sm:flex-row [animation-delay:0.2s]">
-              <Link to="/curriculum" className="btn-primary">
-                查看课程大纲
-                <span aria-hidden>→</span>
-              </Link>
-              <Link to="/roadmap" className="btn-ghost">
-                <span aria-hidden>🗺️</span>
-                学习路线图
-              </Link>
+              {started && continuePath ? (
+                <>
+                  <Link to={continuePath} className="btn-primary">
+                    继续学习
+                    <span aria-hidden>→</span>
+                  </Link>
+                  <Link to="/curriculum" className="btn-ghost">
+                    查看课程大纲
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link to="/curriculum" className="btn-primary">
+                    查看课程大纲
+                    <span aria-hidden>→</span>
+                  </Link>
+                  <Link to="/roadmap" className="btn-ghost">
+                    <span aria-hidden>🗺️</span>
+                    学习路线图
+                  </Link>
+                </>
+              )}
             </div>
           </div>
 
@@ -235,9 +264,15 @@ export function HomePage() {
                 课程大纲已就绪。完整内容正陆续上线，先从第一模块开启你的 Agent 大师之路。
               </p>
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <Link to="/curriculum" className="btn-primary">
-                  浏览完整大纲
-                </Link>
+                {started && continuePath ? (
+                  <Link to={continuePath} className="btn-primary">
+                    继续学习
+                  </Link>
+                ) : (
+                  <Link to="/curriculum" className="btn-primary">
+                    浏览完整大纲
+                  </Link>
+                )}
                 <Link to="/projects" className="btn-ghost">
                   查看实战项目
                 </Link>
