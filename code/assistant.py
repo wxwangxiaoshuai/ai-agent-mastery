@@ -70,7 +70,7 @@ def chat():
 
         try:
             stream = client.chat.completions.create(
-                model=os.getenv("MODEL_NAME"),
+            model=os.getenv("MODEL_NAME", "gpt-4o-mini"),
                 messages=full_messages,
                 stream=True,
             )

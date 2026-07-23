@@ -83,7 +83,7 @@ export const curriculum: Curriculum = {
             '实现一个最小的命令行聊天程序',
           ],
           tags: ['OpenAI SDK', 'Anthropic SDK', 'Streaming', 'Python', 'TypeScript'],
-          prerequisites: ['L01-01'],
+          prerequisites: ['L01-01', 'L01-02'],
           competency: 'API 调用能力',
         },
         {
@@ -98,7 +98,7 @@ export const curriculum: Curriculum = {
             '建立模型路由（model routing）的初步认知',
           ],
           tags: ['Model Routing', 'Cost', 'GPT', 'Claude', 'Gemini'],
-          prerequisites: ['L01-01'],
+          prerequisites: ['L01-01', 'L01-03'],
           competency: '模型选型决策',
         },
       ],
@@ -114,7 +114,7 @@ export const curriculum: Curriculum = {
           '对话历史本地存储',
           '流式打字效果',
         ],
-        stack: ['Python/TS', 'OpenAI/Anthropic SDK', 'Rich CLI', 'JSON 存储'],
+        stack: ['Python/TS', 'OpenAI SDK', 'JSON 存储'],
       },
     },
 

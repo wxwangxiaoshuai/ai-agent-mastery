@@ -18,7 +18,7 @@ pip install openai python-dotenv
 # 标准 OpenAI（与课程文档一致）
 OPENAI_API_KEY=sk-...
 
-# 可选：指定模型（assistant.py 读取）
+# 可选：指定模型（不设则默认 gpt-4o-mini）
 MODEL_NAME=gpt-4o-mini
 
 # 可选：兼容代理 / 中转（不设则走官方 OpenAI）

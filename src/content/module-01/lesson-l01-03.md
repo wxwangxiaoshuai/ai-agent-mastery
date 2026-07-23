@@ -13,9 +13,9 @@ pip install openai anthropic python-dotenv
 **TypeScript 环境**：
 
 ```bash
-npm install openai @anthropic-ai/sdk
+npm install openai @anthropic-ai/sdk dotenv
 # 或
-pnpm add openai @anthropic-ai/sdk
+pnpm add openai @anthropic-ai/sdk dotenv
 ```
 
 **API Key 管理**：永远不要把 API Key 硬编码到代码里。推荐使用 `.env` 文件管理：
@@ -127,6 +127,8 @@ print()
 | 最大 token | 可不设（有默认值） | **必填** `max_tokens` |
 
 > **工程建议**：如果你希望代码同时兼容两家 API，可以封装一个统一接口。后续 M5 的 Agent Loop 会用到这个思路。
+>
+> **模型名说明**：本节示例使用别名（如 `gpt-4o`、`claude-sonnet-5`），方便上手。生产环境建议钉死快照 ID（见 L01-04），避免厂商无声升级导致行为变化。
 
 ---
 

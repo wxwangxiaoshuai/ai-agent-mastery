@@ -111,7 +111,7 @@ while True:
         continue
 
     messages.append({"role": "user", "content": user_input})
-    response = client.chat.completions.create(
+    stream = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=messages,
         stream=True,
@@ -347,15 +347,19 @@ AI: eval() 是高危函数...
   [assistant] 你好！有什么可以帮助你的吗？
   ...
 
-# 5. 清空历史
-你: /clear
-对话历史已清空。
-
-# 6. 重启程序，历史仍在
+# 5. 重启程序，历史仍在（先不要 /clear）
 [Ctrl+D 退出]
 python assistant.py
 [输入] /history
   [应能看到上次保存的对话]
+
+# 6. 清空历史
+你: /clear
+对话历史已清空。
+[再重启一次]
+python assistant.py
+[输入] /history
+  （暂无历史）
 
 # 7. 错误处理（断网测试）
 [断网后输入问题]
