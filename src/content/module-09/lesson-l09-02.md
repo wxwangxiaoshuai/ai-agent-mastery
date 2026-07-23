@@ -153,10 +153,6 @@ r = run_sandboxed(normal)
 
 **为什么不用 volume 持久化**：代码执行沙箱的原则是"用完即弃"。持久化 volume 意味着上一次执行的残留文件可能被下次读到——既可能泄露，也可能造成状态污染。`tmpfs` + `remove` 保证每次执行都是干净环境。
 
-先用交互面板感受「攻击码 → 哪一层防线拦住」；再动手实现 Docker 沙箱。
-
-::interactive{type="sandboxDemo"}
-
 ### 文件传入传出：用 tar 管道
 
 Agent 经常要"给沙箱一个数据文件，跑完拿回结果"。容器只读根目录，不能直接写文件——用 `put_archive` 把数据以 tar 流塞进 `/tmp`：
