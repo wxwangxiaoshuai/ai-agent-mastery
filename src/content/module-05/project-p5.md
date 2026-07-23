@@ -89,15 +89,6 @@ class ToolRegistry:
 
 tools = ToolRegistry()
 
-@tools.register._tools if hasattr(tools.register, '_tools') else None  # placeholder
-# 注册搜索工具
-tools._tools["search"] = {
-    "name": "search",
-    "description": "搜索互联网获取信息。输入搜索关键词，返回搜索结果摘要。",
-    "params": {"query": "搜索关键词"},
-    "fn": None,  # 下面设置
-}
-
 def _search(query: str) -> str:
     """模拟搜索（实际可接入 SerpAPI / Tavily / DuckDuckGo）"""
     # 这里用模拟数据演示。生产环境接入真实搜索 API
@@ -113,9 +104,6 @@ def _search(query: str) -> str:
             return val
     return f"搜索 '{query}' 未找到相关结果。建议换个关键词。"
 
-tools._tools["search"]["fn"] = _search
-
-# 注册网页抓取工具
 def _fetch(url: str) -> str:
     """抓取网页内容"""
     try:
@@ -129,14 +117,6 @@ def _fetch(url: str) -> str:
     except Exception as e:
         return f"抓取失败: {e}"
 
-tools._tools["fetch"] = {
-    "name": "fetch",
-    "description": "抓取指定 URL 的网页内容。输入完整 URL，返回页面文本。",
-    "params": {"url": "要抓取的网页 URL"},
-    "fn": _fetch,
-}
-
-# 注册总结工具
 def _summarize(content: str) -> str:
     """用 LLM 总结文本"""
     response = client.chat.completions.create(
@@ -147,12 +127,25 @@ def _summarize(content: str) -> str:
     )
     return response.choices[0].message.content
 
-tools._tools["summarize"] = {
-    "name": "summarize",
-    "description": "总结长文本。输入文本内容，返回 3 句话摘要。",
-    "params": {"content": "要总结的文本内容"},
-    "fn": _summarize,
-}
+# 通过 ToolRegistry.register 注册，不要直接改 _tools
+tools.register(
+    name="search",
+    description="搜索互联网获取信息。输入搜索关键词，返回搜索结果摘要。",
+    params={"query": "搜索关键词"},
+    fn=_search,
+)
+tools.register(
+    name="fetch",
+    description="抓取指定 URL 的网页内容。输入完整 URL，返回页面文本。",
+    params={"url": "要抓取的网页 URL"},
+    fn=_fetch,
+)
+tools.register(
+    name="summarize",
+    description="总结长文本。输入文本内容，返回 3 句话摘要。",
+    params={"content": "要总结的文本内容"},
+    fn=_summarize,
+)
 ```
 
 **Step 3：实现 ReAct Agent 内核**
@@ -199,6 +192,32 @@ Final Answer: 结构化研究报告
 - 不要编造信息，只基于搜索结果回答
 """
 
+    def _parse_action_input(self, text: str) -> str | None:
+        """优先提取 Action Input 后的 JSON 对象，避免贪婪匹配吞掉后续内容。"""
+        json_match = re.search(r"Action Input:\s*(\{[\s\S]*?\})", text)
+        if json_match:
+            return json_match.group(1)
+        line_match = re.search(r"Action Input:\s*(.+)", text)
+        return line_match.group(1).strip() if line_match else None
+
+    def _check_divergence(self, original_question: str, recent_thoughts: list) -> bool:
+        """检查 Agent 是否偏离主题"""
+        if len(recent_thoughts) < 2:
+            return False
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{
+                "role": "user",
+                "content": (
+                    f"判断以下思考是否与原问题相关。输出 yes 或 no。\n\n"
+                    f"原问题：{original_question}\n\n最近思考：{recent_thoughts[-1]}"
+                ),
+            }],
+            temperature=0,
+            max_tokens=5,
+        )
+        return "no" in response.choices[0].message.content.lower()
+
     def run(self, question: str) -> str:
         """运行 Agent"""
         messages = [
@@ -227,6 +246,15 @@ Final Answer: 结构化研究报告
             if final_match:
                 return final_match.group(1).strip()
 
+            # 发散保护：偏离主题时拉回（仅在尚未给出最终答案时）
+            assistant_thoughts = [m["content"] for m in messages if m["role"] == "assistant"]
+            if self._check_divergence(question, assistant_thoughts):
+                messages.append({
+                    "role": "user",
+                    "content": "Observation: 你似乎偏离了研究主题。请回到原问题。",
+                })
+                continue
+
             # 解析行动
             action_match = re.search(r"Action:\s*(\w+)", text)
             if not action_match:
@@ -236,19 +264,23 @@ Final Answer: 结构化研究报告
             tool_name = action_match.group(1)
             tool = self.tools.get(tool_name)
             if not tool:
-                messages.append({"role": "user", "content": f"Observation: 错误 - 未知工具 '{tool_name}'。可用工具: {', '.join(self.tools._tools.keys())}"})
+                available = ", ".join(self.tools._tools.keys())
+                messages.append({
+                    "role": "user",
+                    "content": f"Observation: 错误 - 未知工具 '{tool_name}'。可用工具: {available}",
+                })
                 continue
 
-            # 解析参数
-            input_match = re.search(r"Action Input:\s*(.+)", text, re.DOTALL)
-            if not input_match:
+            # 解析参数（优先 JSON 对象）
+            raw_input = self._parse_action_input(text)
+            if not raw_input:
                 messages.append({"role": "user", "content": "Observation: 未找到 Action Input。请提供 JSON 格式的参数。"})
                 continue
 
             try:
-                tool_input = json.loads(input_match.group(1).strip())
+                tool_input = json.loads(raw_input)
             except json.JSONDecodeError:
-                tool_input = {"query": input_match.group(1).strip()}
+                tool_input = {"query": raw_input}
 
             # 重复检测
             input_str = json.dumps(tool_input, ensure_ascii=False)
@@ -294,33 +326,9 @@ if __name__ == "__main__":
         print(report)
 ```
 
-**Step 5：添加发散保护**
+**Step 5：发散保护已接入 Loop**
 
-```python
-# 在 ReActAgent.run() 的循环中添加发散检测
-def _check_divergence(self, original_question: str, recent_thoughts: list) -> bool:
-    """检查 Agent 是否偏离主题"""
-    if len(recent_thoughts) < 2:
-        return False
-    # 用 LLM 判断最近思考是否与原问题相关
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{
-            "role": "user",
-            "content": f"判断以下思考是否与原问题相关。输出 yes 或 no。\n\n原问题：{original_question}\n\n最近思考：{recent_thoughts[-1]}",
-        }],
-        temperature=0,
-        max_tokens=5,
-    )
-    return "no" in response.choices[0].message.content.lower()
-
-# 在循环中使用
-if self._check_divergence(question, [m["content"] for m in messages if m["role"] == "assistant"]):
-    messages.append({
-        "role": "user",
-        "content": "Observation: 你似乎偏离了研究主题。请回到原问题。",
-    })
-```
+Step 3 的 `ReActAgent` 已包含 `_check_divergence`，并在每次模型输出后调用：若判定偏离主题，会注入纠正 Observation 并 `continue`，而不是只写在注释里。生产环境可按成本把检测频率改为「每 N 步一次」，或换成关键词/embedding 相似度等廉价启发式。
 
 ### 验收测试
 
@@ -332,11 +340,12 @@ from src.agent import ReActAgent, ToolRegistry
 class TestReActAgent:
     def setup_method(self):
         self.tools = ToolRegistry()
-        # 注册模拟工具
-        self.tools._tools["search"] = {
-            "name": "search", "description": "搜索",
-            "params": {"query": "关键词"}, "fn": lambda query: f"搜索结果: {query}",
-        }
+        self.tools.register(
+            name="search",
+            description="搜索",
+            params={"query": "关键词"},
+            fn=lambda query: f"搜索结果: {query}",
+        )
         self.agent = ReActAgent(self.tools, max_steps=5)
 
     def test_agent_returns_answer(self):

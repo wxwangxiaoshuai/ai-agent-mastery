@@ -115,4 +115,4 @@ def agent_loop(goal, tools, max_steps=10):
 - 自主性分级 L1-L5：生产场景推荐 L2-L3（带人工审批比全自动更可靠）
 - 判断规则：去掉 LLM 还能完成同样任务的，不是 Agent
 - Agent 四组件：LLM（推理）+ Tools（行动）+ Memory（记忆）+ Loop（控制）
-- 后续 5 节课：手写 Loop（L02）→ ReAct 深入（L03）→ Plan-Execute（L04）→ Reflection（L05）→ 决策框架（L06）
+- 后续 5 节课：手写 Loop（L05-02）→ ReAct 深入（L05-03）→ Plan-Execute（L05-04）→ Reflection（L05-05）→ 决策框架（L05-06）

@@ -108,13 +108,16 @@ def generate_plan(goal: str, completed: list = None, results: dict = None) -> li
 {context}
 任务：{goal}
 
-输出 JSON 数组，如：["步骤1", "步骤2", "步骤3"]""",
+输出 JSON 对象，格式必须为：
+{{"steps": ["步骤1", "步骤2", "步骤3"]}}""",
         }],
         temperature=0,
         response_format={"type": "json_object"},
     )
     data = json.loads(response.choices[0].message.content)
-    return data.get("steps", data.get("plan", []))
+    # json_object 模式顶层必须是对象；统一从 steps / plan 字段取列表
+    steps = data.get("steps", data.get("plan", []))
+    return steps if isinstance(steps, list) else []
 
 
 def execute_step(step: str, context: dict = None) -> str:

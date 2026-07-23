@@ -1,6 +1,8 @@
 ## 手写一个最小 Agent Loop
 
-理解 Agent 最好的方式不是读论文，而是**亲手写一个**。这一节我们不依赖任何 Agent 框架，用纯 Python 从零实现一个能"自己决定搜什么、读什么、怎么总结"的 Agent。
+Agent Loop 的本质就是一个 while 循环——理解它最好的方式是亲手写一个。先用交互组件感受 Thought → Action → Observation 的节奏，再动手实现。
+
+::interactive{type="agentLoop"}
 
 ### Agent Loop 的本质：一个 while 循环
 
@@ -65,7 +67,23 @@ def search(query: str) -> str:
 )
 def calculate(expression: str) -> str:
     try:
-        result = eval(expression)  # 生产环境用 ast.literal_eval
+        # 教学示例：仅演示工具接口。生产环境禁止 eval，
+        # 请用受限 AST 求值或专用库（如 simpleeval / sympy）；ast.literal_eval 不能算表达式。
+        import ast
+        import operator as op
+        ops = {
+            ast.Add: op.add, ast.Sub: op.sub, ast.Mult: op.mul,
+            ast.Div: op.truediv, ast.Pow: op.pow, ast.USub: op.neg,
+        }
+        def _eval(node):
+            if isinstance(node, ast.Constant):
+                return node.value
+            if isinstance(node, ast.BinOp):
+                return ops[type(node.op)](_eval(node.left), _eval(node.right))
+            if isinstance(node, ast.UnaryOp):
+                return ops[type(node.op)](_eval(node.operand))
+            raise TypeError(f"不支持的表达式: {type(node)}")
+        result = _eval(ast.parse(expression, mode="eval").body)
         return str(result)
     except Exception as e:
         return f"计算错误: {e}"
@@ -143,16 +161,19 @@ def agent_loop(question: str, max_steps: int = 10) -> str:
 
         if action_match:
             tool_name = action_match.group(1)
-            # 解析 Action Input
-            input_match = re.search(r"Action Input:\s*(.+)", text, re.DOTALL)
-            if input_match:
+            # 解析 Action Input：优先提取 JSON 对象，避免贪婪匹配
+            json_match = re.search(r"Action Input:\s*(\{[\s\S]*?\})", text)
+            raw_input = json_match.group(1) if json_match else None
+            if not raw_input:
+                line_match = re.search(r"Action Input:\s*(.+)", text)
+                raw_input = line_match.group(1).strip() if line_match else None
+            if raw_input:
                 try:
-                    tool_input = json.loads(input_match.group(1).strip())
+                    tool_input = json.loads(raw_input)
                 except json.JSONDecodeError:
                     # 如果不是 JSON，当作纯字符串
-                    tool_input = {"query": input_match.group(1).strip()} \
-                        if tool_name == "search" else \
-                        {"expression": input_match.group(1).strip()}
+                    tool_input = {"query": raw_input} if tool_name == "search" \
+                        else {"expression": raw_input}
 
                 # 3. 执行工具
                 if tool_name in TOOL_REGISTRY:
