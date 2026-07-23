@@ -120,7 +120,7 @@ def rewrite_query(question: str) -> str:
 def rerank_results(question: str, docs: list, top_n: int = 3) -> list:
     """用 Cross-encoder 对检索结果重排序"""
     from sentence_transformers import CrossEncoder
-    reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+    reranker = CrossEncoder("BAAI/bge-reranker-base")  # 中文默认
     scores = reranker.predict([(question, doc) for doc in docs])
     ranked = sorted(zip(scores, docs), reverse=True)
     return [doc for _, doc in ranked[:top_n]]
@@ -190,4 +190,4 @@ Modular RAG 把 RAG 拆成独立可替换的组件：
 - Advanced RAG 在检索前后加优化：查询改写、Reranking、去重压缩
 - Modular RAG 把 RAG 拆成可替换组件：Router → Retriever → Reranker → Generator
 - RAG vs 微调 vs 长上下文：知识用 RAG，行为用微调，小文档用长上下文
-- 后续 5 节课会深入每个环节：分块（L02）→ Embedding（L03）→ 混合检索（L04）→ 评估（L05）→ 前沿范式（L06）
+- 后续 5 节课会深入每个环节：分块（L04-02）→ Embedding（L04-03）→ 混合检索（L04-04）→ 评估（L04-05）→ 前沿范式（L04-06）

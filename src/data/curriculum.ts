@@ -440,7 +440,7 @@ export const curriculum: Curriculum = {
             '用评估结果驱动分块策略和检索参数的优化',
           ],
           tags: ['RAGAS', 'Evaluation', 'Faithfulness', 'Context Precision'],
-          prerequisites: ['L04-01'],
+          prerequisites: ['L04-01', 'L04-04'],
           competency: 'RAG 评估',
         },
         {
@@ -455,7 +455,7 @@ export const curriculum: Curriculum = {
             '评估高级 RAG 范式的适用场景与成本',
           ],
           tags: ['Self-RAG', 'CRAG', 'Graph RAG', 'Agentic RAG'],
-          prerequisites: ['L04-01'],
+          prerequisites: ['L04-01', 'L04-05'],
           competency: 'RAG 架构',
         },
       ],

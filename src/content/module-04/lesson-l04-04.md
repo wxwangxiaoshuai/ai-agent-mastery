@@ -62,9 +62,10 @@ def hybrid_search(
     documents: list[str],
     vector_collection,
     top_k: int = 5,
-    alpha: float = 0.5,
+    bm25_weight: float = 1.0,
+    vector_weight: float = 1.0,
 ) -> list:
-    """混合检索：BM25 + 向量检索 + RRF 融合"""
+    """混合检索：BM25 + 向量检索 + 加权 RRF 融合"""
     # 1. BM25 检索
     bm25_results = bm25_search(query, documents, top_k=top_k * 2)
 
@@ -79,25 +80,25 @@ def hybrid_search(
         n_results=top_k * 2,
     )
 
-    # 3. RRF 融合
+    # 3. 加权 RRF 融合（两侧都带权重；默认等权）
     rrf_k = 60  # RRF 常数
     scores = {}
 
     # BM25 的排名贡献
     for rank, result in enumerate(bm25_results):
         doc = result["content"]
-        scores[doc] = scores.get(doc, 0) + 1 / (rrf_k + rank + 1)
+        scores[doc] = scores.get(doc, 0) + bm25_weight / (rrf_k + rank + 1)
 
     # 向量检索的排名贡献
     for rank, doc in enumerate(vector_results["documents"][0]):
-        scores[doc] = scores.get(doc, 0) + alpha / (rrf_k + rank + 1)
+        scores[doc] = scores.get(doc, 0) + vector_weight / (rrf_k + rank + 1)
 
     # 排序
     ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     return [{"content": doc, "score": score} for doc, score in ranked[:top_k]]
 ```
 
-**RRF 的优势**：不需要对两种检索的分数做归一化（BM25 分数和余弦相似度的量纲不同），只需要排名即可融合。
+**RRF 的优势**：不需要对两种检索的分数做归一化（BM25 分数和余弦相似度的量纲不同），只需要排名即可融合。`bm25_weight` / `vector_weight` 可按场景微调（如专有名词多时提高 BM25 权重）。
 
 ### Reranking：精排提升精度
 
@@ -120,8 +121,8 @@ from sentence_transformers import CrossEncoder
 
 def rerank(query: str, documents: list[str], top_n: int = 3) -> list:
     """用 Cross-encoder 对候选文档重排序"""
-    # 加载模型（首次使用会自动下载）
-    model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+    # 中文场景默认用多语言 / 中文优化模型；纯英文可换 ms-marco-MiniLM-L-6-v2
+    model = CrossEncoder("BAAI/bge-reranker-base")
 
     # 逐对计算相关性分数
     pairs = [(query, doc) for doc in documents]
@@ -139,10 +140,10 @@ def rerank(query: str, documents: list[str], top_n: int = 3) -> list:
 
 | 模型 | 大小 | 多语言 | 推荐场景 |
 |------|------|--------|----------|
-| ms-marco-MiniLM-L-6-v2 | 80MB | 否 | 英文、快速 |
-| ms-marco-MiniLM-L-12-v2 | 120MB | 否 | 英文、精度优先 |
-| multilingual-MiniLM-L-6-v2 | 80MB | 是 | 多语言（含中文） |
-| bge-reranker-base | 280MB | 是 | 中文、高精度 |
+| bge-reranker-base | 280MB | 是 | **中文默认**、高精度 |
+| multilingual-MiniLM-L-6-v2 | 80MB | 是 | 多语言、资源受限 |
+| ms-marco-MiniLM-L-6-v2 | 80MB | 否 | 纯英文、快速 |
+| ms-marco-MiniLM-L-12-v2 | 120MB | 否 | 纯英文、精度优先 |
 
 ### 完整的混合检索 + Reranking 管道
 
@@ -158,7 +159,7 @@ class HybridRetriever:
         self.documents = documents
         self.collection = vector_collection
         self.bm25 = BM25Okapi([list(jieba.cut(doc)) for doc in documents])
-        self.reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+        self.reranker = CrossEncoder("BAAI/bge-reranker-base")  # 中文默认
 
     def retrieve(self, query: str, top_k: int = 5, rerank_top_n: int = 3) -> list:
         # Stage 1: 混合检索（召回阶段）
@@ -188,5 +189,5 @@ class HybridRetriever:
 - RRF（Reciprocal Rank Fusion）是融合两种检索结果的标配算法
 - Reranking 用 Cross-encoder 做精排，精度显著提升但增加延迟
 - 完整管道：混合检索召回 top-20 → Cross-encoder 精排取 top-3
-- 中文 Reranker 推荐 `bge-reranker-base` 或 `multilingual-MiniLM-L-6-v2`
+- 中文 Reranker 推荐默认用 `bge-reranker-base`；纯英文场景再用 `ms-marco-MiniLM`
 - 生产环境标配：混合检索 + Reranking 是 RAG 质量的"及格线"

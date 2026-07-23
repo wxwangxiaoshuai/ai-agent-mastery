@@ -20,12 +20,15 @@
 ```python
 def fixed_size_chunk(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]:
     """固定大小分块，带重叠区"""
+    if overlap >= chunk_size:
+        raise ValueError("overlap 必须小于 chunk_size，否则会死循环")
     chunks = []
     start = 0
+    step = chunk_size - overlap
     while start < len(text):
         end = start + chunk_size
         chunks.append(text[start:end])
-        start = end - overlap  # 回退 overlap 字符，保证上下文连续
+        start += step
     return chunks
 
 # 示例
@@ -94,7 +97,9 @@ def semantic_chunk(text: str, min_size: int = 200, max_size: int = 800) -> list[
 
 ```python
 def recursive_chunk(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]:
-    """递归分块：按层级分隔符逐步切分"""
+    """递归分块：按层级分隔符逐步切分，切完后再做滑动重叠"""
+    if overlap >= chunk_size:
+        raise ValueError("overlap 必须小于 chunk_size")
     separators = ["\n## ", "\n### ", "\n\n", "\n", "。", "！", "？", ".", "!", "?", " "]
 
     def split_text(text: str, separators: list, chunk_size: int) -> list[str]:
@@ -126,7 +131,16 @@ def recursive_chunk(text: str, chunk_size: int = 500, overlap: int = 50) -> list
         # 没有分隔符能切，硬切
         return [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
 
-    return split_text(text, separators, chunk_size)
+    raw = split_text(text, separators, chunk_size)
+    if overlap <= 0 or len(raw) <= 1:
+        return raw
+
+    # 在相邻块之间补重叠：把前一块尾部拼到后一块开头
+    overlapped = [raw[0]]
+    for i in range(1, len(raw)):
+        prev_tail = raw[i - 1][-overlap:]
+        overlapped.append(prev_tail + raw[i])
+    return overlapped
 ```
 
 **优点**：自适应文档结构、在最佳位置切分、保持语义层级。

@@ -78,6 +78,9 @@ from ragas.metrics import (
 )
 from datasets import Dataset
 
+# 注意：ragas API 迭代较快。若 import 失败，请查阅官方文档——
+# 新版可能改为 Faithfulness() 类实例，数据集字段也可能从 ground_truth 改为 reference。
+
 def run_rag_evaluation(test_cases: list, rag_fn) -> dict:
     """运行完整的 RAG 评估"""
     results = []

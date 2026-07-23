@@ -64,8 +64,8 @@ print(f"'差旅报销标准' vs '公司团建活动': {cosine_similarity(v1, v3)
 **选型建议**：
 - 原型阶段用 **Chroma**（零配置）
 - 生产中小规模用 **Qdrant**（Docker 部署，性能好）
-| 已有 PostgreSQL 用 **pgvector**（不引入新组件）
-| 超大规模用 **Milvus**
+- 已有 PostgreSQL 用 **pgvector**（不引入新组件）
+- 超大规模用 **Milvus**
 
 ### Chroma 快速上手
 
@@ -117,7 +117,7 @@ def search(query: str, top_k: int = 5, where: dict = None) -> list:
     )
 
     return [
-        {"content": doc, "score": dist, "metadata": meta}
+        {"content": doc, "distance": dist, "metadata": meta}  # distance 越小越相似
         for doc, dist, meta in zip(
             results["documents"][0],
             results["distances"][0],
@@ -125,6 +125,8 @@ def search(query: str, top_k: int = 5, where: dict = None) -> list:
         )
     ]
 ```
+
+> **注意**：Chroma 在 `cosine` 空间返回的是 **distance**（越小越相关），不是相似度分数。需要相似度时可自行转换：`similarity ≈ 1 - distance`（视实现而定）。
 
 ### HNSW 索引：为什么向量检索这么快
 

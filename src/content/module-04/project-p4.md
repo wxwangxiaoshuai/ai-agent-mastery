@@ -85,7 +85,10 @@ class DocumentIndexer:
         return len(chunks)
 
     def _fixed_chunk(self, text: str, size: int, overlap: int) -> list[str]:
-        return [text[i:i+size] for i in range(0, len(text), size - overlap)]
+        if overlap >= size:
+            raise ValueError("overlap 必须小于 chunk_size")
+        step = size - overlap
+        return [text[i:i+size] for i in range(0, len(text), step)]
 
     def _semantic_chunk(self, text: str, min_size: int = 200, max_size: int = 800) -> list[str]:
         paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
@@ -101,22 +104,41 @@ class DocumentIndexer:
         return chunks
 
     def _recursive_chunk(self, text: str, size: int, overlap: int) -> list[str]:
+        if overlap >= size:
+            raise ValueError("overlap 必须小于 chunk_size")
         separators = ["\n## ", "\n### ", "\n\n", "\n", "。", "."]
-        for sep in separators:
-            if sep in text:
-                parts = text.split(sep)
+
+        def split_text(t: str, seps: list) -> list[str]:
+            if len(t) <= size:
+                return [t] if t.strip() else []
+            for i, sep in enumerate(seps):
+                if sep not in t:
+                    continue
+                parts = t.split(sep)
                 chunks, current = [], ""
                 for part in parts:
                     candidate = current + sep + part if current else part
-                    if len(candidate) > size and current:
-                        chunks.append(current)
-                        current = part
-                    else:
+                    if len(candidate) <= size:
                         current = candidate
+                    else:
+                        if current:
+                            chunks.append(current)
+                        if len(part) > size:
+                            chunks.extend(split_text(part, seps[i+1:]))
+                        else:
+                            current = part
                 if current:
                     chunks.append(current)
                 return [c for c in chunks if len(c) > 20]
-        return [text[i:i+size] for i in range(0, len(text), size)]
+            return [t[i:i+size] for i in range(0, len(t), size)]
+
+        raw = split_text(text, separators)
+        if overlap <= 0 or len(raw) <= 1:
+            return raw
+        overlapped = [raw[0]]
+        for i in range(1, len(raw)):
+            overlapped.append(raw[i - 1][-overlap:] + raw[i])
+        return overlapped
 ```
 
 **Step 3：混合检索 + Reranking 管道**
@@ -131,14 +153,16 @@ class HybridRetriever:
 
     def __init__(self, indexer: DocumentIndexer):
         self.indexer = indexer
-        self.reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+        self.reranker = CrossEncoder("BAAI/bge-reranker-base")  # 中文默认
         self._bm25_docs = None
+        self._bm25_ids = None
         self._bm25_engine = None
 
     def _build_bm25(self):
-        """构建 BM25 索引"""
+        """构建 BM25 索引（与向量库共用同一套 ids）"""
         all_data = self.indexer.collection.get()
         self._bm25_docs = all_data["documents"]
+        self._bm25_ids = all_data["ids"]
         tokenized = [list(jieba.cut(doc)) for doc in self._bm25_docs]
         self._bm25_engine = BM25Okapi(tokenized)
 
@@ -156,18 +180,18 @@ class HybridRetriever:
         # 2. BM25 检索
         tokenized_query = list(jieba.cut(query))
         bm25_scores = self._bm25_engine.get_scores(tokenized_query)
-        bm25_ranked = sorted(range(len(bm25_scores)), key=lambda i: bm25_scores[i], reverse=True)[:top_k]
+        bm25_ranked = sorted(
+            range(len(bm25_scores)), key=lambda i: bm25_scores[i], reverse=True
+        )[:top_k]
 
-        # 3. RRF 融合
+        # 3. RRF 融合——两侧统一使用 Chroma document id，才能正确合并同一文档
         rrf_k = 60
         scores = {}
-        for rank, idx in enumerate(vec_results["documents"][0]):
-            doc_id = vec_results["ids"][0][rank]
+        for rank, doc_id in enumerate(vec_results["ids"][0]):
             scores[doc_id] = scores.get(doc_id, 0) + 1 / (rrf_k + rank + 1)
         for rank, idx in enumerate(bm25_ranked):
-            doc = self._bm25_docs[idx]
-            doc_hash = hashlib.md5(doc.encode()).hexdigest()
-            scores[doc_hash] = scores.get(doc_hash, 0) + 1 / (rrf_k + rank + 1)
+            doc_id = self._bm25_ids[idx]
+            scores[doc_id] = scores.get(doc_id, 0) + 1 / (rrf_k + rank + 1)
 
         # 取融合后 top-k
         sorted_ids = sorted(scores, key=scores.get, reverse=True)[:top_k]
@@ -246,6 +270,7 @@ class RAGGenerator:
 from ragas import evaluate
 from ragas.metrics import faithfulness, context_precision, context_recall, answer_relevancy
 from datasets import Dataset
+# ragas API 可能随版本变化；若报错请对照官方文档调整字段名（如 ground_truth → reference）
 
 class RAGEvaluator:
     """RAGAS 自动化评估"""
@@ -282,10 +307,13 @@ def compare_chunking_strategies(documents: list, test_cases: list) -> str:
 
     for strategy in strategies:
         print(f"\n测试分块策略: {strategy}")
-        # 重新索引
-        indexer = DocumentIndexer(f"test_{strategy}")
-        indexer.collection.delete()  # 清空
-        indexer = DocumentIndexer(f"test_{strategy}")
+        # 重新索引：先删 collection 再建，避免脏数据
+        name = f"test_{strategy}"
+        try:
+            db.delete_collection(name)
+        except Exception:
+            pass
+        indexer = DocumentIndexer(name)
         for doc, source in documents:
             indexer.index(doc, source, chunk_strategy=strategy)
 
@@ -319,7 +347,7 @@ def compare_chunking_strategies(documents: list, test_cases: list) -> str:
 ```python
 # tests/test_rag.py
 import pytest
-from src.indexer import DocumentIndexer
+from src.indexer import DocumentIndexer, db
 from src.retriever import HybridRetriever
 from src.generator import RAGGenerator
 
@@ -356,8 +384,10 @@ TEST_CASES = [
 
 class TestRAG:
     def setup_method(self):
-        self.indexer = DocumentIndexer("test_kb")
-        self.indexer.collection.delete()
+        try:
+            db.delete_collection("test_kb")
+        except Exception:
+            pass
         self.indexer = DocumentIndexer("test_kb")
         self.indexer.index(SAMPLE_DOC, "差旅政策.md", chunk_strategy="recursive")
         self.retriever = HybridRetriever(self.indexer)
@@ -367,6 +397,12 @@ class TestRAG:
         results = self.retriever.retrieve("住宿报销上限", top_k=5, rerank_top_n=3)
         assert len(results) > 0
         assert "住宿" in results[0]["content"]
+
+    def test_rrf_merges_same_doc(self):
+        """RRF 两侧使用同一 id，融合后同一文档不应重复出现"""
+        results = self.retriever.retrieve("住宿报销", top_k=10, rerank_top_n=5)
+        contents = [r["content"] for r in results]
+        assert len(contents) == len(set(contents))
 
     def test_answer_contains_citations(self):
         output = self.generator.answer("住宿报销上限是多少？")

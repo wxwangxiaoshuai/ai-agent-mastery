@@ -16,6 +16,8 @@ Agentic RAG    →  LLM 作为检索 Agent，多步推理+检索（自主）
 
 Naive RAG 对每个问题都检索——但"你好"这种闲聊不需要检索。Self-RAG 让模型自己判断：这个问题需要检索吗？检索结果够好吗？
 
+> **说明**：原论文 Self-RAG（Asai et al.）通过微调让模型生成 reflection token。下面是**教学简化版**——用额外 LLM 调用模拟「是否检索 / 是否相关」的决策，便于理解思路，无需微调。
+
 ```
 用户问题 → [模型判断：需要检索吗？]
               ├─ 是 → 检索 → [检索结果相关吗？] → 是 → 基于检索生成
@@ -262,7 +264,7 @@ def agentic_rag(question: str, search_fn, client, max_steps: int = 5) -> str:
 
 **适用场景**：复杂问题（需要多步检索）、对比分析、开放性研究问题。
 
-### 四种范式对比
+### 五种范式对比
 
 | 范式 | 核心思想 | 适用场景 | 成本 | 复杂度 |
 |------|----------|----------|------|--------|
@@ -277,8 +279,8 @@ def agentic_rag(question: str, search_fn, client, max_steps: int = 5) -> str:
 - 检索不准 → 加 Reranking（L04-04）
 - 闲聊混问答 → 升级 Self-RAG
 - 知识库不全 → 升级 CRAG
-| 需要实体关系 → 升级 Graph RAG
-| 需要多步研究 → 升级 Agentic RAG
+- 需要实体关系 → 升级 Graph RAG
+- 需要多步研究 → 升级 Agentic RAG
 
 ### 要点总结
 
