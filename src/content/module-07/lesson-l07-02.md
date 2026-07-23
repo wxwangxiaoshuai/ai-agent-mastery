@@ -44,9 +44,8 @@ def retry_with_backoff(
                     if attempt < max_retries:
                         # 指数退避：1s → 2s → 4s → 8s...
                         delay = min(base_delay * (2 ** attempt), max_delay)
-                        # 随机抖动：避免多个客户端同步重试
-                        jitter = random.uniform(0, delay * 0.1)
-                        total_delay = delay + jitter
+                        # Full jitter：在 [0, delay] 均匀采样，错峰效果最好
+                        total_delay = random.uniform(0, delay)
                         print(f"重试 {attempt+1}/{max_retries}，{total_delay:.1f}s 后重试... 错误: {e}")
                         time.sleep(total_delay)
                     else:
@@ -80,13 +79,16 @@ def call_llm(messages):
 ### 区分可重试错误与不可重试错误
 
 ```python
-from openai import RateLimitError, APIStatusError, APITimeoutError
+from openai import (
+    RateLimitError, APITimeoutError, APIConnectionError, APIStatusError,
+)
 
 # 可重试错误：暂时性故障，等一会儿可能好
 RETRYABLE_ERRORS = (
-    RateLimitError,      # 429：限流，等一下就好
-    APITimeoutError,     # 超时：网络抖动
-    ConnectionError,     # 连接失败：DNS/网络问题
+    RateLimitError,       # 429：限流（SDK 直接抛出）
+    APITimeoutError,      # 超时：网络抖动
+    APIConnectionError,   # 连接失败：DNS/网络问题
+    APIStatusError,       # 含 5xx；在 call_llm_safe 内再过滤 4xx
 )
 
 # 不可重试错误：永久性故障，重试也没用
@@ -96,21 +98,25 @@ NON_RETRYABLE_ERRORS = (
     # OpenAI 400/401/403：参数错误/认证失败/无权限
 )
 
+class NonRetryableAPIError(ValueError):
+    """包装不可重试的 4xx，避免被 RETRYABLE_ERRORS 中的 APIStatusError 捕获"""
+
 @retry_with_backoff(
     max_retries=3,
     base_delay=1.0,
     retryable_exceptions=RETRYABLE_ERRORS,
 )
 def call_llm_safe(messages):
-    """只重试可恢复错误"""
+    """只重试可恢复错误；429/超时/连接错误由 SDK 直接抛出并进入重试"""
     try:
-        return client.chat.completions.create(model="gpt-4o-mini", messages=messages)
+        return client.chat.completions.create(
+            model="gpt-4o-mini", messages=messages, timeout=30.0,
+        )
     except APIStatusError as e:
         if e.status_code >= 500:
-            raise  # 5xx：服务端错误，可重试
-        if e.status_code == 429:
-            raise RateLimitError(...)  # 限流，可重试
-        raise ValueError(f"不可重试的 API 错误: {e.status_code}")  # 4xx：不重试
+            raise  # 5xx：可重试（由装饰器捕获）
+        # 4xx（除 429，429 已是 RateLimitError）：不可重试
+        raise NonRetryableAPIError(f"不可重试的 API 错误: {e.status_code}") from e
 ```
 
 **错误分类指南**：
@@ -179,19 +185,29 @@ def agent_step(deadline: Deadline):
 ### 完整的重试 + 超时工具
 
 ```python
+import random
+from openai import RateLimitError, APITimeoutError, APIConnectionError, APIStatusError
+
 def robust_call(fn, *args, max_retries=3, timeout=30, base_delay=1.0, **kwargs):
     """带重试 + 超时的通用调用封装"""
     for attempt in range(max_retries + 1):
         try:
             return fn(*args, timeout=timeout, **kwargs)
-        except (APITimeoutError, RateLimitError, ConnectionError) as e:
+        except (APITimeoutError, RateLimitError, APIConnectionError) as e:
             if attempt < max_retries:
-                delay = min(base_delay * (2 ** attempt), 30) + random.uniform(0, 0.5)
+                delay = random.uniform(0, min(base_delay * (2 ** attempt), 30))
                 print(f"[重试 {attempt+1}/{max_retries}] {delay:.1f}s 后重试: {e}")
                 time.sleep(delay)
             else:
                 raise
-        except Exception as e:
+        except APIStatusError as e:
+            if e.status_code >= 500 and attempt < max_retries:
+                delay = random.uniform(0, min(base_delay * (2 ** attempt), 30))
+                print(f"[重试 {attempt+1}/{max_retries}] 5xx，{delay:.1f}s 后重试: {e}")
+                time.sleep(delay)
+            else:
+                raise
+        except Exception:
             # 不可重试错误，直接抛出
             raise
 

@@ -19,7 +19,6 @@
 
 ```python
 import json
-import pickle
 from pathlib import Path
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -48,7 +47,7 @@ class AgentCheckpoint:
 **保存什么**：
 - `messages`：完整对话历史（模型需要历史来理解上下文）
 - `tool_results`：工具返回的结果（避免重新调用工具）
-- `step`：当前执行到第几步（恢复后从下一步继续）
+- `step`：下一待执行步的 0-based 索引（恢复后从该步重试，用户可见步号 = step + 1）
 
 **不保存什么**：
 - LLM 的内部状态（无法保存，也不需要——每次调用是无状态的）
@@ -109,7 +108,11 @@ class CheckpointAgent:
         # 尝试加载 Checkpoint
         checkpoint = self.store.load(agent_id)
         if checkpoint:
-            print(f"[恢复] 从 step {checkpoint.step} 恢复，已有 {len(checkpoint.tool_results)} 个工具结果")
+            # checkpoint.step 是下一待执行步的 0-based 索引；用户可见为第 N 步（1-based）
+            print(
+                f"[恢复] 从第 {checkpoint.step + 1} 步恢复"
+                f"（loop index={checkpoint.step}），已有 {len(checkpoint.tool_results)} 个工具结果"
+            )
             messages = checkpoint.messages
             tool_results = checkpoint.tool_results
             start_step = checkpoint.step
@@ -191,9 +194,11 @@ result = agent.run("调研 ReAct 范式", agent_id="research_001")
 
 # 从 Checkpoint 恢复（API 恢复后）
 result = agent.resume("research_001")
-# 输出：[恢复] 从 step 5 恢复，已有 4 个工具结果
-# ... 继续执行 step 5-10 ...
+# 输出：[恢复] 从第 5 步恢复（loop index=4），已有 4 个工具结果
+# ... 从失败步重试，继续执行 ...
 ```
+
+> 本课采用**每步成功后**快照。若 Step 5 在工具执行中途失败，磁盘上仍是 Step 4 的 Checkpoint，恢复后会重跑整步（含 LLM）。步内细粒度恢复属于生产级增强，可在工具循环内增加中间保存。
 
 ### Checkpoint 的时机策略
 
@@ -223,7 +228,7 @@ for step in range(max_steps):
 
 - Checkpointing 让 Agent 从失败步骤恢复，而非从头来过
 - 保存三样东西：messages（上下文）、tool_results（工具结果）、step（步数）
-- 存储：文件系统（简单）或 Redis（高性能）或数据库（持久化）
-- 恢复时加载 Checkpoint → 从 step+1 继续 → 不重复已完成的工作
+- 存储方案对比：内存（快、进程退出丢失）/ 文件 JSON（简单可持久）/ Redis 或 DB（多实例共享）；本课实现文件后端，`backend` 参数预留扩展
+- 恢复时加载 Checkpoint → 从 `checkpoint.step`（下一待执行步，0-based）继续，重试失败步，不重复已完成工作
 - 保存时机：推荐"工具调用后保存"——工具结果最值钱，纯推理可从 messages 重建
 - 任务完成后删除 Checkpoint，避免存储泄漏

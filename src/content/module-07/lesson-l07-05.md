@@ -40,12 +40,12 @@ class ModelFallbackChain:
             {"model": "local-fallback", "timeout": 5, "label": "本地兜底"},
         ]
 
-    def call(self, messages: list, tools: list = None) -> str:
-        """按降级链依次尝试"""
+    def call(self, messages: list, tools: list = None) -> tuple[str, bool]:
+        """按降级链依次尝试。返回 (内容, degraded)：degraded=True 表示已落到静态兜底。"""
         for i, config in enumerate(self.chain):
             try:
                 if config["model"] == "local-fallback":
-                    return self._static_fallback(messages)
+                    return self._static_fallback(messages), True
 
                 response = client.chat.completions.create(
                     model=config["model"],
@@ -56,13 +56,13 @@ class ModelFallbackChain:
                 )
                 if i > 0:
                     print(f"[降级] 使用 {config['label']} 成功（第 {i+1} 个）")
-                return response.choices[0].message.content
+                return response.choices[0].message.content, False
 
             except Exception as e:
                 print(f"[降级] {config['label']} 失败: {e}")
                 continue
 
-        return self._static_fallback(messages)
+        return self._static_fallback(messages), True
 
     def _static_fallback(self, messages: list) -> str:
         """最后的静态兜底"""
@@ -182,15 +182,21 @@ class ResilientAgent:
                 return StaticFallback.get("default")
 
             # 使用模型降级链调用 LLM
-            response = self.model_chain.call(messages)
-            self.llm_breaker.record_success()
+            response, degraded = self.model_chain.call(messages)
+            if degraded:
+                # 全模型失败落到静态兜底：记失败，便于熔断统计
+                self.llm_breaker.record_failure()
+            else:
+                self.llm_breaker.record_success()
 
             # 如果 LLM 需要调工具，使用工具降级链
-            if "需要搜索" in response:
+            if not degraded and "需要搜索" in response:
                 search_result = self.tool_chain.execute("search", query=question)
                 messages.append({"role": "assistant", "content": response})
                 messages.append({"role": "user", "content": f"搜索结果: {search_result}"})
-                response = self.model_chain.call(messages)
+                response, degraded = self.model_chain.call(messages)
+                if degraded:
+                    self.llm_breaker.record_failure()
 
             return response
 
@@ -201,7 +207,7 @@ class ResilientAgent:
 
 ### 降级的工程原则
 
-1. **降级是"有损"的**——备用方案的能力一定弱于主方案，要让用户感知到"可能不够好"
+1. **核心路径尽量无感，有损降级需透明**——能自动切备用服务时用户可无感；落到静态兜底或能力明显变弱时，应告知「可能不够好」
 2. **降级要可观测**——每次降级都要记录日志和告警，不能"静默降级"
 3. **降级链不要太长**——3-4 层足够，太多层增加复杂度且最后一层差别不大
 4. **静态兜底永远要有**——即使所有服务都挂了，用户也要收到一个友好回复
@@ -210,8 +216,8 @@ class ResilientAgent:
 ### 要点总结
 
 - 降级 = 换方案，重试 = 等一等，熔断 = 停一下——三者互补
-- 三层降级链：模型降级（Opus→Sonnet→mini→本地）→ 工具降级（主→备→缓存→静态）→ 静态兜底
-- 最好的故障处理是"用户感知不到故障"——降级链让 Agent 在故障时仍然给出可用回答
-- 降级是有损的——备用方案一定弱于主方案，要让用户知道"可能不够好"
+- 三层降级链：模型降级（示例：Sonnet→GPT-4o→mini→静态；可按实际换成 Opus→Sonnet→Haiku→本地）→ 工具降级（主→备→缓存→静态）→ 静态兜底
+- 核心路径可无感降级；有损/静态兜底要让用户感知并记录可观测指标
+- 降级是有损的——备用方案一定弱于主方案
 - 静态兜底永远要有——所有服务挂了也要给用户一个友好回复
 - 降级后自动恢复——主服务恢复后切回主方案，不要"永久降级"

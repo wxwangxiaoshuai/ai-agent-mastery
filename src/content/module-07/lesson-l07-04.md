@@ -64,14 +64,17 @@ class CircuitBreaker:
                 self.state = CircuitState.HALF_OPEN
                 self.half_open_calls = 0
                 print("[CircuitBreaker] Open → Half-Open（冷却结束，试探中）")
-                return True
-            return False  # 熔断中，拒绝
+                # 落入下方 HALF_OPEN 分支统一计数，避免多放行 1 次
+            else:
+                return False  # 熔断中，拒绝
 
         if self.state == CircuitState.HALF_OPEN:
             if self.half_open_calls < self.half_open_max_calls:
                 self.half_open_calls += 1
                 return True
             return False  # 半开名额用完
+
+        return False
 
     def record_success(self):
         """记录成功"""
@@ -162,6 +165,35 @@ def call_llm_rate_limited(messages):
     return client.chat.completions.create(model="gpt-4o-mini", messages=messages)
 ```
 
+### 限流：滑动窗口（可选替代）
+
+令牌桶适合「平滑速率 + 允许突发」；若需要「任意连续窗口内请求数不超过 N」，用滑动窗口：
+
+```python
+from collections import deque
+
+class SlidingWindowRateLimiter:
+    """固定长度时间窗口内最多 max_requests 次"""
+
+    def __init__(self, max_requests: int, window_seconds: float):
+        self.max_requests = max_requests
+        self.window = window_seconds
+        self.timestamps: deque[float] = deque()
+        self.lock = threading.Lock()
+
+    def acquire(self) -> bool:
+        with self.lock:
+            now = time.time()
+            while self.timestamps and now - self.timestamps[0] >= self.window:
+                self.timestamps.popleft()
+            if len(self.timestamps) >= self.max_requests:
+                return False
+            self.timestamps.append(now)
+            return True
+
+# 对比：令牌桶允许突发填满桶；滑动窗口更精确限制「过去 1 秒内不超过 N 次」
+```
+
 ### 并发控制
 
 ```python
@@ -238,7 +270,7 @@ class AgentTaskQueue:
 
 - Circuit Breaker 三态：Closed（正常）→ Open（熔断）→ Half-Open（试探）→ Closed/Open
 - 熔断器防止级联故障——服务连续失败时直接拒绝请求，给它"休息"时间
-- 令牌桶限流：平滑请求速率，允许短暂突发
+- 令牌桶限流：平滑请求速率，允许短暂突发；滑动窗口更适合「任意连续窗口内不超过 N 次」
 - 并发控制 = 信号量（并发数限制）+ 令牌桶（速率限制）
 - 任务队列：峰值保护——请求排队处理，不会压垮系统
 - 这四个组件组合使用：熔断（防故障扩散）+ 限流（防过载）+ 并发控制（防资源耗尽）+ 队列（防峰值）
