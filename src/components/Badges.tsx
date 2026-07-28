@@ -10,14 +10,12 @@ const difficultyStyles: Record<Difficulty, string> = {
 const typeStyles: Record<LessonType, string> = {
   理论: 'bg-ink-700/50 text-ink-200 border-ink-600/50',
   实战: 'bg-brand-500/15 text-brand-300 border-brand-500/30',
-  项目: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
   复盘: 'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/30',
 }
 
 const typeIcon: Record<LessonType, string> = {
   理论: '📖',
   实战: '⚙️',
-  项目: '🎯',
   复盘: '🔍',
 }
 

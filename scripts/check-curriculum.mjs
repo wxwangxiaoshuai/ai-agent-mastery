@@ -271,6 +271,52 @@ const lessonFiles = contentFiles.filter((f) => f.isLesson)
   if (!ghost.length && !undoc.length) ok('C10', 'CLAUDE.md 组件表与 componentMap 一致')
 }
 
+// ------------------------------------------ C12 联合类型与 Record 映射同步
+{
+  // 曾经从 LessonType 里删掉 '项目'，却漏改 Badges.tsx 的 Record<LessonType, string>，
+  // 结果本地校验全绿、CI 上 tsc 才报错。这里把 tsc 的这条规则前移到 check。
+  const typesSrc = read('src/data/types.ts')
+  const unions = {}
+  for (const m of typesSrc.matchAll(/export type (\w+) = ((?:'[^']*'\s*\|?\s*)+)/g)) {
+    unions[m[1]] = [...m[2].matchAll(/'([^']*)'/g)].map((x) => x[1])
+  }
+
+  const srcFiles = []
+  const walk = (dir) => {
+    for (const e of readdirSync(join(ROOT, dir))) {
+      const rel = `${dir}/${e}`
+      if (statSync(join(ROOT, rel)).isDirectory()) walk(rel)
+      else if (/\.tsx?$/.test(e)) srcFiles.push(rel)
+    }
+  }
+  walk('src')
+
+  let bad = 0
+  let checked = 0
+  for (const rel of srcFiles) {
+    const text = read(rel)
+    for (const m of text.matchAll(/Record<(\w+), [^>]+> = \{([\s\S]*?)\n\}/g)) {
+      const union = unions[m[1]]
+      if (!union) continue
+      checked++
+      const keys = [...m[2].matchAll(/^\s{2}'?([^\s':]+)'?:/gm)].map((x) => x[1])
+      const missing = union.filter((k) => !keys.includes(k))
+      const extra = keys.filter((k) => !union.includes(k))
+      if (missing.length) {
+        err('C12', `${rel} 的 Record<${m[1]}, …> 缺少键：${missing.join('、')}`)
+        bad++
+      }
+      if (extra.length) {
+        err('C12', `${rel} 的 Record<${m[1]}, …> 含 ${m[1]} 中不存在的键：${extra.join('、')}`)
+        bad++
+      }
+    }
+  }
+  if (!bad) {
+    ok('C12', `联合类型与 Record 映射同步（${checked} 处映射 / ${Object.keys(unions).length} 个联合类型）`)
+  }
+}
+
 // -------------------------------------------------- C11 文档数字与数据一致
 {
   // 曾经 README 和 CLAUDE.md 都写着 91 节课，而数据里只有 87 节 ——
