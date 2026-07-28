@@ -258,6 +258,16 @@ pip install my-kb-server
 - get_doc: 获取文档内容
 ```
 
+### 动手 5 分钟
+
+把你自己的 MCP Server 交给别人跑一次。
+
+1. 在你的 Server 上补齐 README：依赖、启动命令、配置片段、三个可直接复制的示例请求。
+2. 找一台干净环境（新虚拟环境或同事的机器）按 README 从零跑通。
+3. 记录卡住的每一步，回头补进 README。
+
+**验收标准**：第二个人不问你任何问题就能跑通——分发能力是 MCP 相对私有工具格式的核心价值。
+
 ### 要点总结
 
 - MCP Server 用 Python SDK 实现：注册 Tools + Resources + Prompts，通过 stdio 通信

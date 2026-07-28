@@ -226,6 +226,16 @@ with SqliteSaver.from_conn_string("agent.db") as checkpointer:
 
 > 反模式：**简单需求硬上 LangGraph**。一个"调一次 LLM 解析 JSON"的需求，画成图要定义 state+3 个节点+边，比直接 `result = llm(prompt)` 啰嗦十倍。图抽象有固定开销，简单场景它反而是负担。L10-06 会系统讲"何时退回手写"。
 
+### 动手 5 分钟
+
+用 LangGraph 画一张真的会绕回来的图。
+
+1. 实现 plan → search → reflect 的循环，reflect 判定"信息不足"时回到 search。
+2. 加一个硬性上限：循环超过 3 次强制走向 answer。
+3. 打开 checkpointer，在循环中途中断再恢复。
+
+**验收标准**：把 reflect 改成永远返回"不足"，Agent 仍然能在 3 轮后收敛输出——没有硬上限的循环图迟早会烧穿你的账单。
+
 ### 要点总结
 
 - LangGraph 三概念：State（流动数据）、Node（一步操作）、Edge（控制流）

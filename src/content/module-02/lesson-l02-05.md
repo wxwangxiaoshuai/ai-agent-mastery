@@ -303,6 +303,16 @@ def regression_test_on_model_switch(
 3. 如果有回归用例，逐个分析原因，调整 Prompt
 4. 确认全部通过后再切换
 
+### 动手 5 分钟
+
+把本节的测试运行器接进 CI，让 Prompt 改动无法蒙混过关。
+
+1. 建 10 条测试用例（含 2 条边界、1 条已知会失败的），写进 `tests/test_cases.py`。
+2. 设一个通过阈值（如"准确率 ≥ 80% 才算通过"），低于阈值时 exit 1。
+3. 加一个 GitHub Actions workflow，在 PR 修改 `prompts/` 目录时自动触发。
+
+**验收标准**：你把 Prompt 里的一句关键约束删掉并提 PR，CI 变红并在日志里指出是哪几条用例挂了。
+
 ### 要点总结
 
 - Prompt 测试用量化指标替代直觉判断，防止"改好了 A 但改坏了 B"

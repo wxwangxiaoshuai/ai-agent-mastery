@@ -270,6 +270,16 @@ class AgentTaskQueue:
                 self.task_queue.task_done()
 ```
 
+### 动手 5 分钟
+
+把熔断器的三态跑一遍，别只看代码。
+
+1. 用一个可开关的假服务，先让它连续失败触发 OPEN。
+2. 在 OPEN 期间继续发请求，确认它们被立刻拒绝（没有真实等待）。
+3. 等到 HALF_OPEN，先让服务继续失败一次（回到 OPEN），再让它成功（回到 CLOSED）。
+
+**验收标准**：你能画出这次实验的状态转移时间轴，并说出熔断打开期间用户看到的是什么（不能是超时转圈）。
+
 ### 要点总结
 
 - Circuit Breaker 三态：Closed（正常）→ Open（熔断）→ Half-Open（试探）→ Closed/Open

@@ -262,6 +262,16 @@ def diagnose_cache_miss(response, expected_prefix_tokens: int) -> str:
         return f"✅ 缓存正常（{cached}/{expected_prefix_tokens} tokens 命中）"
 ```
 
+### 动手 5 分钟
+
+给你的 Context 装配逻辑加一组单元测试。
+
+1. 写 3 个测试：`test_order_stable`（装配顺序固定）、`test_budget_respected`（总量不超预算）、`test_no_leak`（用户 A 的历史不出现在用户 B 的上下文里）。
+2. 故意把装配顺序改一行，确认测试变红。
+3. 加一个快照测试：把装配结果存成 `.txt` 基线，改动后 diff 可读。
+
+**验收标准**：三个测试全绿，且你能通过 diff 快照一眼看出"这次改动到底往上下文里多塞了什么"。
+
 ### 要点总结
 
 - Agent bug 有 80% 是上下文问题，不是代码逻辑问题

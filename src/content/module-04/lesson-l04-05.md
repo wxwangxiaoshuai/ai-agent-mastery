@@ -191,6 +191,16 @@ def evaluation_pipeline(rag_fn, eval_dataset, output_file="eval_report.json"):
     return report
 ```
 
+### 动手 5 分钟
+
+建一个能长期用下去的 RAG 评估基线。
+
+1. 造 20 条评估样本（question / ground_truth / contexts），存成 JSON 提交进仓库。
+2. 跑一次 RAGAS，把 faithfulness、answer_relevancy、context_precision、context_recall 四个分数记为基线。
+3. 改一个参数（chunk_size 从 512 改到 1024），重跑，对比四个分数的涨跌。
+
+**验收标准**：你能指出这次改动是"检索变好但生成变差"还是相反——单看一个总分是看不出来的，这就是四维指标的意义。
+
 ### 要点总结
 
 - RAG 评估是 RAG 优化的前提——没有评估就是盲目调参

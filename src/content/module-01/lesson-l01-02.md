@@ -181,6 +181,16 @@ def call(cfg: GenConfig, messages: list[dict]) -> str:
 | 多角度分析 | 0.7 | 0.9 | 0.3 | 1500-3000 | 需要覆盖多方面，presence_penalty 也可调高 |
 | 测试/调试 | 0 | 1.0 | 0 | 按需 | 确定性 + 可复现 |
 
+### 动手 5 分钟
+
+把本节的参数配置思路落到一个真实的配置文件里。
+
+1. 新建 `configs/generation.py`，为三个用途各写一份具名配置：`EXTRACT`（结构化抽取）、`CHAT`（日常对话）、`BRAINSTORM`（创意发散）。
+2. 每份配置至少显式写出 `temperature`、`top_p`、`max_tokens`、`stop`，并在注释里写清"为什么是这个值"。
+3. 写一个 `resolve(name)` 函数，传入不存在的名字时抛出明确异常，而不是静默回退到默认值。
+
+**验收标准**：把 `EXTRACT` 的 temperature 从 0 改成 1.2，运行抽取任务，你能观察到 JSON 解析失败率上升——这就是配置集中化的价值：改动可被定位。
+
 ### 要点总结
 
 - Temperature 控制"创造力"，0=确定，1=原始，2=疯狂
