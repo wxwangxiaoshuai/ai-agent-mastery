@@ -97,6 +97,77 @@ response = client.chat.completions.create(
 
 > **注意**：seed 的可复现性并非 100%——模型版本更新、API 内部优化都可能影响输出。它更适合"大致复现"而非"严格一致"。
 
+### 调参解决不了的问题
+
+新手最常见的浪费，是把本该用别的手段解决的问题拿去调参。记住这条边界：
+
+**参数只能改变"从分布里怎么选"，不能改变"分布本身是什么"。**
+
+| 你遇到的问题 | 调参能解决吗 | 真正的解法 |
+|--------------|--------------|-----------|
+| 输出格式不稳定，JSON 时好时坏 | 部分（temperature=0 有帮助） | 结构化输出 / JSON Schema 约束（M2） |
+| 事实错误、编造引用 | 不能 | RAG + 强制引用来源（M4） |
+| 不遵守"不要做 X"的指令 | 不能 | 改写成正向指令 + Few-shot（M2） |
+| 回答太啰嗦 | 不能 | 在 System Prompt 里给长度与格式约束（M3） |
+| 同一句话反复出现 | 能 | frequency_penalty |
+| 内容太平淡、缺少变化 | 能 | 提高 temperature / top_p |
+| 长回答被砍在半截 | 能 | 提高 max_tokens（并检查上下文预算，M3） |
+
+把 temperature 从 0.7 调到 0.3 治不好幻觉——它只会让模型更稳定地说出同一个错误答案。
+
+### stop 序列：容易忽略的一个坑
+
+`stop` 让模型在生成到指定字符串时立刻停下，常用于自定义格式的解析：
+
+```python
+resp = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "写一条 SQL，然后解释它"}],
+    stop=["\n\n解释"],    # 只要 SQL，不要后面的解释
+    max_tokens=300,
+)
+```
+
+两个必须知道的细节：
+
+1. **停止串本身不会出现在返回内容里**。如果你的解析逻辑依赖那个分隔符存在，会直接踩空。
+2. **它是纯字符串匹配，不理解语义**。用 ``` 作为 stop，会在模型生成代码块的开头就把它切断。
+
+在 Agent 里，`stop` 常被用来切分 ReAct 的 `Thought / Action / Observation` 段落——
+这是 M5 手写 Agent 循环时会用到的技巧。但只要能用原生 Function Calling，
+就优先用 Function Calling：靠 stop 串切分自定义文本格式，本质上是在自己实现一个脆弱的解析器。
+
+### 参数要写进配置，不要散落在代码里
+
+生产环境里最难查的一类问题是"上周还好好的，这周输出全变了"，
+而根因往往是某个人在某个分支里把 temperature 从 0 改成了 0.7。
+
+把生成参数当成配置来管理，而不是当成调用现场的字面量：
+
+```python
+from dataclasses import dataclass, asdict
+
+@dataclass(frozen=True)
+class GenConfig:
+    """生成参数配置。frozen=True 防止运行时被意外修改。"""
+    model: str
+    temperature: float
+    top_p: float = 1.0
+    max_tokens: int = 1024
+    seed: int | None = None
+
+# 每个用途一份具名配置，改动可被 code review 看见
+EXTRACT = GenConfig(model="gpt-4o", temperature=0.0, max_tokens=800, seed=42)
+CHAT = GenConfig(model="gpt-4o", temperature=0.6, top_p=0.9, max_tokens=1200)
+
+def call(cfg: GenConfig, messages: list[dict]) -> str:
+    resp = client.chat.completions.create(messages=messages, **asdict(cfg))
+    return resp.choices[0].message.content
+```
+
+这么做还有一个额外好处：等到 M13 做评测时，你可以把 `GenConfig` 直接作为实验变量，
+一次性对比不同参数组合在回归集上的得分——而不是靠记忆去猜"上次是怎么调的"。
+
 ### 参数组合策略
 
 学完上述参数后，用一张表把常见场景串起来：
@@ -119,4 +190,7 @@ response = client.chat.completions.create(
 - frequency_penalty 抑制重复，presence_penalty 鼓励新话题
 - seed 用于可复现输出，适合测试场景
 - 生产环境代码生成用 temperature=0，对话用 0.3-0.7
+- 参数只改"怎么选"，不改"分布是什么"：幻觉、格式、指令遵循都不是调参问题
+- stop 序列是纯字符串匹配且不返回停止串本身，能用 Function Calling 就别用它
+- 把生成参数收敛成具名配置，让改动可被 review、可被评测复用
 - 参数选择没有"正确"答案，只有"更适合场景"的答案
