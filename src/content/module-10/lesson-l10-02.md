@@ -2,6 +2,10 @@
 
 L10-01 说所有框架底层都可画成"状态图"。LangGraph 直接把这张图交给你画——用节点和边显式表达 Agent 控制流。这一节动手用 StateGraph 实现分支、循环、持久化，你会理解为什么复杂控制流该用图，而非嵌套 if。
 
+先单步走一遍带回环的执行轨迹，看清状态是怎么在节点之间流动的：
+
+::interactive{type="graphOrchestrator"}
+
 ### LangGraph 的三个核心概念
 
 上手前先建立模型。LangGraph 一切围绕三件事：

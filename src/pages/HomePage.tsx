@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { curriculum, totalLessons, totalHours, totalProjects } from '../data/curriculum'
+import { curriculum, stages, totalLessons, totalHours, totalProjects } from '../data/curriculum'
 import { DifficultyBadge } from '../components/Badges'
 import { useProgress } from '../components/ProgressProvider'
 import {
@@ -7,6 +7,8 @@ import {
   hasStarted,
   lessonOverallProgress,
 } from '../lib/progress'
+
+const CN_NUM = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'] as const
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
@@ -167,33 +169,32 @@ export function HomePage() {
                 <br />
                 到交付生产级 Agent
               </h2>
+              {/* 阶段列表直接由 curriculum.ts 的 stages 派生 —— 这里曾经手写过一份
+                  七阶段副本，数据改成六阶段后首页整整错了一版。 */}
               <p className="mt-4 text-ink-400">
-                课程分七个阶段：<span className="text-emerald-300">筑基</span>、
-                <span className="text-cyan-300">上下文与知识</span>、
-                <span className="text-brand-300">Agent 核心</span>、
-                <span className="text-violet-300">记忆执行与编排</span>、
-                <span className="text-fuchsia-300">多智能体与多模态</span>、
-                <span className="text-amber-300">质量保障</span>、
-                <span className="text-rose-300">架构设计与生产落地</span>。
+                课程共 {stages.length} 个阶段：
+                {stages.map((st, i) => (
+                  <span key={st.id}>
+                    <span className={st.accentText}>{st.name.replace('篇', '')}</span>
+                    {i < stages.length - 1 ? '、' : '。'}
+                  </span>
+                ))}
                 起点是你能调通 API，终点是你能独立设计并部署一个生产级 Agent 系统。
               </p>
               <div className="mt-8 space-y-4">
-                {[
-                  { icon: '🧱', text: '阶段一·筑基', detail: '理解 LLM 本质，调通第一个应用' },
-                  { icon: '⚙️', text: '阶段二·上下文与知识', detail: '上下文工程，RAG 知识库' },
-                  { icon: '🔁', text: '阶段三·Agent 核心', detail: '手写 Agent 内核，工具/MCP，Harness 工程化' },
-                  { icon: '🧠', text: '阶段四·记忆执行与编排', detail: '记忆系统，代码沙箱，框架编排' },
-                  { icon: '👥', text: '阶段五·多智能体与多模态', detail: 'Agent 团队协作，视觉/语音/视频' },
-                  { icon: '📊', text: '阶段六·质量保障', detail: '评估，护栏，测试，可观测性，安全' },
-                  { icon: '🏛️', text: '阶段七·架构设计与生产落地', detail: '架构决策，案例拆解，生产运维，毕业设计' },
-                ].map((s, i) => (
-                  <div key={i} className="flex items-center gap-4">
+                {stages.map((st) => (
+                  <div key={st.id} className="flex items-center gap-4">
                     <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-ink-700 bg-ink-900 text-lg">
-                      {s.icon}
+                      {st.icon}
                     </div>
                     <div>
-                      <div className="text-sm font-semibold text-ink-50">{s.text}</div>
-                      <div className="text-xs text-ink-400">{s.detail}</div>
+                      <div className="text-sm font-semibold text-ink-50">
+                        阶段{CN_NUM[st.id]}·{st.name.replace('篇', '')}
+                        <span className="ml-2 text-xs font-normal text-ink-500">
+                          M{st.range[0]}–M{st.range[1]}
+                        </span>
+                      </div>
+                      <div className="text-xs text-ink-400">{st.detail}</div>
                     </div>
                   </div>
                 ))}

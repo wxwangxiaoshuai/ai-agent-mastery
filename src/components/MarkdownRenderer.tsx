@@ -11,6 +11,17 @@ import { EmbeddingExplorer } from './interactive/EmbeddingExplorer'
 import { HarnessMonitor } from './interactive/HarnessMonitor'
 import { SandboxDemo } from './interactive/SandboxDemo'
 import { MultiModalDemo } from './interactive/MultiModalDemo'
+import { ChunkingVisualizer } from './interactive/ChunkingVisualizer'
+import { RAGPipelineDemo } from './interactive/RAGPipelineDemo'
+import { TokenBudgetPlanner } from './interactive/TokenBudgetPlanner'
+import { ToolSchemaDesigner } from './interactive/ToolSchemaDesigner'
+import { MemoryLayersDemo } from './interactive/MemoryLayersDemo'
+import { GraphStateMachine } from './interactive/GraphStateMachine'
+import { MultiAgentTopology } from './interactive/MultiAgentTopology'
+import { GuardrailTester } from './interactive/GuardrailTester'
+import { TradeoffMatrix } from './interactive/TradeoffMatrix'
+import { CostLatencyOptimizer } from './interactive/CostLatencyOptimizer'
+import { GrowthMapChecklist } from './interactive/GrowthMapChecklist'
 
 const componentMap: Record<string, React.ComponentType<Record<string, string>>> = {
   tokenizer: TokenizerDemo,
@@ -21,6 +32,17 @@ const componentMap: Record<string, React.ComponentType<Record<string, string>>> 
   harnessMonitor: HarnessMonitor,
   sandboxDemo: SandboxDemo,
   multimodalDemo: MultiModalDemo,
+  chunking: ChunkingVisualizer,
+  ragPipeline: RAGPipelineDemo,
+  contextBudget: TokenBudgetPlanner,
+  toolSchema: ToolSchemaDesigner,
+  memoryLayers: MemoryLayersDemo,
+  graphOrchestrator: GraphStateMachine,
+  topology: MultiAgentTopology,
+  guardrail: GuardrailTester,
+  tradeoff: TradeoffMatrix,
+  costLatency: CostLatencyOptimizer,
+  growthMap: GrowthMapChecklist,
 }
 
 function parseInteractiveDirective(

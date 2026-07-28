@@ -71,6 +71,18 @@ const componentMap = Object.fromEntries(
   [...componentMapBlock.matchAll(/^\s{2}(\w+): (\w+),$/gm)].map((m) => [m[1], m[2]]),
 )
 
+// stages 是阶段划分的唯一真源，阶段数从这里解析而不是写死。
+const stagesBlock = curriculumSrc.match(/export const stages = \[([\s\S]*?)\n\] as const/)?.[1]
+if (stagesBlock == null) {
+  console.error('无法定位 curriculum.ts 中的 stages —— 解析逻辑可能已脱节。')
+  process.exit(1)
+}
+const stageRanges = [...stagesBlock.matchAll(/range: \[(\d+), (\d+)\]/g)].map((m) => [
+  Number(m[1]),
+  Number(m[2]),
+])
+const stageCount = stageRanges.length
+
 const contentDir = join(ROOT, 'src/content')
 const contentFiles = []
 for (const d of readdirSync(contentDir)) {
@@ -355,7 +367,6 @@ const lessonFiles = contentFiles.filter((f) => f.isLesson)
     bad++
   }
 
-  const stageCount = 6
   for (const file of ['README.md', 'CLAUDE.md']) {
     for (const m of read(file).matchAll(/(\d+)\s*大阶段/g)) {
       if (Number(m[1]) !== stageCount) {
@@ -371,6 +382,75 @@ const lessonFiles = contentFiles.filter((f) => f.isLesson)
       `文档规模数字与课程数据一致（${nModules} 模块 / ${nLessons} 节 / ${nProjects} 项目 / ${totalHours}h，共 ${seen} 处声明）`,
     )
   }
+}
+
+// -------------------------------------------- C13 阶段划分覆盖与全站表述一致
+{
+  // 曾经出现过：数据层收敛成 6 阶段，首页却还硬编码着一份 7 阶段副本，
+  // 课程正文里也留着"七大阶段"。这里同时守护区间连续性与全站表述。
+  let bad = 0
+
+  const sorted = [...stageRanges].sort((a, b) => a[0] - b[0])
+  if (sorted.length === 0) {
+    err('C13', 'stages 为空')
+    bad++
+  } else {
+    if (sorted[0][0] !== 1) {
+      err('C13', `stages 未从模块 1 开始，首个区间为 [${sorted[0].join(', ')}]`)
+      bad++
+    }
+    const last = sorted[sorted.length - 1][1]
+    if (last !== modules.length) {
+      err('C13', `stages 未覆盖到最后一个模块：末区间到 M${last}，实际有 ${modules.length} 个模块`)
+      bad++
+    }
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i][0] !== sorted[i - 1][1] + 1) {
+        err(
+          'C13',
+          `stages 区间不连续：[${sorted[i - 1].join(', ')}] 之后是 [${sorted[i].join(', ')}]`,
+        )
+        bad++
+      }
+    }
+    for (const r of sorted) {
+      if (r[1] - r[0] === 0) {
+        warn('C13', `阶段 [${r.join(', ')}] 只含 1 个模块，建议并入相邻阶段`)
+      }
+    }
+  }
+
+  // 全站中文数字表述："七大阶段" / "分七个阶段" 之类
+  const CN = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 }
+  const targets = [...lessonFiles.map((f) => f.rel), ...srcTsxFiles()]
+  for (const rel of targets) {
+    const text = read(rel)
+    // 只匹配"课程整体阶段数"的表述，避免误伤"训练/微调/推理三个阶段"这类局部用法。
+    const RE = /([一二三四五六七八九十\d]+)\s*大阶段|(?:课程(?:分|共)|全课程|整个课程)\s*([一二三四五六七八九十\d]+)\s*个阶段/g
+    for (const m of text.matchAll(RE)) {
+      m[1] = m[1] ?? m[2]
+      const n = CN[m[1]] ?? Number(m[1])
+      if (Number.isFinite(n) && n !== stageCount) {
+        err('C13', `${rel} 写着 "${m[0]}"，实际阶段数为 ${stageCount}`)
+        bad++
+      }
+    }
+  }
+
+  if (!bad) ok('C13', `阶段划分连续且全站表述一致（${stageCount} 个阶段，覆盖 M1–M${modules.length}）`)
+}
+
+function srcTsxFiles() {
+  const out = []
+  const walk = (dir) => {
+    for (const f of readdirSync(join(ROOT, dir))) {
+      const rel = `${dir}/${f}`
+      if (statSync(join(ROOT, rel)).isDirectory()) walk(rel)
+      else if (/\.tsx?$/.test(f)) out.push(rel)
+    }
+  }
+  walk('src')
+  return out
 }
 
 // ------------------------------------------------------------------ 输出

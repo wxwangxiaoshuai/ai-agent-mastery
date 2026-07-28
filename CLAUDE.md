@@ -33,6 +33,8 @@ pnpm build        # 构建（check + tsc + vite）
 | C9 | `curriculum.ts` 与 `.md` 文件一一对应，无孤儿文件 | error |
 | C10 | 本文件的交互组件表与 `componentMap` 一致 | error |
 | C11 | README 与本文件里的规模数字与课程数据一致 | error |
+| C12 | `Record<联合类型, …>` 映射与联合类型定义同步（把 tsc 的这条规则前移） | error |
+| C13 | `stages` 区间连续且覆盖全部模块，全站阶段数表述一致 | error |
 
 ## 模块开发工作流
 
@@ -65,11 +67,22 @@ pnpm build        # 构建（check + tsc + vite）
 | harnessMonitor | HarnessMonitor | Agent 健壮性实时监控面板 |
 | sandboxDemo | SandboxDemo | 代码沙箱安全执行演示 |
 | multimodalDemo | MultiModalDemo | 多模态输入输出对比 |
+| chunking | ChunkingVisualizer | 三种分块策略切分结果对比 |
+| ragPipeline | RAGPipelineDemo | RAG 七道工序单步执行 |
+| contextBudget | TokenBudgetPlanner | 上下文窗口预算分配 |
+| toolSchema | ToolSchemaDesigner | 工具 schema 设计对照 |
+| memoryLayers | MemoryLayersDemo | 记忆四层路由演示 |
+| graphOrchestrator | GraphStateMachine | 图状态机执行轨迹 |
+| topology | MultiAgentTopology | 多智能体拓扑对比 |
+| guardrail | GuardrailTester | 护栏分层拦截测试 |
+| tradeoff | TradeoffMatrix | 架构加权决策矩阵 |
+| costLatency | CostLatencyOptimizer | 成本/延迟/质量三角 |
+| growthMap | GrowthMapChecklist | 架构师能力自评地图 |
 
 > 此表必须与 `src/components/MarkdownRenderer.tsx` 的 `componentMap` 保持一致，
 > 由 `pnpm check` 的 C10 检查项守护。**不要在此表登记尚未实现的组件**——
 > 曾出现过 chunkingDemo / ragPipeline 只写进文档却没有实现，导致内容引用悬空。
-> 待补组件（ChunkingVisualizer / RAGPipelineDemo 等）见 `curriculum-action-plan.md` W2。
+> 每个模块至少要有 1 个交互组件（C3），且不允许存在零引用的孤儿组件（C4）。
 
 ### 开发顺序
 
