@@ -5,7 +5,7 @@
 
 export type Difficulty = '入门' | '进阶' | '高级' | '专家'
 
-export type LessonType = '理论' | '实战' | '项目' | '复盘'
+export type LessonType = '理论' | '实战' | '复盘'
 
 export interface Lesson {
   /** 课程唯一编号，如 L01-01 */
@@ -36,6 +36,8 @@ export interface Project {
   module: number
   /** 项目难度 */
   difficulty: Difficulty
+  /** 项目预计实践时长（小时） */
+  hours: number
   /** 交付物 */
   deliverables: string[]
   /** 用到的核心技术 */
@@ -53,7 +55,11 @@ export interface Module {
   description: string
   /** 模块难度 */
   difficulty: Difficulty
-  /** 预计学习时长（小时） */
+  /**
+   * 模块总时长（小时）= 精讲 + 实战。
+   * 不变式：hours === Math.round(Σ lesson.duration / 60 + project.hours)
+   * 由 scripts/check-curriculum.mjs 的 C1 检查项守护，勿手改单侧数值。
+   */
   hours: number
   /** 模块图标（emoji 或符号） */
   icon: string

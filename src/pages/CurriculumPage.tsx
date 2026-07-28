@@ -1,5 +1,11 @@
 import { Link } from 'react-router-dom'
-import { curriculum, stages } from '../data/curriculum'
+import {
+  curriculum,
+  getModuleHours,
+  stages,
+  totalLessons,
+  totalProjects,
+} from '../data/curriculum'
 import type { Module } from '../data/types'
 import { DifficultyBadge, LessonTypeBadge } from '../components/Badges'
 import { useProgress } from '../components/ProgressProvider'
@@ -8,6 +14,7 @@ import { moduleProgress } from '../lib/progress'
 function ModuleCard({ module }: { module: Module }) {
   const { progress, isLessonComplete } = useProgress()
   const mp = moduleProgress(module, progress)
+  const hours = getModuleHours(module)
 
   return (
     <div className="card card-hover overflow-hidden">
@@ -24,7 +31,13 @@ function ModuleCard({ module }: { module: Module }) {
               <div className="flex items-center gap-2 text-xs text-ink-500">
                 <span>模块 {String(module.id).padStart(2, '0')}</span>
                 <span>·</span>
-                <span>{module.hours} 小时</span>
+                <span title={`精讲 ${hours.lessonHours}h + 实战 ${hours.projectHours}h`}>
+                  {hours.total} 小时
+                </span>
+                <span>·</span>
+                <span>
+                  精讲 {hours.lessonHours}h + 实战 {hours.projectHours}h
+                </span>
               </div>
               <h3 className="mt-1 text-lg font-bold text-ink-50 transition-colors group-hover:text-brand-300">
                 {module.title}
@@ -115,7 +128,8 @@ export function CurriculumPage() {
         <span className="section-eyebrow">完整大纲</span>
         <h1 className="section-title">课程大纲</h1>
         <p className="mt-4 text-ink-400">
-          7 大阶段、16 个核心模块、91 节精讲课、16 个实战项目。
+          {stages.length} 大阶段、{curriculum.modules.length} 个核心模块、{totalLessons} 节精讲课、
+          {totalProjects} 个实战项目。
           每个模块由"理论 → 实战 → 复盘"构成闭环，模块末尾产出可交付项目。
         </p>
       </div>

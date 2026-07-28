@@ -208,7 +208,7 @@ export function ProjectPage() {
             </div>
             <div className="mt-3 flex items-center gap-2">
               <DifficultyBadge level={mod.difficulty} />
-              <span className="text-xs text-ink-500">{mod.hours}h</span>
+              <span className="text-xs text-ink-500">实战 {project.hours}h</span>
             </div>
           </div>
 

@@ -6,8 +6,9 @@
   "description": "从零到一的 AI Agent 开发实战课程",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "build:pages": "tsc -b && vite build && cp dist/index.html dist/404.html",
+    "check": "node scripts/check-curriculum.mjs",
+    "build": "pnpm check && tsc -b && vite build",
+    "build:pages": "pnpm check && tsc -b && vite build && cp dist/index.html dist/404.html",
     "preview": "vite preview",
     "lint": "eslint ."
   },

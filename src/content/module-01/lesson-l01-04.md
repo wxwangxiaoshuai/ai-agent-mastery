@@ -121,7 +121,7 @@ def route_task(user_input: str) -> str:
     if len(user_input) < 50 and not any(kw in user_input for kw in ["分析", "总结", "推理"]):
         return "gpt-4o-mini"
     elif any(kw in user_input for kw in ["代码", "debug", "架构", "设计"]):
-        return "claude-opus-4-8"
+        return "claude-opus-5"
     return "claude-sonnet-5"
 ```
 
@@ -142,7 +142,7 @@ def smart_route(user_input: str) -> str:
         max_tokens=10,
     )
     level = response.choices[0].message.content.strip()
-    return {"simple": "gpt-4o-mini", "standard": "claude-sonnet-5", "complex": "claude-opus-4-8"}.get(level, "claude-sonnet-5")
+    return {"simple": "gpt-4o-mini", "standard": "claude-sonnet-5", "complex": "claude-opus-5"}.get(level, "claude-sonnet-5")
 ```
 
 > **工程权衡**：LLM 路由更准确，但每次请求多一次轻量模型调用（增加延迟和成本）。规则路由零额外成本但不够灵活。建议从规则路由开始，随着场景复杂化再升级为 LLM 路由。

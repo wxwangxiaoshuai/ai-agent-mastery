@@ -33,6 +33,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # 课程一致性校验独立成一步，失败时能直接看出是内容问题还是构建问题。
+      - name: Check curriculum consistency
+        run: pnpm check
+
       - name: Build for GitHub Pages
         env:
           VITE_BASE_PATH: /${{ github.event.repository.name }}/

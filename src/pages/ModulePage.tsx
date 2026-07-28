@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
-import { curriculum } from '../data/curriculum'
+import { curriculum, getModuleHours } from '../data/curriculum'
 import { DifficultyBadge, LessonTypeBadge, Tag } from '../components/Badges'
 import { useProgress } from '../components/ProgressProvider'
 import { moduleProgress } from '../lib/progress'
@@ -24,7 +24,7 @@ export function ModulePage() {
   const prev = idx > 0 ? curriculum.modules[idx - 1] : null
   const next = idx < curriculum.modules.length - 1 ? curriculum.modules[idx + 1] : null
 
-  const totalMin = module.lessons.reduce((s, l) => s + l.duration, 0)
+  const hours = getModuleHours(module)
   const mp = moduleProgress(module, progress)
 
   return (
@@ -49,7 +49,7 @@ export function ModulePage() {
             </span>
             <DifficultyBadge level={module.difficulty} />
             <span className="chip border border-ink-700 text-ink-300">
-              ⏱ {module.hours}h · {totalMin}m 课程
+              ⏱ 共 {hours.total}h · 精讲 {hours.lessonHours}h + 实战 {hours.projectHours}h
             </span>
           </div>
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-ink-50 sm:text-4xl">

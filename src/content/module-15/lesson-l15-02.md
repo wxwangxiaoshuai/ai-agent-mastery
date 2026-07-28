@@ -63,7 +63,7 @@ def route_model(question: str, history: list) -> str:
     if is_simple_faq(question):
         return "claude-haiku-4-5"   # 简单用小模型
     if is_code_or_reasoning(question):
-        return "claude-opus-4-8"    # 复杂用大模型
+        return "claude-opus-5"    # 复杂用大模型
     return "claude-sonnet-5"        # 默认中模型
 
     # 进阶：LLM 路由器（用很小的模型判断复杂度）
@@ -85,8 +85,8 @@ def route_with_fallback(question):
     model = route_model(question)
     answer = call(question, model)
     # 质量检查：答得不好就升级
-    if quality_check(answer) < threshold and model != "claude-opus-4-8":
-        answer = call(question, "claude-opus-4-8")  # 升级重答
+    if quality_check(answer) < threshold and model != "claude-opus-5":
+        answer = call(question, "claude-opus-5")  # 升级重答
     return answer
 ```
 

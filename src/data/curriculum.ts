@@ -1,4 +1,4 @@
-import type { Curriculum } from './types'
+import type { Curriculum, Module } from './types'
 
 /**
  * AI Agent 大师之路 —— 完整课程大纲
@@ -10,7 +10,7 @@ import type { Curriculum } from './types'
  *  - 贯穿工程素养：上下文工程、RAG、Harness、评估、护栏、安全、部署
  *  - 架构师视角：新增架构设计、案例拆解、运维 SRE、平台架构
  *
- * 共 7 大阶段 / 16 个模块 / 91 节课 / 16 个实战项目
+ * 共 6 大阶段 / 16 个模块 / 87 节课 / 16 个实战项目
  */
 export const curriculum: Curriculum = {
   title: 'AI Agent 大师之路',
@@ -108,6 +108,7 @@ export const curriculum: Curriculum = {
         summary: '打造你的第一个命令行 AI 助手，支持多轮对话、流式输出、系统提示词定制与历史记录持久化。',
         module: 1,
         difficulty: '入门',
+        hours: 6,
         deliverables: [
           '可交互的命令行聊天程序',
           '可切换 system prompt 的角色系统',
@@ -215,6 +216,7 @@ export const curriculum: Curriculum = {
           '并配有可回归的测试集，验证 Prompt 改动没有引入回归。',
         module: 2,
         difficulty: '入门',
+        hours: 7,
         deliverables: [
           '支持长文档的摘要与实体抽取',
           '稳定输出符合 Schema 的 JSON',
@@ -343,6 +345,7 @@ export const curriculum: Curriculum = {
           '让任何 Agent Loop 都能即插即用地获得上下文工程能力。',
         module: 3,
         difficulty: '进阶',
+        hours: 6,
         deliverables: [
           'Token 预算分配与实时计量引擎',
           '动态 Context 组装与优先级裁剪',
@@ -468,6 +471,7 @@ export const curriculum: Curriculum = {
           '最终输出一份包含性能对比数据和优化建议的 RAG 系统报告。',
         module: 4,
         difficulty: '进阶',
+        hours: 8,
         deliverables: [
           '多分块策略 AB 对比实验',
           '混合检索 + Reranking 管道',
@@ -596,6 +600,7 @@ export const curriculum: Curriculum = {
           '它会把"调研 X 技术"这类开放任务，分解为搜索-阅读-整合的循环，最终输出结构化研究报告。',
         module: 5,
         difficulty: '进阶',
+        hours: 8,
         deliverables: [
           '从零实现的 ReAct Agent 内核',
           '可插拔的 Tool 接口（搜索、抓取、总结）',
@@ -718,6 +723,7 @@ export const curriculum: Curriculum = {
           '并把其中一组能力封装成一个独立的 MCP Server 发布，让 Claude Desktop 等客户端直接接入。',
         module: 6,
         difficulty: '进阶',
+        hours: 7,
         deliverables: [
           '多工具 Agent（搜索/代码/DB/文件）',
           '独立的 MCP Server（含 tools+resources）',
@@ -828,6 +834,7 @@ export const curriculum: Curriculum = {
           '让任何 Agent Loop 都能即插即用地获得生产级可靠性。',
         module: 7,
         difficulty: '高级',
+        hours: 7,
         deliverables: [
           '重试/退避/超时中间件',
           'Circuit Breaker 故障隔离',
@@ -941,6 +948,7 @@ export const curriculum: Curriculum = {
           '基于你的笔记/文档做 RAG 问答，并在回答中标注引用来源。',
         module: 8,
         difficulty: '进阶',
+        hours: 7,
         deliverables: [
           '跨会话长期记忆（用户偏好）',
           '私有文档 RAG 问答',
@@ -1035,6 +1043,7 @@ export const curriculum: Curriculum = {
           '配套压力测试与安全审计报告。',
         module: 9,
         difficulty: '高级',
+        hours: 5,
         deliverables: [
           'Docker 沙箱执行环境',
           'CPU/内存/网络/磁盘资源限制',
@@ -1159,6 +1168,7 @@ export const curriculum: Curriculum = {
           '关键节点支持人工介入审核，全程状态可持久化、可恢复、可重放。',
         module: 10,
         difficulty: '高级',
+        hours: 8,
         deliverables: [
           'LangGraph 状态图编排',
           '并行搜索 + 去重 + 综合',
@@ -1271,6 +1281,7 @@ export const curriculum: Curriculum = {
           '用 supervisor + debate 混合拓扑协作完成一个真实的小型软件需求：从需求拆解到代码交付与评审。',
         module: 11,
         difficulty: '高级',
+        hours: 7,
         deliverables: [
           '5 角色多 Agent 团队',
           'Supervisor + Debate 混合编排',
@@ -1380,6 +1391,7 @@ export const curriculum: Curriculum = {
           '上传视频→关键帧提取+时序事件标注+视频摘要。最终输出结构化的多模态分析报告。',
         module: 12,
         difficulty: '专家',
+        hours: 6,
         deliverables: [
           '多模态输入路由',
           '图片分析 + OCR + 图表提取',
@@ -1539,6 +1551,7 @@ export const curriculum: Curriculum = {
           '建立 Mock LLM 回归测试体系，输出一份可上线的质量与安全报告。',
         module: 13,
         difficulty: '高级',
+        hours: 10,
         deliverables: [
           '自动化评测流水线 + CI 门禁',
           '全链路 tracing 面板',
@@ -1670,6 +1683,7 @@ export const curriculum: Curriculum = {
           '要求对标至少一个业界参考架构。',
         module: 14,
         difficulty: '专家',
+        hours: 6,
         deliverables: [
           '架构决策记录（ADR）至少 5 条',
           '系统架构图与数据流图',
@@ -1797,6 +1811,7 @@ export const curriculum: Curriculum = {
           '完成一次完整的故障注入与恢复演练。',
         module: 15,
         difficulty: '专家',
+        hours: 8,
         deliverables: [
           '生产部署架构（网关+队列+缓存+限流）',
           '监控告警仪表盘与 SLA 定义',
@@ -1893,6 +1908,7 @@ export const curriculum: Curriculum = {
           '并配套架构设计文档（ADR）、前端 UI 与部署方案。',
         module: 16,
         difficulty: '专家',
+        hours: 5,
         deliverables: [
           '完整的生产级 Agent 产品',
           '多 Agent + MCP + RAG 全栈',
@@ -1920,7 +1936,17 @@ export const totalMinutes = curriculum.modules.reduce(
   0,
 )
 
-export const totalHours = Math.round((totalMinutes / 60) * 10) / 10
+/** 精讲总时长（小时，一位小数） */
+export const totalLessonHours = Math.round((totalMinutes / 60) * 10) / 10
+
+/** 实战总时长（小时） */
+export const totalProjectHours = curriculum.modules.reduce(
+  (sum, m) => sum + (m.project?.hours ?? 0),
+  0,
+)
+
+/** 课程总时长（小时）= Σ module.hours，与各模块展示值天然一致 */
+export const totalHours = curriculum.modules.reduce((sum, m) => sum + m.hours, 0)
 
 export const totalProjects = curriculum.modules.filter((m) => m.project).length
 
@@ -1928,13 +1954,45 @@ export const allProjects = curriculum.modules
   .map((m) => m.project)
   .filter((p): p is NonNullable<typeof p> => Boolean(p))
 
-/** 学习阶段分组 */
+/**
+ * 学习阶段分组。
+ *
+ * 约束：range 必须是连续且不重叠的模块区间，且覆盖全部模块 ——
+ * CurriculumPage / RoadmapPage 直接按区间过滤，漏掉的模块会静默消失。
+ * 另：单模块阶段（如曾经的「质量保障篇」只含 M13）会让阶段粒度失衡，
+ * 新增阶段时优先合并到相邻阶段，而不是再开一个只有一个模块的阶段。
+ */
 export const stages = [
   { id: 1, name: '筑基篇', range: [1, 2], color: 'from-emerald-500 to-teal-500' },
   { id: 2, name: '上下文与知识篇', range: [3, 4], color: 'from-cyan-500 to-blue-500' },
-  { id: 3, name: 'Agent 核心篇', range: [5, 7], color: 'from-brand-500 to-indigo-500' },
-  { id: 4, name: '记忆执行与编排篇', range: [8, 10], color: 'from-violet-500 to-purple-500' },
+  { id: 3, name: 'Agent 核心篇', range: [5, 6], color: 'from-brand-500 to-indigo-500' },
+  { id: 4, name: '工程化与编排篇', range: [7, 10], color: 'from-violet-500 to-purple-500' },
   { id: 5, name: '多智能体与多模态篇', range: [11, 12], color: 'from-fuchsia-500 to-pink-500' },
-  { id: 6, name: '质量保障篇', range: [13, 13], color: 'from-amber-500 to-orange-500' },
-  { id: 7, name: '架构设计与生产落地篇', range: [14, 16], color: 'from-rose-500 to-red-500' },
+  {
+    id: 6,
+    name: '质量、架构与生产落地篇',
+    range: [13, 16],
+    color: 'from-amber-500 to-orange-500',
+  },
 ] as const
+
+/**
+ * 模块时长构成。
+ * 单一真源 —— 所有页面展示时长时都应调用它，不要各自计算。
+ * 不变式：total === Math.round(lessonMinutes / 60 + projectHours)，由 C1 检查项守护。
+ */
+export function getModuleHours(module: Module): {
+  lessonMinutes: number
+  lessonHours: number
+  projectHours: number
+  total: number
+} {
+  const lessonMinutes = module.lessons.reduce((s, l) => s + l.duration, 0)
+  const projectHours = module.project?.hours ?? 0
+  return {
+    lessonMinutes,
+    lessonHours: Math.round((lessonMinutes / 60) * 10) / 10,
+    projectHours,
+    total: module.hours,
+  }
+}

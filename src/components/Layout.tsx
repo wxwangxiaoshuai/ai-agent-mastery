@@ -2,7 +2,7 @@ import { NavLink, Outlet, Link, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { ThemeToggle } from './ThemeToggle'
 import { useProgress } from './ProgressProvider'
-import { curriculum } from '../data/curriculum'
+import { curriculum, stages, totalLessons, totalProjects } from '../data/curriculum'
 import { lessonOverallProgress } from '../lib/progress'
 
 const navItems = [
@@ -99,7 +99,10 @@ export function Layout() {
             AI Agent 大师之路 · 一套从零到架构师的实战课程
           </p>
           <div className="flex items-center gap-4 text-xs text-ink-500">
-            <span>7 阶段 · 16 模块 · 91 节课 · 16 实战项目</span>
+            <span>
+              {stages.length} 阶段 · {curriculum.modules.length} 模块 · {totalLessons} 节课 ·{' '}
+              {totalProjects} 实战项目
+            </span>
           </div>
         </div>
       </footer>
