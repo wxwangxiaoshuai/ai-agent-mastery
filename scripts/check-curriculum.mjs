@@ -171,18 +171,19 @@ const lessonFiles = contentFiles.filter((f) => f.isLesson)
 
 // ---------------------------------------------------- C5 模型标识白名单
 {
-  // W3 落地模型别名层后，此白名单应改为从 src/data/models.ts 读取。
-  const ALLOWED = new Set([
-    'gpt-4o',
-    'gpt-4o-mini',
-    'gpt-4o-2024-08-06',
-    'gpt-4o-2024-11-20',
-    'claude-opus-5',
-    'claude-sonnet-5',
-    'claude-haiku-4-5',
-    'claude-sonnet-4-20250514',
-    'gemini-2.0-flash',
-  ])
+  // 白名单来自 src/data/models.ts —— 那里是模型标识的唯一真源。
+  // 想在正文里用一个新型号？先去 models.ts 登记，顺手更新 CALIBRATED_ON。
+  const modelsSrc = read('src/data/models.ts')
+  const tiersBlock = modelsSrc.match(/export const MODEL_TIERS[^=]*= \[([\s\S]*?)\n\]/)?.[1]
+  if (tiersBlock == null) {
+    console.error('无法定位 models.ts 中的 MODEL_TIERS —— 解析逻辑可能已脱节。')
+    process.exit(1)
+  }
+  const ALLOWED = new Set([...tiersBlock.matchAll(/id: '([^']+)'/g)].map((m) => m[1]))
+  if (ALLOWED.size === 0) {
+    console.error('models.ts 中未解析到任何模型标识 —— 解析逻辑可能已脱节。')
+    process.exit(1)
+  }
   const found = new Map()
   const re = /\b(gpt-[0-9o][\w.-]*|claude-(?:opus|sonnet|haiku)-[\w.-]*|gemini-[\w.-]*)\b/g
   for (const f of contentFiles) {
@@ -451,6 +452,30 @@ function srcTsxFiles() {
   }
   walk('src')
   return out
+}
+
+// ------------------------------------------------ C14 模型白名单校准新鲜度
+{
+  // 模型标识是全站最容易过期的信息。这里不判断"型号是否还存在"（脚本没有网络），
+  // 只逼着维护者定期回头核对一次，并把核对日期写下来。
+  const modelsSrc = read('src/data/models.ts')
+  const on = modelsSrc.match(/export const CALIBRATED_ON = '(\d{4}-\d{2}-\d{2})'/)?.[1]
+  const maxAge = Number(
+    modelsSrc.match(/export const CALIBRATION_MAX_AGE_DAYS = (\d+)/)?.[1] ?? NaN,
+  )
+  if (!on || !Number.isFinite(maxAge)) {
+    err('C14', 'models.ts 缺少 CALIBRATED_ON 或 CALIBRATION_MAX_AGE_DAYS')
+  } else {
+    const age = Math.floor((Date.now() - Date.parse(`${on}T00:00:00Z`)) / 86400000)
+    if (age > maxAge) {
+      warn(
+        'C14',
+        `模型白名单已 ${age} 天未校准（上次 ${on}，阈值 ${maxAge} 天）—— 请对照厂商文档复核 models.ts`,
+      )
+    } else {
+      ok('C14', `模型白名单校准新鲜（${on}，${age} 天前）`)
+    }
+  }
 }
 
 // ------------------------------------------------------------------ 输出

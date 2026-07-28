@@ -22,6 +22,7 @@ import { GuardrailTester } from './interactive/GuardrailTester'
 import { TradeoffMatrix } from './interactive/TradeoffMatrix'
 import { CostLatencyOptimizer } from './interactive/CostLatencyOptimizer'
 import { GrowthMapChecklist } from './interactive/GrowthMapChecklist'
+import { ModelTierTable } from './interactive/ModelTierTable'
 
 const componentMap: Record<string, React.ComponentType<Record<string, string>>> = {
   tokenizer: TokenizerDemo,
@@ -43,6 +44,7 @@ const componentMap: Record<string, React.ComponentType<Record<string, string>>> 
   tradeoff: TradeoffMatrix,
   costLatency: CostLatencyOptimizer,
   growthMap: GrowthMapChecklist,
+  modelTiers: ModelTierTable,
 }
 
 function parseInteractiveDirective(

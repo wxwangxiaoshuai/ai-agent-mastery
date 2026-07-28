@@ -26,7 +26,7 @@ pnpm build        # 构建（check + tsc + vite）
 | C2 | 内容里 `::interactive` 引用的组件已注册且组件文件存在 | error |
 | C3 | 每个模块至少含 1 个交互组件 | warn |
 | C4 | 无"已注册但零引用"的孤儿组件 | warn |
-| C5 | 模型标识在白名单内（防止写出不存在的型号） | error |
+| C5 | 模型标识在白名单内（白名单读自 `src/data/models.ts`） | error |
 | C6 | 每节课含"要点总结" | error |
 | C7 | 每节课含"动手 5 分钟"练习 | warn |
 | C8 | 每节课不少于 150 行 | warn |
@@ -35,6 +35,7 @@ pnpm build        # 构建（check + tsc + vite）
 | C11 | README 与本文件里的规模数字与课程数据一致 | error |
 | C12 | `Record<联合类型, …>` 映射与联合类型定义同步（把 tsc 的这条规则前移） | error |
 | C13 | `stages` 区间连续且覆盖全部模块，全站阶段数表述一致 | error |
+| C14 | `models.ts` 的模型白名单校准日期未超过 180 天 | warn |
 
 ## 模块开发工作流
 
@@ -78,6 +79,7 @@ pnpm build        # 构建（check + tsc + vite）
 | tradeoff | TradeoffMatrix | 架构加权决策矩阵 |
 | costLatency | CostLatencyOptimizer | 成本/延迟/质量三角 |
 | growthMap | GrowthMapChecklist | 架构师能力自评地图 |
+| modelTiers | ModelTierTable | 模型档位与标识对照（数据来自 models.ts） |
 
 > 此表必须与 `src/components/MarkdownRenderer.tsx` 的 `componentMap` 保持一致，
 > 由 `pnpm check` 的 C10 检查项守护。**不要在此表登记尚未实现的组件**——
@@ -96,7 +98,8 @@ pnpm build        # 构建（check + tsc + vite）
 src/
   data/
     types.ts          # 课程数据类型定义
-    curriculum.ts     # 完整课程大纲数据
+    curriculum.ts     # 完整课程大纲数据（含 stages 阶段划分，全站派生真源）
+    models.ts         # 模型档位与标识白名单（C5/C14 的真源，换代时只改这里）
   content/            # 课程内容（Markdown 文件）
     module-01/
       lesson-l01-01.md
