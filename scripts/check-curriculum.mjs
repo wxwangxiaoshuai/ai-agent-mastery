@@ -478,6 +478,37 @@ function srcTsxFiles() {
   }
 }
 
+// ----------------------------------------------------- C15 语言定位不夸大
+{
+  // 曾经 M1-03 的标题写着"Python & TypeScript 双语言"，而全站 TS 代码块只有 4 个。
+  // 这条检查不要求补齐 TS，只要求文案别承诺做不到的事。
+  let bad = 0
+  const claim = /双语言|Python\s*[/&+]\s*TypeScript|TypeScript\s*[/&+]\s*Python/
+  for (const rel of [
+    'README.md',
+    'CLAUDE.md',
+    'src/data/curriculum.ts',
+    ...lessonFiles.map((f) => f.rel),
+  ]) {
+    for (const line of read(rel).split('\n')) {
+      // CLAUDE.md 里那条"不要承诺双语言"的约定本身会命中，放行带否定词的行。
+      if (claim.test(line) && !/不要|禁止|别在|不得|曾经|假装/.test(line)) {
+        err('C15', `${rel} 出现双语言承诺："${line.trim().slice(0, 60)}"`)
+        bad++
+      }
+    }
+  }
+
+  // 顺带把实际比例算出来，供维护者判断这个定位是否还成立
+  let py = 0
+  let ts = 0
+  for (const f of contentFiles) {
+    py += (f.text.match(/^```python/gm) ?? []).length
+    ts += (f.text.match(/^```(?:typescript|tsx?|jsx)/gm) ?? []).length
+  }
+  if (!bad) ok('C15', `语言定位与实际一致（Python 代码块 ${py} 个 / TypeScript 系 ${ts} 个）`)
+}
+
 // ------------------------------------------------------------------ 输出
 const GREEN = '\x1b[32m'
 const YELLOW = '\x1b[33m'

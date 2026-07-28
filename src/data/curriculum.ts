@@ -72,8 +72,9 @@ export const curriculum: Curriculum = {
         },
         {
           id: 'L01-03',
-          title: '动手调用 LLM API（Python & TypeScript 双语言）',
-          summary: '用 OpenAI / Anthropic SDK 跑通你的第一次模型调用，打通开发环境。',
+          title: '动手调用 LLM API',
+          summary:
+            '用 OpenAI / Anthropic SDK 跑通你的第一次模型调用，打通开发环境。本节附一份 TypeScript 平行实现，供前端背景的同学对照；其余章节统一以 Python 为主线。',
           duration: 50,
           type: '实战',
           objectives: [

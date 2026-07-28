@@ -36,6 +36,7 @@ pnpm build        # 构建（check + tsc + vite）
 | C12 | `Record<联合类型, …>` 映射与联合类型定义同步（把 tsc 的这条规则前移） | error |
 | C13 | `stages` 区间连续且覆盖全部模块，全站阶段数表述一致 | error |
 | C14 | `models.ts` 的模型白名单校准日期未超过 180 天 | warn |
+| C15 | 文案不承诺做不到的语言覆盖（Python 主线） | error |
 
 ## 模块开发工作流
 
@@ -132,6 +133,10 @@ src/
 ## 注意事项
 
 - 课程没有视频，全是图文+交互组件
-- 所有文本使用中文，代码示例使用 Python/TypeScript
+- 所有文本使用中文
+- **代码主线是 Python**。Agent 生态在 Python 侧完整得多，课程重点是架构与工程而非语言。
+  只有两处例外：L01-03 给一份 TypeScript 平行实现供前端同学对照；前端集成/UI 相关内容用 TypeScript/React。
+  不要在任何地方承诺"双语言" —— 全站 392 个 Python 代码块 vs 4 个 TypeScript，
+  假装双语言比坦白单语言伤害更大。C15 会守住这条。
 - 不要使用 `@apply` 引用 CSS 变量颜色（Tailwind 3 会 bake 值）
 - 亮色模式下代码高亮色在 `index.css` 中单独覆盖
