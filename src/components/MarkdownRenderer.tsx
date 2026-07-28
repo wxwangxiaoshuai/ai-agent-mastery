@@ -23,6 +23,9 @@ import { TradeoffMatrix } from './interactive/TradeoffMatrix'
 import { CostLatencyOptimizer } from './interactive/CostLatencyOptimizer'
 import { GrowthMapChecklist } from './interactive/GrowthMapChecklist'
 import { ModelTierTable } from './interactive/ModelTierTable'
+import { UIStateMatrix } from './interactive/UIStateMatrix'
+import { UnitEconomicsModel } from './interactive/UnitEconomicsModel'
+import { GrowthFunnelSim } from './interactive/GrowthFunnelSim'
 
 const componentMap: Record<string, React.ComponentType<Record<string, string>>> = {
   tokenizer: TokenizerDemo,
@@ -45,6 +48,9 @@ const componentMap: Record<string, React.ComponentType<Record<string, string>>> 
   costLatency: CostLatencyOptimizer,
   growthMap: GrowthMapChecklist,
   modelTiers: ModelTierTable,
+  uiStateMatrix: UIStateMatrix,
+  costModel: UnitEconomicsModel,
+  growthFunnel: GrowthFunnelSim,
 }
 
 function parseInteractiveDirective(

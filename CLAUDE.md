@@ -3,7 +3,7 @@
 ## 项目概述
 
 Vite + React 18 + TypeScript + Tailwind CSS 3 + React Router 6 构建的 AI Agent 开发课程站点。
-16 个模块、87 节课、16 个实战项目，6 大阶段，暗/亮双主题。
+19 个模块、109 节课、19 个实战项目，7 大阶段，暗/亮双主题。
 
 > 这组数字由 `pnpm check` 的 C11 检查项守护，改动课程数据后请同步更新本行与 README。
 
@@ -81,6 +81,9 @@ pnpm build        # 构建（check + tsc + vite）
 | costLatency | CostLatencyOptimizer | 成本/延迟/质量三角 |
 | growthMap | GrowthMapChecklist | 架构师能力自评地图 |
 | modelTiers | ModelTierTable | 模型档位与标识对照（数据来自 models.ts） |
+| uiStateMatrix | UIStateMatrix | 前端 UI 状态矩阵覆盖自检 |
+| costModel | UnitEconomicsModel | 单位经济模型与毛利率推演 |
+| growthFunnel | GrowthFunnelSim | 增长漏斗与留存复利模拟 |
 
 > 此表必须与 `src/components/MarkdownRenderer.tsx` 的 `componentMap` 保持一致，
 > 由 `pnpm check` 的 C10 检查项守护。**不要在此表登记尚未实现的组件**——
@@ -91,7 +94,7 @@ pnpm build        # 构建（check + tsc + vite）
 
 按模块 ID 递增，每个模块内的 lesson 也按顺序开发。
 **约定：每个模块开发时，课程内容和项目内容必须一并补齐。**
-当前进度：模块 1（4 节课 + P1）已完成，模块 2（5 节课 + P2）已完成。模块 3（6 节课 + P3）已完成。模块 4（6 节课 + P4）已完成。模块 5（6 节课 + P5）已完成。模块 6（6 节课 + P6）已完成。模块 7（5 节课 + P7）已完成。模块 8（5 节课 + P8）已完成。模块 9（4 节课 + P9）已完成。模块 10（6 节课 + P10）已完成。模块 11（5 节课 + P11）已完成。模块 12（5 节课 + P12）已完成。模块 13（8 节课 + P13）已完成。模块 14（6 节课 + P14）已完成。模块 15（6 节课 + P15）已完成。模块 16（4 节课 + P16）已完成。全部 16 个模块（87 节课 + 16 个项目）开发完毕。
+当前进度：M1-M16（技术主线）全部开发完毕。M17（10 节课 + P17）已完成。M18（6 节课 + P18）已完成。M19（6 节课 + P19）已完成。全部 19 个模块（109 节课 + 19 个项目）开发完毕。
 
 ## 关键文件结构
 
