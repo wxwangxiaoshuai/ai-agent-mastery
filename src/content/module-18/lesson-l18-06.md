@@ -65,18 +65,17 @@ async def purge_expired():
 async def delete_user(user_id: str, *, dry_run: bool = True) -> dict[str, int]:
     """删除用户全部数据。先 dry_run 看影响面，确认后再执行。"""
     targets = [
-        ('uploads',    'DELETE FROM uploads WHERE user_id=$1'),
-        ('api_calls',  'DELETE FROM api_calls WHERE user_id=$1'),
-        ('sessions',   'DELETE FROM sessions WHERE user_id=$1'),
-        ('users',      'DELETE FROM users WHERE id=$1'),
+        ('uploads',   'uploads',   'user_id'),
+        ('api_calls', 'api_calls', 'user_id'),
+        ('sessions',  'sessions',  'user_id'),
+        ('users',     'users',     'id'),
     ]
     report = {}
-    for name, sql in targets:
-        cnt = await db.fetchval(sql.replace('DELETE', 'SELECT count(*)')
-                                   .replace('FROM', 'FROM'), user_id)
-        report[name] = cnt
+    for name, table, col in targets:
+        report[name] = await db.fetchval(
+            f'SELECT count(*) FROM {table} WHERE {col}=$1', user_id)
         if not dry_run:
-            await db.execute(sql, user_id)
+            await db.execute(f'DELETE FROM {table} WHERE {col}=$1', user_id)
 
     if not dry_run:
         await cache.delete_prefix(f'user:{user_id}:')
