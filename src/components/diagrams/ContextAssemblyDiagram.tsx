@@ -1,47 +1,104 @@
 /**
  * Context 组装流程图 —— M3 上下文工程
- * 静态底座 → 动态注入 → 优先级排序 → Token 预算 → 输出
+ *
+ * 布局策略：泳道仅作装饰背景（不挂 parentId），六源用贝塞尔汇入中枢，
+ * 再水平流向预算/输出，避免跨层正交折线被误读成中间层横向连线。
  */
-import { ArchitectureDiagram, type DiagramLayer, type DiagramNode, type DiagramEdge } from './ArchitectureDiagram'
+import { DiagramShell, n, e, g } from './_shared'
 
-const layers: DiagramLayer[] = [
-  { id: 'static', label: '静态底座', y: 2, height: 12, color: 'brand' },
-  { id: 'dynamic', label: '动态注入', y: 16, height: 12, color: 'emerald' },
-  { id: 'assemble', label: '组装与输出', y: 30, height: 12, color: 'amber' },
+const W = 780
+
+const nodes = [
+  g('lane-static', '静态底座', 0, 0, W, 118, 'brand'),
+  g('lane-dyn', '动态注入', 0, 130, W, 118, 'emerald'),
+  g('lane-out', '组装与输出', 0, 330, W, 140, 'amber'),
+
+  // Absolute coords — no parentId (critical for clean fan-in routing)
+  n('sys', 'System\nPrompt', 70, 42, { color: 'brand', caption: 'static', height: 64 }),
+  n('rules', '项目约定', 310, 42, { color: 'brand', caption: 'static', height: 64 }),
+  n('tools', '工具定义', 550, 42, { color: 'brand', caption: 'static', height: 64 }),
+
+  n('history', '对话历史', 70, 172, { color: 'emerald', caption: 'dynamic', height: 56 }),
+  n('rag', 'RAG 检索', 310, 172, { color: 'emerald', caption: 'dynamic', height: 56 }),
+  n('user', '用户输入', 550, 172, { color: 'emerald', caption: 'dynamic', height: 56 }),
+
+  n('merge', '六源汇入', 310, 262, {
+    color: 'amber',
+    emphasis: 'hub',
+    width: 150,
+    height: 56,
+    caption: 'merge',
+  }),
+
+  n('priority', '优先级\n排序', 120, 368, { color: 'amber', height: 64 }),
+  n('budget', 'Token\n预算', 320, 368, { color: 'amber', height: 64 }),
+  n('output', '最终\nContext', 530, 368, { color: 'ink', emphasis: 'output', height: 64 }),
 ]
 
-const nodes: DiagramNode[] = [
-  { id: 'sys', label: 'System\nPrompt', x: 3, y: 5, color: 'brand' },
-  { id: 'rules', label: '项目约定', x: 22, y: 5, color: 'brand' },
-  { id: 'tools', label: '工具定义', x: 41, y: 5, color: 'brand' },
-  { id: 'history', label: '对话历史', x: 3, y: 19, color: 'emerald' },
-  { id: 'rag', label: 'RAG 检索', x: 22, y: 19, color: 'emerald' },
-  { id: 'user', label: '用户输入', x: 41, y: 19, color: 'emerald' },
-  { id: 'priority', label: '优先级\n排序', x: 10, y: 33, color: 'amber' },
-  { id: 'budget', label: 'Token\n预算', x: 30, y: 33, color: 'amber' },
-  { id: 'output', label: '最终\nContext', x: 50, y: 33, color: 'ink' },
-]
+const edges = [
+  // Fan-in with bezier — no per-edge labels (avoids mid-lane clutter)
+  e('sys', 'merge', {
+    id: 'sys-m',
+    fromSide: 's',
+    toSide: 'n',
+    curve: 'bezier',
+    accent: 'brand',
+  }),
+  e('rules', 'merge', {
+    id: 'rules-m',
+    fromSide: 's',
+    toSide: 'n',
+    curve: 'bezier',
+    accent: 'brand',
+  }),
+  e('tools', 'merge', {
+    id: 'tools-m',
+    fromSide: 's',
+    toSide: 'n',
+    curve: 'bezier',
+    accent: 'brand',
+  }),
+  e('history', 'merge', {
+    id: 'hist-m',
+    fromSide: 's',
+    toSide: 'n',
+    curve: 'bezier',
+    accent: 'emerald',
+  }),
+  e('rag', 'merge', {
+    id: 'rag-m',
+    fromSide: 's',
+    toSide: 'n',
+    curve: 'bezier',
+    accent: 'emerald',
+  }),
+  e('user', 'merge', {
+    id: 'user-m',
+    fromSide: 's',
+    toSide: 'n',
+    curve: 'bezier',
+    accent: 'emerald',
+  }),
 
-const edges: DiagramEdge[] = [
-  { from: 'sys', to: 'priority' },
-  { from: 'rules', to: 'priority' },
-  { from: 'tools', to: 'priority' },
-  { from: 'history', to: 'priority' },
-  { from: 'rag', to: 'priority' },
-  { from: 'user', to: 'priority' },
-  { from: 'priority', to: 'budget' },
-  { from: 'budget', to: 'output' },
+  e('merge', 'priority', {
+    label: '汇入',
+    fromSide: 's',
+    toSide: 'n',
+    accent: 'amber',
+  }),
+  e('priority', 'budget', { label: '排序', accent: 'amber' }),
+  e('budget', 'output', { label: '裁剪', accent: 'ink' }),
 ]
 
 export function ContextAssemblyDiagram() {
   return (
-    <ArchitectureDiagram
+    <DiagramShell
       title="Context 组装流程"
-      description="静态底座（System Prompt / 约定 / 工具定义）→ 动态注入（历史 / RAG / 用户输入）→ 优先级排序 → Token 预算裁剪 → 最终 Context。"
-      layers={layers}
+      description="静态底座（System Prompt / 约定 / 工具定义）与动态注入（历史 / RAG / 用户输入）六源并行汇入 → 优先级排序 → Token 预算裁剪 → 最终 Context。"
+      height={520}
       nodes={nodes}
       edges={edges}
-      height={280}
+      fitViewPadding={0.1}
     />
   )
 }

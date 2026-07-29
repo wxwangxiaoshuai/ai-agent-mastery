@@ -1,47 +1,66 @@
 /**
  * Function Calling 调用链时序图 —— M6 工具使用
- * User → Agent → Tool → Agent → User
+ * 含多轮 tool 回环
  */
-import { ArchitectureDiagram, type DiagramLayer, type DiagramNode, type DiagramEdge } from './ArchitectureDiagram'
+import { DiagramShell, n, e, g } from './_shared'
 
-const layers: DiagramLayer[] = [
-  { id: 'user', label: '用户', y: 2, height: 10, color: 'ink' },
-  { id: 'agent', label: 'Agent（LLM + 推理）', y: 14, height: 10, color: 'brand' },
-  { id: 'tools', label: '工具层', y: 26, height: 10, color: 'emerald' },
+const H = 56
+
+const nodes = [
+  g('lane-user', '用户', 0, 0, 780, 100, 'ink'),
+  g('lane-agent', 'Agent（LLM + 推理）', 0, 120, 780, 120, 'brand'),
+  g('lane-tools', '工具层', 0, 260, 780, 110, 'emerald'),
+  n('u1', '用户输入', 40, 35, { color: 'ink', height: H, parentId: 'lane-user' }),
+  n('u2', '最终回复', 620, 35, { color: 'ink', height: H, parentId: 'lane-user' }),
+  n('a1', '解析意图', 40, 45, { color: 'brand', height: H, parentId: 'lane-agent' }),
+  n('a2', '选择工具', 230, 45, { color: 'brand', height: H, parentId: 'lane-agent' }),
+  n('a3', '解析结果', 420, 45, { color: 'brand', height: H, parentId: 'lane-agent' }),
+  n('a4', '生成回答', 610, 45, { color: 'brand', height: H, parentId: 'lane-agent' }),
+  n('t1', 'Tool A\n执行', 230, 40, { color: 'emerald', height: H, parentId: 'lane-tools' }),
+  n('t2', 'Tool B\n执行', 420, 40, { color: 'emerald', height: H, parentId: 'lane-tools' }),
 ]
 
-const nodes: DiagramNode[] = [
-  { id: 'u1', label: '用户输入', x: 3, y: 5, color: 'ink' },
-  { id: 'a1', label: '解析意图', x: 3, y: 17, color: 'brand' },
-  { id: 'a2', label: '选择工具', x: 22, y: 17, color: 'brand' },
-  { id: 'a3', label: '解析结果', x: 41, y: 17, color: 'brand' },
-  { id: 'a4', label: '生成回答', x: 60, y: 17, color: 'brand' },
-  { id: 't1', label: 'Tool A\n执行', x: 22, y: 29, color: 'emerald' },
-  { id: 't2', label: 'Tool B\n执行', x: 41, y: 29, color: 'emerald' },
-  { id: 'u2', label: '最终回复', x: 80, y: 5, color: 'ink' },
-]
-
-const edges: DiagramEdge[] = [
-  { from: 'u1', to: 'a1' },
-  { from: 'a1', to: 'a2' },
-  { from: 'a2', to: 't1', label: 'call', dashed: true },
-  { from: 't1', to: 'a3', label: 'result', dashed: true },
-  { from: 'a3', to: 'a2', label: '继续？' },
-  { from: 'a2', to: 't2', label: 'call', dashed: true },
-  { from: 't2', to: 'a3', label: 'result', dashed: true },
-  { from: 'a3', to: 'a4' },
-  { from: 'a4', to: 'u2' },
+const edges = [
+  e('u1', 'a1', { label: '请求', sourceHandle: 'b', targetHandle: 't', accent: 'ink' }),
+  e('a1', 'a2', { accent: 'brand' }),
+  e('a2', 't1', { label: 'call', dashed: true, sourceHandle: 'b', targetHandle: 't', accent: 'emerald' }),
+  e('t1', 'a3', { label: 'result', dashed: true, sourceHandle: 't', targetHandle: 'b', accent: 'emerald' }),
+  e('a3', 'a2', {
+    label: '继续调用',
+    dashed: true,
+    sourceHandle: 'l',
+    targetHandle: 'r',
+    accent: 'amber',
+    id: 'multi-loop',
+  }),
+  e('a2', 't2', {
+    label: 'call',
+    dashed: true,
+    sourceHandle: 'b',
+    targetHandle: 't',
+    accent: 'emerald',
+    id: 'a2-t2',
+  }),
+  e('t2', 'a3', {
+    label: 'result',
+    dashed: true,
+    sourceHandle: 't',
+    targetHandle: 'b',
+    accent: 'emerald',
+    id: 't2-a3',
+  }),
+  e('a3', 'a4', { label: '足够', accent: 'brand' }),
+  e('a4', 'u2', { label: '回复', sourceHandle: 't', targetHandle: 'b', accent: 'ink' }),
 ]
 
 export function FunctionCallingSequence() {
   return (
-    <ArchitectureDiagram
+    <DiagramShell
       title="Function Calling 调用链"
-      description="用户输入 → Agent 解析意图 → 选择工具 → 工具执行 → 解析结果 → 可能继续调用 → 生成最终回答。"
-      layers={layers}
+      description="用户输入 → Agent 解析意图 → 选择工具 → 工具执行 → 解析结果 → 可能继续调用下一工具 → 信息足够后生成最终回答。"
+      height={420}
       nodes={nodes}
       edges={edges}
-      height={280}
     />
   )
 }

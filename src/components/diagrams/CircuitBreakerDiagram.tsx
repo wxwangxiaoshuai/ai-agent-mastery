@@ -1,39 +1,52 @@
 /**
  * Circuit Breaker 三态转换图 —— M7 Agent Harness 工程化
- * Closed → Open → Half-Open → Closed
  */
-import { ArchitectureDiagram, type DiagramLayer, type DiagramNode, type DiagramEdge } from './ArchitectureDiagram'
+import { DiagramShell, n, e } from './_shared'
 
-const nodes: DiagramNode[] = [
-  { id: 'closed', label: 'Closed\n正常', x: 5, y: 12, color: 'emerald' },
-  { id: 'open', label: 'Open\n熔断', x: 38, y: 12, color: 'danger' },
-  { id: 'half', label: 'Half-Open\n探测', x: 71, y: 12, color: 'amber' },
-  { id: 'fail', label: '故障\n阈值触发', x: 20, y: 3, color: 'danger' },
-  { id: 'timeout', label: '超时\n冷却到期', x: 55, y: 3, color: 'amber' },
-  { id: 'success', label: '探测\n成功', x: 55, y: 22, color: 'emerald' },
-  { id: 'refail', label: '探测\n失败', x: 20, y: 22, color: 'danger' },
+const H = 64
+
+const nodes = [
+  n('closed', 'Closed\n正常', 80, 150, { color: 'emerald', width: 120, height: H, caption: 'state' }),
+  n('open', 'Open\n熔断', 340, 150, { color: 'danger', width: 120, height: H, caption: 'state' }),
+  n('half', 'Half-Open\n探测', 600, 150, { color: 'amber', width: 120, height: H, caption: 'state' }),
 ]
 
-const edges: DiagramEdge[] = [
-  { from: 'closed', to: 'open', label: '故障', dashed: true },
-  { from: 'fail', to: 'open', label: '触发', dashed: true },
-  { from: 'open', to: 'half', label: '冷却', dashed: true },
-  { from: 'timeout', to: 'half', label: '到期', dashed: true },
-  { from: 'half', to: 'closed', label: '恢复', dashed: true },
-  { from: 'half', to: 'open', label: '再熔断', dashed: true },
-  { from: 'success', to: 'closed', dashed: true },
-  { from: 'refail', to: 'open', dashed: true },
+const edges = [
+  e('closed', 'open', { label: '故障频率超阈值', accent: 'danger' }),
+  e('open', 'half', {
+    label: '冷却超时',
+    fromSide: 's',
+    toSide: 's',
+    curve: 'bezier',
+    accent: 'amber',
+    id: 'open-half',
+  }),
+  e('half', 'closed', {
+    label: '探测成功',
+    fromSide: 's',
+    toSide: 's',
+    curve: 'bezier',
+    accent: 'emerald',
+    id: 'half-ok',
+  }),
+  e('half', 'open', {
+    label: '探测失败',
+    fromSide: 'n',
+    toSide: 'n',
+    curve: 'bezier',
+    accent: 'danger',
+    id: 'half-fail',
+  }),
 ]
 
 export function CircuitBreakerDiagram() {
   return (
-    <ArchitectureDiagram
+    <DiagramShell
       title="Circuit Breaker 三态转换"
-      description="Closed（正常）→ 故障阈值触发 → Open（熔断）→ 冷却到期 → Half-Open（探测）→ 成功则恢复 Closed，失败则回到 Open。"
-      layers={[]}
+      description="Closed（正常）→ 故障频率超阈值 → Open（熔断）→ 冷却超时 → Half-Open（探测）→ 成功则恢复 Closed，失败则回到 Open。"
+      height={340}
       nodes={nodes}
       edges={edges}
-      height={360}
     />
   )
 }

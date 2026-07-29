@@ -1,51 +1,74 @@
 /**
  * Human-in-the-Loop 中断流程 —— M10 框架编排
- * Agent 执行 → 高风险动作 → 暂停 → 人工审核 → 继续/拒绝
  */
-import { ArchitectureDiagram, type DiagramLayer, type DiagramNode, type DiagramEdge } from './ArchitectureDiagram'
+import { DiagramShell, n, e, g } from './_shared'
 
-const layers: DiagramLayer[] = [
-  { id: 'auto', label: 'Agent 自主执行区', y: 5, height: 7, color: 'brand' },
-  { id: 'gate', label: 'HITL 审批门禁', y: 14, height: 7, color: 'amber' },
-  { id: 'human', label: '人工决策区', y: 23, height: 7, color: 'fuchsia' },
-  { id: 'result', label: '执行结果', y: 32, height: 7, color: 'emerald' },
+const W = 800
+
+const nodes = [
+  g('lane-auto', 'Agent 自主执行区', 0, 0, W, 120, 'brand'),
+  g('lane-gate', 'HITL 审批门禁', 0, 140, W, 120, 'amber'),
+  g('lane-human', '人工决策区', 0, 280, W, 110, 'fuchsia'),
+  g('lane-result', '执行结果', 0, 410, W, 120, 'emerald'),
+
+  n('agent', 'Agent\n规划下一步', 50, 42, { color: 'brand', caption: 'plan' }),
+  n('risk', '风险\n判断', 280, 42, { color: 'amber', caption: 'gate' }),
+  n('low', '低风险\n自动放行', 520, 42, { color: 'emerald', caption: 'auto' }),
+
+  n('pause', '暂停\n等待审核', 280, 182, { color: 'amber', caption: 'hold' }),
+  n('timeout', '超时\n降级', 560, 182, { color: 'danger', caption: 'sla' }),
+
+  n('review', '人工\n审核', 280, 318, { color: 'fuchsia', caption: 'human' }),
+
+  n('approve', '批准\n继续', 80, 448, { color: 'emerald', caption: 'yes' }),
+  n('tool', '执行\n工具', 320, 448, { color: 'brand', caption: 'exec' }),
+  n('reject', '拒绝\n回退', 560, 448, { color: 'danger', caption: 'no' }),
 ]
 
-const nodes: DiagramNode[] = [
-  { id: 'agent', label: 'Agent\n执行', x: 5, y: 7, color: 'brand' },
-  { id: 'tool', label: '工具\n调用', x: 25, y: 7, color: 'brand' },
-  { id: 'risk', label: '风险\n判断', x: 45, y: 7, color: 'amber' },
-  { id: 'low', label: '低风险\n自动放行', x: 65, y: 7, color: 'emerald' },
-  { id: 'pause', label: '暂停\n等待审核', x: 45, y: 16, color: 'amber' },
-  { id: 'review', label: '人工\n审核', x: 45, y: 25, color: 'fuchsia' },
-  { id: 'approve', label: '批准\n继续', x: 25, y: 34, color: 'emerald' },
-  { id: 'reject', label: '拒绝\n回退', x: 65, y: 34, color: 'danger' },
-  { id: 'timeout', label: '超时\n降级', x: 85, y: 25, color: 'amber' },
-]
-
-const edges: DiagramEdge[] = [
-  { from: 'agent', to: 'tool', label: '调用' },
-  { from: 'tool', to: 'risk', label: '结果' },
-  { from: 'risk', to: 'low', label: '安全' },
-  { from: 'risk', to: 'pause', label: '高风险' },
-  { from: 'pause', to: 'review', label: '通知' },
-  { from: 'review', to: 'approve', label: '通过' },
-  { from: 'review', to: 'reject', label: '拒绝' },
-  { from: 'pause', to: 'timeout', label: '超时', dashed: true },
-  { from: 'timeout', to: 'reject', label: '降级', dashed: true },
-  { from: 'low', to: 'tool', label: '继续', dashed: true },
-  { from: 'approve', to: 'tool', label: '继续', dashed: true },
+const edges = [
+  e('agent', 'risk', { label: '拟调用', accent: 'brand' }),
+  e('risk', 'low', { label: '安全', accent: 'emerald' }),
+  e('risk', 'pause', { label: '高风险', fromSide: 's', toSide: 'n', accent: 'amber' }),
+  e('pause', 'review', { label: '通知', fromSide: 's', toSide: 'n', accent: 'fuchsia' }),
+  e('pause', 'timeout', { label: '超时', dashed: true, accent: 'danger' }),
+  e('timeout', 'reject', { label: '降级', dashed: true, fromSide: 's', toSide: 'n', accent: 'danger' }),
+  e('review', 'approve', { label: '通过', fromSide: 's', toSide: 'n', accent: 'emerald' }),
+  e('review', 'reject', { label: '拒绝', fromSide: 's', toSide: 'n', accent: 'danger' }),
+  e('approve', 'tool', { label: '执行', accent: 'brand' }),
+  e('low', 'tool', {
+    label: '直接执行',
+    fromSide: 's',
+    toSide: 'n',
+    curve: 'bezier',
+    accent: 'emerald',
+  }),
+  e('tool', 'agent', {
+    label: '结果回环',
+    dashed: true,
+    fromSide: 'w',
+    toSide: 'w',
+    curve: 'bezier',
+    accent: 'brand',
+  }),
+  e('reject', 'agent', {
+    label: '回退重规划',
+    dashed: true,
+    fromSide: 'w',
+    toSide: 's',
+    curve: 'bezier',
+    accent: 'danger',
+    id: 'reject-back',
+  }),
 ]
 
 export function HITLFlowDiagram() {
   return (
-    <ArchitectureDiagram
+    <DiagramShell
       title="HITL 人工介入流程"
-      description="Agent 执行 → 工具调用 → 风险判断 → 低风险自动放行，高风险暂停等待人工审核 → 批准/拒绝/超时降级。"
-      layers={layers}
+      description="Agent 规划下一步 → 风险判断（工具执行前）→ 低风险自动放行并执行工具；高风险暂停等待人工审核 → 批准执行 / 拒绝回退 / 超时降级。"
+      height={580}
       nodes={nodes}
       edges={edges}
-      height={280}
     />
   )
 }

@@ -1,48 +1,55 @@
 /**
  * RAG 数据流图 —— M4 RAG 深度实战
- * 索引管道（左）+ 检索管道（右）
  */
-import { ArchitectureDiagram, type DiagramLayer, type DiagramNode, type DiagramEdge } from './ArchitectureDiagram'
+import { DiagramShell, n, e, g } from './_shared'
 
-const layers: DiagramLayer[] = [
-  { id: 'index', label: '索引管道（离线）', y: 2, height: 16, color: 'brand' },
-  { id: 'query', label: '检索管道（在线）', y: 20, height: 16, color: 'emerald' },
+const W = 800
+const H_ROW = 56
+
+const nodes = [
+  g('lane-index', '索引管道（离线）', 0, 0, W, 120, 'brand'),
+  g('lane-query', '检索管道（在线）', 0, 160, W, 180, 'emerald'),
+
+  n('docs', '文档', 40, 45, { color: 'ink', caption: 'src', height: H_ROW }),
+  n('chunk', '分块', 190, 45, { color: 'brand', height: H_ROW }),
+  n('embed', 'Embedding', 350, 45, { color: 'brand', height: H_ROW }),
+  n('store', '向量库', 540, 45, { color: 'brand', caption: 'index', height: H_ROW }),
+
+  n('question', '问题', 40, 210, { color: 'ink', caption: 'query', height: H_ROW }),
+  n('qembed', 'Query\nEmbedding', 190, 210, { color: 'emerald', height: H_ROW }),
+  n('search', '检索', 360, 210, { color: 'emerald', height: H_ROW }),
+  n('rerank', 'Rerank', 510, 210, { color: 'emerald', height: H_ROW }),
+  n('llm', 'LLM 生成', 650, 210, { color: 'emerald', height: H_ROW }),
+  n('answer', '回答', 650, 295, { color: 'ink', emphasis: 'output', height: H_ROW }),
 ]
 
-const nodes: DiagramNode[] = [
-  { id: 'docs', label: '文档', x: 3, y: 6, color: 'ink' },
-  { id: 'chunk', label: '分块', x: 20, y: 6, color: 'brand' },
-  { id: 'embed', label: 'Embedding', x: 37, y: 6, color: 'brand' },
-  { id: 'store', label: '向量库', x: 54, y: 6, color: 'brand' },
-  { id: 'question', label: '问题', x: 3, y: 26, color: 'ink' },
-  { id: 'qembed', label: 'Query\nEmbedding', x: 20, y: 26, color: 'emerald' },
-  { id: 'search', label: '检索', x: 37, y: 26, color: 'emerald' },
-  { id: 'rerank', label: 'Rerank', x: 54, y: 26, color: 'emerald' },
-  { id: 'llm', label: 'LLM 生成', x: 71, y: 26, color: 'emerald' },
-  { id: 'answer', label: '回答', x: 88, y: 26, color: 'ink' },
-]
-
-const edges: DiagramEdge[] = [
-  { from: 'docs', to: 'chunk' },
-  { from: 'chunk', to: 'embed' },
-  { from: 'embed', to: 'store' },
-  { from: 'question', to: 'qembed' },
-  { from: 'qembed', to: 'search' },
-  { from: 'store', to: 'search', label: '相似度', dashed: true },
-  { from: 'search', to: 'rerank' },
-  { from: 'rerank', to: 'llm' },
-  { from: 'llm', to: 'answer' },
+const edges = [
+  e('docs', 'chunk', { accent: 'brand' }),
+  e('chunk', 'embed', { accent: 'brand' }),
+  e('embed', 'store', { accent: 'brand' }),
+  e('question', 'qembed', { accent: 'emerald' }),
+  e('qembed', 'search', { accent: 'emerald' }),
+  e('store', 'search', {
+    label: '相似度',
+    dashed: true,
+    fromSide: 's',
+    toSide: 'n',
+    curve: 'bezier',
+    accent: 'brand',
+  }),
+  e('search', 'rerank', { accent: 'emerald' }),
+  e('rerank', 'llm', { accent: 'emerald' }),
+  e('llm', 'answer', { label: '生成', fromSide: 's', toSide: 'n', accent: 'ink' }),
 ]
 
 export function RAGPipelineDiagram() {
   return (
-    <ArchitectureDiagram
+    <DiagramShell
       title="RAG 数据流：索引管道 + 检索管道"
       description="离线：文档 → 分块 → Embedding → 向量库。在线：问题 → Embedding → 检索 → Rerank → LLM 生成 → 回答。"
-      layers={layers}
+      height={400}
       nodes={nodes}
       edges={edges}
-      height={280}
     />
   )
 }

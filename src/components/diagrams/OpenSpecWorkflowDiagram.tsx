@@ -1,63 +1,60 @@
 /**
  * OpenSpec + Superpowers 工作流全貌 —— M17 AI Coding 工程实践
- * User → OpenSpec → Superpowers → Harness → 产出
  */
-import { ArchitectureDiagram, type DiagramLayer, type DiagramNode, type DiagramEdge } from './ArchitectureDiagram'
+import { DiagramShell, n, e, g } from './_shared'
 
-const layers: DiagramLayer[] = [
-  { id: 'spec', label: 'OpenSpec 规格层 —— "做什么"', y: 2, height: 12, color: 'brand' },
-  { id: 'process', label: 'Superpowers 流程层 —— "怎么做"', y: 16, height: 12, color: 'emerald' },
-  { id: 'gate', label: 'Harness 门禁层 —— "谁检查"', y: 30, height: 12, color: 'amber' },
+const nodes = [
+  g('lane-spec', 'OpenSpec 规格层 —— "做什么"', 0, 0, 900, 110, 'brand'),
+  g('lane-process', 'Superpowers 流程层 —— "怎么做"', 0, 130, 900, 110, 'emerald'),
+  g('lane-gate', 'Harness 门禁层 —— "谁检查"', 0, 260, 900, 120, 'amber'),
+  n('user', 'User', 20, 40, { color: 'ink', width: 90, height: 48, parentId: 'lane-spec' }),
+  n('explore', 'explore', 140, 40, { color: 'brand', width: 110, height: 48, parentId: 'lane-spec' }),
+  n('propose', 'propose', 300, 40, { color: 'brand', width: 110, height: 48, parentId: 'lane-spec' }),
+  n('apply', 'apply', 460, 40, { color: 'brand', width: 110, height: 48, parentId: 'lane-spec' }),
+  n('archive', 'archive', 620, 40, { color: 'brand', width: 110, height: 48, parentId: 'lane-spec' }),
+  n('output', '产出', 780, 40, { color: 'ink', width: 90, height: 48, parentId: 'lane-spec' }),
+  n('brainstorm', 'brainstorming', 140, 40, { color: 'emerald', width: 110, height: 48, parentId: 'lane-process' }),
+  n('plan', 'writing-plans', 300, 40, { color: 'emerald', width: 110, height: 48, parentId: 'lane-process' }),
+  n('tdd', 'TDD', 460, 40, { color: 'emerald', width: 110, height: 48, parentId: 'lane-process' }),
+  n('review', 'code-review', 620, 40, { color: 'emerald', width: 110, height: 48, parentId: 'lane-process' }),
+  n('g0', 'Gate 0-2', 140, 45, { color: 'amber', width: 110, height: 48, parentId: 'lane-gate' }),
+  n('g3', 'Gate 3-5', 460, 45, { color: 'amber', width: 110, height: 48, parentId: 'lane-gate' }),
+  n('g6', 'Gate 6-8', 620, 45, { color: 'amber', width: 110, height: 48, parentId: 'lane-gate' }),
 ]
 
-const nodes: DiagramNode[] = [
-  { id: 'user', label: 'User', x: 3, y: 5, color: 'ink' },
-  { id: 'explore', label: 'explore', x: 18, y: 5, color: 'brand' },
-  { id: 'propose', label: 'propose', x: 33, y: 5, color: 'brand' },
-  { id: 'apply', label: 'apply', x: 48, y: 5, color: 'brand' },
-  { id: 'archive', label: 'archive', x: 63, y: 5, color: 'brand' },
-  { id: 'brainstorm', label: 'brainstorming', x: 18, y: 19, color: 'emerald' },
-  { id: 'plan', label: 'writing-plans', x: 33, y: 19, color: 'emerald' },
-  { id: 'tdd', label: 'TDD', x: 48, y: 19, color: 'emerald' },
-  { id: 'subagent', label: 'subagent-dev', x: 63, y: 19, color: 'emerald' },
-  { id: 'review', label: 'code-review', x: 78, y: 19, color: 'emerald' },
-  { id: 'g0', label: 'Gate\n0-2', x: 18, y: 33, color: 'amber' },
-  { id: 'g3', label: 'Gate\n3-5', x: 48, y: 33, color: 'amber' },
-  { id: 'g6', label: 'Gate\n6-7', x: 68, y: 33, color: 'amber' },
-  { id: 'g8', label: 'Gate 8', x: 83, y: 33, color: 'amber' },
-  { id: 'output', label: '产出', x: 88, y: 5, color: 'ink' },
-]
-
-const edges: DiagramEdge[] = [
-  { from: 'user', to: 'explore' },
-  { from: 'explore', to: 'propose' },
-  { from: 'propose', to: 'apply' },
-  { from: 'apply', to: 'archive' },
-  { from: 'archive', to: 'output' },
-  { from: 'explore', to: 'brainstorm', dashed: true },
-  { from: 'propose', to: 'plan', dashed: true },
-  { from: 'apply', to: 'tdd', dashed: true },
-  { from: 'apply', to: 'subagent', dashed: true },
-  { from: 'subagent', to: 'review', dashed: true },
-  { from: 'brainstorm', to: 'g0', dashed: true },
-  { from: 'plan', to: 'g0', dashed: true },
-  { from: 'tdd', to: 'g3', dashed: true },
-  { from: 'subagent', to: 'g3', dashed: true },
-  { from: 'review', to: 'g3', dashed: true },
-  { from: 'g3', to: 'g6', dashed: true },
-  { from: 'g6', to: 'g8', dashed: true },
-  { from: 'g8', to: 'output', dashed: true },
+const edges = [
+  e('user', 'explore'),
+  e('explore', 'propose'),
+  e('propose', 'apply'),
+  e('apply', 'archive'),
+  e('archive', 'output'),
+  e('explore', 'brainstorm', { dashed: true, sourceHandle: 'b', targetHandle: 't' }),
+  e('propose', 'plan', { dashed: true, sourceHandle: 'b', targetHandle: 't' }),
+  e('apply', 'tdd', { dashed: true, sourceHandle: 'b', targetHandle: 't' }),
+  e('tdd', 'review', { dashed: true }),
+  e('brainstorm', 'g0', { dashed: true, sourceHandle: 'b', targetHandle: 't' }),
+  e('g0', 'propose', { label: '通过→规格', dashed: true, sourceHandle: 't', targetHandle: 'b', id: 'g0-rejoin' }),
+  e('plan', 'apply', {
+    label: '计划通过→实现',
+    dashed: true,
+    fromSide: 'n',
+    toSide: 's',
+    accent: 'emerald',
+    id: 'plan-apply',
+  }),
+  e('review', 'g3', { dashed: true, sourceHandle: 'b', targetHandle: 't' }),
+  e('g3', 'g6', { dashed: true }),
+  e('g6', 'archive', { label: '归档前', dashed: true, sourceHandle: 't', targetHandle: 'b' }),
 ]
 
 export function OpenSpecWorkflowDiagram() {
   return (
-    <ArchitectureDiagram
+    <DiagramShell
       title="OpenSpec + Superpowers + Harness 工作流"
-      description={`OpenSpec 定义"做什么"（explore→propose→apply→archive），Superpowers 指导"怎么做"（brainstorming/TDD/subagent/code-review），Harness 门禁在每个节点检查质量。`}
-      layers={layers}
+      description={`OpenSpec 定义"做什么"（explore→propose→apply→archive），Superpowers 指导"怎么做"（brainstorming / writing-plans / TDD / code-review），Harness 门禁在关键节点检查质量并汇回主线。`}
+      height={440}
       nodes={nodes}
       edges={edges}
-      height={300}
     />
   )
 }

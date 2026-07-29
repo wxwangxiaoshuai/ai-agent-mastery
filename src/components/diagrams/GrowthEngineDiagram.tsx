@@ -1,62 +1,68 @@
 /**
- * 增长引擎循环图 —— M19 L19-03 数据驱动增长
- * 获客 → 激活 → 留存 → 付费 → 传播 → 回到获客（飞轮）
+ * 增长引擎循环图 —— M19 L19-03
  */
-import { ArchitectureDiagram, type DiagramLayer, type DiagramNode, type DiagramEdge } from './ArchitectureDiagram'
+import { DiagramShell, n, e, g } from './_shared'
 
-const layers: DiagramLayer[] = [
-  { id: 'funnel', label: '增长漏斗 —— 用户从来到留', y: 2, height: 18, color: 'brand' },
-  { id: 'metric', label: '数据仪表盘 —— 每周五分钟报表', y: 22, height: 18, color: 'emerald' },
-  { id: 'action', label: '增长动作 —— 针对性优化', y: 42, height: 14, color: 'amber' },
+const nodes = [
+  g('lane-funnel', '增长漏斗 —— 用户从来到留', 0, 0, 860, 110, 'brand'),
+  g('lane-metric', '数据仪表盘 —— 每周五分钟报表', 0, 130, 860, 110, 'emerald'),
+  g('lane-action', '增长动作 —— 针对性优化', 0, 260, 860, 110, 'amber'),
+  n('acq', '获客\n流量', 30, 40, { color: 'brand', parentId: 'lane-funnel' }),
+  n('act', '激活\n首次价值', 200, 40, { color: 'brand', parentId: 'lane-funnel' }),
+  n('ret', '留存\n持续使用', 370, 40, { color: 'brand', parentId: 'lane-funnel' }),
+  n('rev', '付费\n转化', 540, 40, { color: 'brand', parentId: 'lane-funnel' }),
+  n('ref', '传播\n推荐', 710, 40, { color: 'brand', parentId: 'lane-funnel' }),
+  n('reg', '注册率', 30, 40, { color: 'emerald', parentId: 'lane-metric' }),
+  n('act_rate', '激活率', 200, 40, { color: 'emerald', parentId: 'lane-metric' }),
+  n('ret_rate', '次周回访', 370, 40, { color: 'emerald', parentId: 'lane-metric' }),
+  n('rev_rate', '付费率', 540, 40, { color: 'emerald', parentId: 'lane-metric' }),
+  n('ref_rate', '推荐率', 710, 40, { color: 'emerald', parentId: 'lane-metric' }),
+  n('fix_content', '内容\n营销', 30, 40, { color: 'amber', parentId: 'lane-action' }),
+  n('fix_act', '缩短到\n首次成功', 200, 40, { color: 'amber', parentId: 'lane-action' }),
+  n('fix_ret', '价值\n强化', 370, 40, { color: 'amber', parentId: 'lane-action' }),
+  n('fix_rev', '调整\n付费墙', 540, 40, { color: 'amber', parentId: 'lane-action' }),
+  n('fix_ref', '邀请\n奖励', 710, 40, { color: 'amber', parentId: 'lane-action' }),
 ]
 
-const nodes: DiagramNode[] = [
-  { id: 'acq', label: '获客\n流量', x: 3, y: 8, color: 'brand' },
-  { id: 'act', label: '激活\n首次价值', x: 22, y: 8, color: 'brand' },
-  { id: 'ret', label: '留存\n持续使用', x: 41, y: 8, color: 'brand' },
-  { id: 'rev', label: '付费\n转化', x: 60, y: 8, color: 'brand' },
-  { id: 'ref', label: '传播\n推荐', x: 79, y: 8, color: 'brand' },
-  { id: 'reg', label: '注册率', x: 3, y: 28, color: 'emerald' },
-  { id: 'act_rate', label: '激活率', x: 22, y: 28, color: 'emerald' },
-  { id: 'ret_rate', label: '次周回访', x: 41, y: 28, color: 'emerald' },
-  { id: 'rev_rate', label: '付费率', x: 60, y: 28, color: 'emerald' },
-  { id: 'cohort', label: '队列\n分析', x: 79, y: 28, color: 'emerald' },
-  { id: 'fix_act', label: '缩短到\n首次成功', x: 12, y: 48, color: 'amber' },
-  { id: 'fix_ret', label: '价值\n强化', x: 41, y: 48, color: 'amber' },
-  { id: 'fix_rev', label: '调整\n付费墙', x: 60, y: 48, color: 'amber' },
-  { id: 'fix_content', label: '内容\n营销', x: 3, y: 48, color: 'amber' },
-]
-
-const edges: DiagramEdge[] = [
-  { from: 'acq', to: 'act', label: '注册' },
-  { from: 'act', to: 'ret', label: '激活' },
-  { from: 'ret', to: 'rev', label: '付费' },
-  { from: 'rev', to: 'ref', label: '口碑' },
-  { from: 'ref', to: 'acq', label: '飞轮', dashed: true },
-  { from: 'acq', to: 'reg', label: '测量', dashed: true },
-  { from: 'act', to: 'act_rate', label: '测量', dashed: true },
-  { from: 'ret', to: 'ret_rate', label: '测量', dashed: true },
-  { from: 'rev', to: 'rev_rate', label: '测量', dashed: true },
-  { from: 'ret_rate', to: 'cohort', label: '队列', dashed: true },
-  { from: 'reg', to: 'fix_content', label: '低→优化', dashed: true },
-  { from: 'act_rate', to: 'fix_act', label: '低→优化', dashed: true },
-  { from: 'ret_rate', to: 'fix_ret', label: '低→优化', dashed: true },
-  { from: 'rev_rate', to: 'fix_rev', label: '低→优化', dashed: true },
-  { from: 'fix_content', to: 'acq', label: '改善', dashed: true },
-  { from: 'fix_act', to: 'act', label: '改善', dashed: true },
-  { from: 'fix_ret', to: 'ret', label: '改善', dashed: true },
-  { from: 'fix_rev', to: 'rev', label: '改善', dashed: true },
+const edges = [
+  e('acq', 'act', { label: '→' }),
+  e('act', 'ret', { label: '→' }),
+  e('ret', 'rev', { label: '→' }),
+  e('rev', 'ref', { label: '→' }),
+  e('ref', 'acq', {
+    label: '飞轮',
+    dashed: true,
+    fromSide: 's',
+    toSide: 's',
+    curve: 'bezier',
+    accent: 'brand',
+    id: 'flywheel',
+  }),
+  e('acq', 'reg', { dashed: true, sourceHandle: 'b', targetHandle: 't' }),
+  e('act', 'act_rate', { dashed: true, sourceHandle: 'b', targetHandle: 't' }),
+  e('ret', 'ret_rate', { dashed: true, sourceHandle: 'b', targetHandle: 't' }),
+  e('rev', 'rev_rate', { dashed: true, sourceHandle: 'b', targetHandle: 't' }),
+  e('ref', 'ref_rate', { dashed: true, sourceHandle: 'b', targetHandle: 't' }),
+  e('reg', 'fix_content', { dashed: true, sourceHandle: 'b', targetHandle: 't' }),
+  e('act_rate', 'fix_act', { dashed: true, sourceHandle: 'b', targetHandle: 't' }),
+  e('ret_rate', 'fix_ret', { dashed: true, sourceHandle: 'b', targetHandle: 't' }),
+  e('rev_rate', 'fix_rev', { dashed: true, sourceHandle: 'b', targetHandle: 't' }),
+  e('ref_rate', 'fix_ref', { dashed: true, sourceHandle: 'b', targetHandle: 't' }),
+  e('fix_content', 'acq', { label: '改善', dashed: true, sourceHandle: 't', targetHandle: 'b', id: 'fc-acq' }),
+  e('fix_act', 'act', { label: '改善', dashed: true, sourceHandle: 't', targetHandle: 'b', id: 'fa-act' }),
+  e('fix_ret', 'ret', { label: '改善', dashed: true, sourceHandle: 't', targetHandle: 'b', id: 'fr-ret' }),
+  e('fix_rev', 'rev', { label: '改善', dashed: true, sourceHandle: 't', targetHandle: 'b', id: 'fv-rev' }),
+  e('fix_ref', 'ref', { label: '改善', dashed: true, sourceHandle: 't', targetHandle: 'b', id: 'fref-ref' }),
 ]
 
 export function GrowthEngineDiagram() {
   return (
-    <ArchitectureDiagram
+    <DiagramShell
       title="增长引擎循环：从获客到传播"
-      description="获客 → 激活 → 留存 → 付费 → 传播 → 回到获客（飞轮）。每个环节测量关键指标，低则触发针对性优化，改善后回到主干。核心洞察：留存进入复利公式，提留存 10pp 的效果常超过流量翻倍。"
-      layers={layers}
+      description="获客 → 激活 → 留存 → 付费 → 传播 → 飞轮回获客。每个环节测量关键指标，低则触发针对性优化，改善后回到对应漏斗阶段。"
+      height={420}
       nodes={nodes}
       edges={edges}
-      height={360}
     />
   )
 }

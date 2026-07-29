@@ -1,39 +1,51 @@
 /**
  * LangGraph 状态图 —— M10 框架编排
- * 节点、条件边、循环、Checkpoint
  */
-import { ArchitectureDiagram, type DiagramLayer, type DiagramNode, type DiagramEdge } from './ArchitectureDiagram'
+import { DiagramShell, n, e } from './_shared'
 
-const nodes: DiagramNode[] = [
-  { id: 'start', label: 'START', x: 50, y: 3, color: 'emerald' },
-  { id: 'node_a', label: 'Node A\n推理', x: 50, y: 10, color: 'brand' },
-  { id: 'cond', label: '条件\n判断', x: 50, y: 18, color: 'amber' },
-  { id: 'node_b', label: 'Node B\n工具调用', x: 25, y: 26, color: 'fuchsia' },
-  { id: 'node_c', label: 'Node C\n生成回答', x: 75, y: 26, color: 'emerald' },
-  { id: 'checkpoint', label: 'Checkpoint\n状态快照', x: 85, y: 10, color: 'ink' },
-  { id: 'end', label: 'END', x: 50, y: 34, color: 'danger' },
+const nodes = [
+  n('start', 'START', 340, 20, { color: 'emerald', width: 100, height: 48 }),
+  n('node_a', 'Node A\n推理', 320, 120, { color: 'brand', width: 120, height: 64 }),
+  n('cond', '条件\n判断', 320, 240, { color: 'amber', width: 120, height: 64 }),
+  n('node_b', 'Node B\n工具调用', 80, 360, { color: 'fuchsia', width: 120, height: 64 }),
+  n('node_c', 'Node C\n生成回答', 560, 360, { color: 'emerald', width: 120, height: 64 }),
+  n('checkpoint', 'Checkpoint\n状态快照', 560, 120, { color: 'ink', width: 120, height: 64 }),
+  n('end', 'END', 340, 500, { color: 'ink', width: 100, height: 48, emphasis: 'output' }),
 ]
 
-const edges: DiagramEdge[] = [
-  { from: 'start', to: 'node_a', label: '入口' },
-  { from: 'node_a', to: 'cond', label: '执行' },
-  { from: 'cond', to: 'node_b', label: '需工具' },
-  { from: 'cond', to: 'node_c', label: '无需工具' },
-  { from: 'node_b', to: 'node_a', label: '循环' },
-  { from: 'node_c', to: 'end', label: '完成' },
-  { from: 'node_a', to: 'checkpoint', label: '保存', dashed: true },
-  { from: 'checkpoint', to: 'node_a', label: '恢复', dashed: true },
+const edges = [
+  e('start', 'node_a', { label: '入口', sourceHandle: 'b', targetHandle: 't' }),
+  e('node_a', 'cond', { label: '执行', sourceHandle: 'b', targetHandle: 't' }),
+  e('cond', 'node_b', { label: '需工具', sourceHandle: 'b', targetHandle: 't' }),
+  e('cond', 'node_c', { label: '无需工具', sourceHandle: 'b', targetHandle: 't' }),
+  e('node_b', 'node_a', {
+    label: '循环',
+    dashed: true,
+    fromSide: 'n',
+    toSide: 'w',
+    curve: 'bezier',
+    accent: 'brand',
+  }),
+  e('node_c', 'end', { label: '完成', sourceHandle: 'b', targetHandle: 't' }),
+  e('node_a', 'checkpoint', { label: '旁路快照', dashed: true, accent: 'ink' }),
+  e('node_c', 'checkpoint', {
+    label: '旁路快照',
+    dashed: true,
+    fromSide: 'n',
+    toSide: 's',
+    accent: 'ink',
+    id: 'c-cp',
+  }),
 ]
 
 export function LangGraphStateDiagram() {
   return (
-    <ArchitectureDiagram
+    <DiagramShell
       title="LangGraph 状态图"
-      description="节点 → 条件边路由 → 循环回 Node A 或走向 END。Checkpoint 在每一步保存状态，支持中断恢复。"
-      layers={[]}
+      description="START → 推理节点 → 条件边路由：需工具则 Node B 并循环回推理，否则 Node C → END。关键节点旁路写入 Checkpoint，支持中断恢复。"
+      height={600}
       nodes={nodes}
       edges={edges}
-      height={280}
     />
   )
 }

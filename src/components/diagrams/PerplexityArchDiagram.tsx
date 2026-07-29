@@ -1,57 +1,55 @@
 /**
- * Perplexity 搜索→推理→引用→生成架构 —— M14 L14-04 参考架构案例拆解 III
- * 搜索驱动流水线：查询改写 → 多源并行搜索 → Reranking → 综合生成 → 引用溯源
+ * Perplexity 搜索→推理→引用→生成架构 —— M14 L14-04
  */
-import { ArchitectureDiagram, type DiagramLayer, type DiagramNode, type DiagramEdge } from './ArchitectureDiagram'
+import { DiagramShell, n, e, g } from './_shared'
 
-const layers: DiagramLayer[] = [
-  { id: 'input', label: '输入理解层 —— 查询改写 + 意图判断', y: 2, height: 10, color: 'brand' },
-  { id: 'search', label: '搜索层 —— 多源并行检索', y: 14, height: 10, color: 'emerald' },
-  { id: 'process', label: '检索结果处理层 —— 去重 + Reranking', y: 26, height: 10, color: 'amber' },
-  { id: 'generate', label: '生成与呈现层 —— 综合 + 引用', y: 38, height: 10, color: 'fuchsia' },
+const nodes = [
+  g('lane-input', '输入理解层 —— 查询改写 + 意图判断', 0, 0, 860, 110, 'brand'),
+  g('lane-search', '搜索层 —— 多源并行检索', 0, 130, 860, 110, 'emerald'),
+  g('lane-process', '检索结果处理层 —— 去重 + Reranking', 0, 260, 860, 110, 'amber'),
+  g('lane-gen', '生成与呈现层 —— 综合 + 引用', 0, 390, 860, 110, 'fuchsia'),
+  n('query', '用户\n问题', 30, 40, { color: 'ink', parentId: 'lane-input' }),
+  n('rewrite', '查询\n改写', 220, 40, { color: 'brand', parentId: 'lane-input' }),
+  n('intent', '意图\n判断', 420, 40, { color: 'brand', parentId: 'lane-input' }),
+  n('direct', '直接\n回答', 640, 40, { color: 'ink', parentId: 'lane-input' }),
+  n('multi', '多查询\n并行', 30, 40, { color: 'emerald', parentId: 'lane-search' }),
+  n('web', 'Web\n搜索', 250, 40, { color: 'emerald', parentId: 'lane-search' }),
+  n('index', '自有\n索引', 470, 40, { color: 'emerald', parentId: 'lane-search' }),
+  n('dedup', '去重\n过滤', 30, 40, { color: 'amber', parentId: 'lane-process' }),
+  n('rerank', 'Reranking\n排序', 250, 40, { color: 'amber', parentId: 'lane-process' }),
+  n('extract', '提取\n片段', 470, 40, { color: 'amber', parentId: 'lane-process' }),
+  n('synthesize', '综合\n生成', 30, 40, { color: 'fuchsia', parentId: 'lane-gen' }),
+  n('cite', '引用\n标注', 220, 40, { color: 'fuchsia', parentId: 'lane-gen' }),
+  n('present', '答案\n呈现', 420, 40, { color: 'fuchsia', parentId: 'lane-gen' }),
+  n('suggest', '追问\n建议', 640, 40, { color: 'ink', parentId: 'lane-gen' }),
 ]
 
-const nodes: DiagramNode[] = [
-  { id: 'query', label: '用户\n问题', x: 3, y: 4, color: 'ink' },
-  { id: 'rewrite', label: '查询\n改写', x: 18, y: 4, color: 'brand' },
-  { id: 'intent', label: '意图\n判断', x: 33, y: 4, color: 'brand' },
-  { id: 'web', label: 'Web\n搜索', x: 3, y: 16, color: 'emerald' },
-  { id: 'index', label: '自有\n索引', x: 18, y: 16, color: 'emerald' },
-  { id: 'multi', label: '多查询\n并行', x: 33, y: 16, color: 'emerald' },
-  { id: 'dedup', label: '去重\n过滤', x: 3, y: 28, color: 'amber' },
-  { id: 'rerank', label: 'Reranking\n排序', x: 18, y: 28, color: 'amber' },
-  { id: 'extract', label: '提取\n片段', x: 33, y: 28, color: 'amber' },
-  { id: 'synthesize', label: '综合\n生成', x: 3, y: 40, color: 'fuchsia' },
-  { id: 'cite', label: '引用\n标注', x: 18, y: 40, color: 'fuchsia' },
-  { id: 'present', label: '答案\n呈现', x: 33, y: 40, color: 'fuchsia' },
-  { id: 'suggest', label: '追问\n建议', x: 48, y: 40, color: 'ink' },
-]
-
-const edges: DiagramEdge[] = [
-  { from: 'query', to: 'rewrite', label: '输入' },
-  { from: 'rewrite', to: 'intent', label: '改写完' },
-  { from: 'intent', to: 'multi', label: '要搜' },
-  { from: 'multi', to: 'web', label: '并行', dashed: true },
-  { from: 'multi', to: 'index', label: '并行', dashed: true },
-  { from: 'web', to: 'dedup', label: '结果' },
-  { from: 'index', to: 'dedup', label: '结果' },
-  { from: 'dedup', to: 'rerank', label: '去重完' },
-  { from: 'rerank', to: 'extract', label: '排序完' },
-  { from: 'extract', to: 'synthesize', label: '片段' },
-  { from: 'synthesize', to: 'cite', label: '生成' },
-  { from: 'cite', to: 'present', label: '标注完' },
-  { from: 'present', to: 'suggest', label: '追问' },
+const edges = [
+  e('query', 'rewrite', { label: '输入' }),
+  e('rewrite', 'intent', { label: '改写完' }),
+  e('intent', 'multi', { label: '要搜', sourceHandle: 'b', targetHandle: 't' }),
+  e('intent', 'direct', { label: '无需搜', dashed: true }),
+  e('direct', 'present', { label: '直出', dashed: true, sourceHandle: 'b', targetHandle: 't' }),
+  e('multi', 'web', { label: '并行', dashed: true, id: 'm-web' }),
+  e('multi', 'index', { label: '并行', dashed: true, id: 'm-idx' }),
+  e('web', 'dedup', { label: '结果', sourceHandle: 'b', targetHandle: 't', id: 'w-d' }),
+  e('index', 'dedup', { label: '结果', sourceHandle: 'b', targetHandle: 't', id: 'i-d' }),
+  e('dedup', 'rerank', { label: '去重完' }),
+  e('rerank', 'extract', { label: '排序完' }),
+  e('extract', 'synthesize', { label: '片段', sourceHandle: 'b', targetHandle: 't' }),
+  e('synthesize', 'cite', { label: '生成' }),
+  e('cite', 'present', { label: '标注完' }),
+  e('present', 'suggest', { label: '追问' }),
 ]
 
 export function PerplexityArchDiagram() {
   return (
-    <ArchitectureDiagram
+    <DiagramShell
       title="Perplexity 搜索驱动架构"
-      description="用户问题 → 查询改写 → 意图判断 → 多查询并行搜索（Web + 自有索引）→ 去重 → Reranking → 提取片段 → 综合生成 → 引用标注 → 答案呈现 + 追问建议。搜索是核心主线，模型是综合器而非知识库。"
-      layers={layers}
+      description="用户问题 → 查询改写 → 意图判断：需搜则多查询并行（Web + 自有索引）→ 去重 → Reranking → 提取片段 → 综合生成 → 引用标注 → 呈现 + 追问；无需搜则直接呈现。"
+      height={560}
       nodes={nodes}
       edges={edges}
-      height={320}
     />
   )
 }
