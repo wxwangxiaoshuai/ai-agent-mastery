@@ -10,7 +10,7 @@ import type { Curriculum, Module } from './types'
  *  - 贯穿工程素养：上下文工程、RAG、Harness、评估、护栏、安全、部署
  *  - 架构师视角：新增架构设计、案例拆解、运维 SRE、平台架构
  *
- * 共 7 大阶段 / 19 个模块 / 109 节课 / 19 个实战项目
+ * 共 7 大阶段 / 19 个模块 / 119 节课 / 19 个实战项目
  */
 export const curriculum: Curriculum = {
   title: 'AI Agent 大师之路',
@@ -498,7 +498,7 @@ export const curriculum: Curriculum = {
         '我们手写一个最小 Agent Loop，再拆解 ReAct、Plan-and-Execute、Reflection 三大范式，' +
         '看清 Agent 不是"多包一层 prompt"那么简单。',
       difficulty: '进阶',
-      hours: 12,
+      hours: 13,
       icon: '🔁',
       accent: 'brand',
       lessons: [
@@ -592,6 +592,21 @@ export const curriculum: Curriculum = {
           prerequisites: ['L05-04'],
           competency: '架构决策',
         },
+        {
+          id: 'L05-07',
+          title: 'Agent 设计模式全景',
+          summary: '学完 M5 的 ReAct、Plan-Execute、Reflection 后，用一张全景图看清所有 Agent 设计模式及其分类与选择逻辑。',
+          duration: 45,
+          type: '复盘',
+          objectives: [
+            '掌握 Prompt Chaining / Routing / Parallelization / Orchestrator-Workers / Evaluator-Optimizer 五大基础模式',
+            '理解各模式在课程模块中的位置与映射',
+            '用模式选择决策树为任务选择正确的设计模式',
+          ],
+          tags: ['Design Patterns', 'Prompt Chaining', 'Routing', 'Orchestrator-Workers', 'Evaluator-Optimizer'],
+          prerequisites: ['L05-06'],
+          competency: '架构决策',
+        },
       ],
       project: {
         id: 'P5',
@@ -619,9 +634,10 @@ export const curriculum: Curriculum = {
       subtitle: '给 Agent 装上"手"——让它调用真实世界的能力',
       description:
         '没有工具的 Agent 只会说话。本章系统讲解 Tool Use 的工程化：如何定义工具、如何让模型选择工具、' +
-        '如何处理工具的并行调用与错误恢复，并深入 MCP（Model Context Protocol）这一连接 Agent 与海量工具/数据源的统一标准。',
+        '如何处理工具的并行调用与错误恢复，并深入 MCP（Model Context Protocol）这一连接 Agent 与海量工具/数据源的统一标准，' +
+        '最后上探 Skills 系统——比 Function Calling 更高层的 Agent 能力封装。',
       difficulty: '进阶',
-      hours: 11,
+      hours: 14,
       icon: '🔧',
       accent: 'brand',
       lessons: [
@@ -715,23 +731,58 @@ export const curriculum: Curriculum = {
           prerequisites: ['L06-03'],
           competency: '工具可观测性',
         },
+        {
+          id: 'L06-07',
+          title: 'Agent Skills 系统：从 Function Calling 到技能注册',
+          summary: 'Skills 是比 Function Calling 更高层的抽象——一个 Skill 不是单个工具，而是一个可复用的 Agent 行为包。',
+          duration: 40,
+          type: '理论',
+          objectives: [
+            '理解 Skills 与 Function Calling 的层次关系',
+            '掌握 Skill 的定义结构：System Prompt、工具集、Schema、前置条件',
+            '理解 Skills 与 MCP 的分工：MCP 连接外部工具，Skills 封装内部能力',
+          ],
+          tags: ['Skills', 'Skill Registry', 'Tool Use', 'MCP'],
+          prerequisites: ['L06-04'],
+          competency: '工具工程',
+        },
+        {
+          id: 'L06-08',
+          title: '构建 Skill 注册中心与动态调度',
+          summary: '实现 Skill Registry：注册、发现、匹配、调度。把 P6 的工具箱 Agent 重构为 Skills 架构。',
+          duration: 50,
+          type: '实战',
+          objectives: [
+            '实现 Skill Registry 的注册、发现与匹配',
+            '用 Function Calling 实现 Skill 的动态选择与调度',
+            '实现 Skill 级别的上下文隔离（独立 System Prompt + 工具集）',
+            '对比 Function Calling（直接调工具）vs Skills（调能力包）的架构差异',
+          ],
+          tags: ['Skill Registry', 'Dynamic Dispatch', 'Context Isolation'],
+          prerequisites: ['L06-07'],
+          competency: '工具工程',
+        },
       ],
       project: {
         id: 'P6',
-        title: '全能工具箱 Agent + 自制 MCP Server',
+        title: '全能工具箱 Agent + 自制 MCP Server + Skills 注册中心',
         summary:
           '构建一个能调用搜索、代码执行、数据库查询、文件操作等多种工具的 Agent，' +
-          '并把其中一组能力封装成一个独立的 MCP Server 发布，让 Claude Desktop 等客户端直接接入。',
+          '把这些工具按"能力包"组织为 Skills（如 research skill 含搜索+抓取+总结），' +
+          '实现 Skill 注册中心与动态调度，并把其中一组能力封装成 MCP Server 发布。',
         module: 6,
         difficulty: '进阶',
-        hours: 7,
+        hours: 8,
         deliverables: [
           '多工具 Agent（搜索/代码/DB/文件）',
+          'Skills 注册中心（按"能力包"组织工具）',
+          'Skill 动态调度与上下文隔离',
           '独立的 MCP Server（含 tools+resources）',
           'MCP 客户端接入演示',
           '工具调用链追踪面板',
+          'Function Calling vs Skills 架构对比报告',
         ],
-        stack: ['Python/TS', 'Function Calling', 'MCP SDK (1.x)', 'SQLite', 'Sandbox'],
+        stack: ['Python', 'Function Calling', 'MCP SDK (1.x)', 'Skill Registry', 'SQLite', 'Sandbox'],
       },
     },
 
@@ -1930,9 +1981,10 @@ export const curriculum: Curriculum = {
         'M1-M16 教你造 Agent，这一章教你用 AI 造软件——两件事的技能栈只有一半重叠。' +
         '独立开发者最稀缺的资源是时间，AI Coding 的价值不在"写得快"，而在"让一个人能维护住' +
         '本来需要三个人才维护得住的代码量"。本章从能力边界讲起，覆盖规格驱动开发、代码库上下文工程、' +
-        'AI 生成生产级前端 UI（两节专项）、测试与重构、CI/CD，以及最容易被忽略的技术债与成本控制。',
+        'AI 生成生产级前端 UI（两节专项）、测试与重构、CI/CD、技术债与成本控制，' +
+        '最后深入 OpenSpec+Superpowers+Harness 工作流框架、桌面端 Agent 应用与 UI 约束 Skills。',
       difficulty: '高级',
-      hours: 13,
+      hours: 20,
       icon: '⌨️',
       accent: 'brand',
       lessons: [
@@ -2086,25 +2138,102 @@ export const curriculum: Curriculum = {
           prerequisites: ['L15-02'],
           competency: '成本意识',
         },
+        {
+          id: 'L17-11',
+          title: 'Agent 桌面端应用架构',
+          summary: '桌面端 Agent 技术选型：Electron vs Tauri，本地模型推理，离线优先架构。',
+          duration: 45,
+          type: '理论',
+          objectives: [
+            '对比 Electron 与 Tauri 在桌面端 Agent 场景下的优劣',
+            '理解本地模型推理（Ollama / llama.cpp）的嵌入方式',
+            '设计离线优先架构：本地模型做常规任务，云端模型做复杂推理',
+          ],
+          tags: ['桌面端', 'Electron', 'Tauri', 'Ollama', '本地模型'],
+          prerequisites: ['L17-04'],
+          competency: '前端工程',
+        },
+        {
+          id: 'L17-12',
+          title: '用 AI Coding 交付一个桌面端 Agent 原型',
+          summary: '用规格驱动开发，从零交付一个系统托盘 Agent：常驻后台、快捷键唤醒、剪贴板输出。',
+          duration: 55,
+          type: '实战',
+          objectives: [
+            '用 AI 生成 Electron + Python 后端项目骨架',
+            '实现系统托盘 Agent（后台常驻、快捷键唤醒）',
+            '掌握 pyinstaller / electron-builder 打包与分发',
+          ],
+          tags: ['桌面端', 'Electron', 'Python', '打包分发'],
+          prerequisites: ['L17-11'],
+          competency: '前端工程',
+        },
+        {
+          id: 'L17-13',
+          title: 'AI Coding 工作流框架（上）：OpenSpec 规格驱动 + Superpowers 流程控制',
+          summary: 'OpenSpec 定义"做什么"，Superpowers 指导"怎么做"，Harness 负责"谁检查"。',
+          duration: 50,
+          type: '实战',
+          objectives: [
+            '掌握 OpenSpec 四步工作流：explore → propose → apply → archive',
+            '理解 Superpowers 14 个可组合 skills 的核心用法',
+            '理解"有 1% 可能就该调 skill"的触发原则',
+          ],
+          tags: ['OpenSpec', 'Superpowers', 'Spec-Driven', 'Workflow'],
+          prerequisites: ['L17-03'],
+          competency: '工程方法',
+        },
+        {
+          id: 'L17-14',
+          title: 'AI Coding 工作流框架（下）：Harness 质量门禁——三级防线让 AI 产出可控',
+          summary: '在 AI 产出代码的每一个关键节点自动触发检查，不通过就阻断。Gate 0-8 全流程。',
+          duration: 75,
+          type: '实战',
+          objectives: [
+            '理解 Harness 门禁的 Gate 0-8 全流程及其在 OpenSpec+Superpowers 工作流中的位置',
+            '掌握 pre-commit / pre-push / 归档前三级门禁的配置',
+            '按项目风险等级选择合适的门禁策略',
+          ],
+          tags: ['Harness', 'Quality Gate', 'Pre-commit', 'CI/CD'],
+          prerequisites: ['L17-13'],
+          competency: '工程化',
+        },
+        {
+          id: 'L17-15',
+          title: '生产级 UI 约束：用 Skills 让 AI 产出美观可用的前端',
+          summary: '把设计 token 固化为 AI 可消费的约束，用 UI 质量检查 skill 自动审查产出。',
+          duration: 70,
+          type: '实战',
+          objectives: [
+            '用 UI Skills 把设计系统固化为 AI 可执行的约束',
+            '用可访问性 / 响应式 / 状态矩阵检查 skill 自动审查 UI 产出',
+            '形成"spec 定义约束 → skill 指导生成 → skill 自动审查 → 人最终确认"的闭环',
+          ],
+          tags: ['UI', 'Design System', 'Skills', 'A11y', '响应式'],
+          prerequisites: ['L17-06', 'L17-13'],
+          competency: '前端工程',
+        },
       ],
       project: {
         id: 'P17',
-        title: '用 AI Coding 从零交付一个可上线的 Web 应用',
+        title: '用 AI Coding 从零交付一个可上线的 Web 应用（或桌面端 Agent）',
         summary:
-          '选一个你自己真正想用的小工具，用本章的工作流从规格写起，' +
-          '交付一个含前后端、有测试、有 CI/CD、能被陌生人打开使用的 Web 应用。' +
-          '要求全程记录 AI 参与度与返工点——这份记录比代码本身更有价值。',
+          '选一个你自己真正想用的小工具，用 OpenSpec + Superpowers + Harness 工作流从规格写起，' +
+          '交付一个含前后端、有测试、有 CI/CD、能被陌生人打开使用的 Web 应用（或桌面端 Agent 原型）。' +
+          '要求全程记录 AI 参与度与返工点，并沉淀至少 3 个可复用 skills。',
         module: 17,
         difficulty: '高级',
-        hours: 6,
+        hours: 8,
         deliverables: [
-          '可访问的线上应用（含域名或托管地址）',
-          '规格文档与验收用例',
-          '前端 UI 状态矩阵自检表',
+          '可访问的线上应用（含域名或托管地址）或桌面端 Agent 原型',
+          'OpenSpec 工作流产物（proposal.md + specs/ + design.md + tasks.md + archive/）',
+          'Superpowers 流程产物（brainstorming / plans / subagent 执行 / code-review 记录）',
+          'UI 设计 token 定义文件与质量检查报告',
+          '至少 3 个可复用自建 skills（含 SKILL.md）',
           '测试套件与 CI/CD 流水线',
-          'AI 参与度与返工点记录',
+          'AI 参与度与返工点记录（含 OpenSpec 和 Superpowers 介入点分析）',
         ],
-        stack: ['Python', 'React', 'TypeScript', 'GitHub Actions', 'AI Coding'],
+        stack: ['Python', 'React', 'OpenSpec', 'Superpowers', 'UI Skills', 'GitHub Actions', 'AI Coding'],
       },
     },
     {
@@ -2118,7 +2247,7 @@ export const curriculum: Curriculum = {
         '注意：本章内容为工程与经营的通用参考，不构成法律、税务或投资建议，' +
         '涉及合同、隐私合规与税务的决定请咨询相应资质的专业人士。',
       difficulty: '高级',
-      hours: 9,
+      hours: 10,
       icon: '💳',
       accent: 'brand',
       lessons: [
@@ -2212,6 +2341,21 @@ export const curriculum: Curriculum = {
           prerequisites: ['L13-06'],
           competency: '风险意识',
         },
+        {
+          id: 'L18-07',
+          title: '用 AI Skills 辅助产品化决策',
+          summary: 'OpenSpec + Superpowers 工作流不只适用于写代码，同样适用于竞品分析、定价建模与合规检查。',
+          duration: 45,
+          type: '实战',
+          objectives: [
+            '用 Superpowers brainstorming + web search 做竞品扫描与需求验证',
+            '用 AI 辅助定价敏感度分析与财务建模',
+            '用 AI 生成合规检查清单与隐私政策草稿（标注"需律师审核"）',
+          ],
+          tags: ['AI 辅助', '竞品分析', '定价', '合规'],
+          prerequisites: ['L17-13', 'L18-03'],
+          competency: '产品思维',
+        },
       ],
       project: {
         id: 'P18',
@@ -2219,7 +2363,7 @@ export const curriculum: Curriculum = {
         summary:
           '在 P17 的应用上接入完整的账号、订阅与支付闭环，并建立一张能实时回答' +
           '"这个用户这个月让我赚了还是亏了"的单位经济仪表盘。' +
-          '要求包含免费额度的成本上限与滥用防护。',
+          '要求包含免费额度的成本上限与滥用防护，可选：用 AI Skills 辅助产品化决策记录。',
         module: 18,
         difficulty: '高级',
         hours: 5,
@@ -2229,8 +2373,9 @@ export const curriculum: Curriculum = {
           '单位经济模型与仪表盘',
           '定价方案与依据文档',
           '合规检查清单与隐私声明草稿',
+          'AI 辅助产品化决策记录（可选：竞品分析、定价建模、合规检查清单）',
         ],
-        stack: ['支付网关', 'Webhook', '数据库', '仪表盘'],
+        stack: ['支付网关', 'Webhook', '数据库', '仪表盘', 'AI Skills'],
       },
     },
     {
@@ -2242,7 +2387,7 @@ export const curriculum: Curriculum = {
         '怎么用 Agent 自动化运营自己的产品，以及独立开发者最少被讨论但最常发生的问题——' +
         '倦怠与退出。全课程的最后一节，回到那个最初的问题：你要做多久。',
       difficulty: '高级',
-      hours: 9,
+      hours: 10,
       icon: '📈',
       accent: 'brand',
       lessons: [
@@ -2335,6 +2480,21 @@ export const curriculum: Curriculum = {
           tags: ['长期主义', '护城河', '职业规划'],
           prerequisites: ['L16-04'],
           competency: '职业规划',
+        },
+        {
+          id: 'L19-07',
+          title: '用 AI Skills 驱动增长运营',
+          summary: '把 OpenSpec + Superpowers 工作流用在内容营销、增长实验与用户反馈分析上。',
+          duration: 45,
+          type: '实战',
+          objectives: [
+            '用 AI 做关键词研究与内容日历规划',
+            '用 Superpowers brainstorming 发散增长假设并设计实验',
+            '用 AI 批量分析用户反馈，提取主题、情感与优先级',
+          ],
+          tags: ['AI 辅助', 'SEO', '增长实验', '反馈分析'],
+          prerequisites: ['L17-13', 'L19-02'],
+          competency: '增长运营',
         },
       ],
       project: {

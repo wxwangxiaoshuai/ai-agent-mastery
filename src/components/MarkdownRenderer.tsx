@@ -26,6 +26,16 @@ import { ModelTierTable } from './interactive/ModelTierTable'
 import { UIStateMatrix } from './interactive/UIStateMatrix'
 import { UnitEconomicsModel } from './interactive/UnitEconomicsModel'
 import { GrowthFunnelSim } from './interactive/GrowthFunnelSim'
+import { PatternSelector } from './interactive/PatternSelector'
+import { GateConfigurator } from './interactive/GateConfigurator'
+import { ReActLoopDiagram } from './diagrams/ReActLoopDiagram'
+import { RAGPipelineDiagram } from './diagrams/RAGPipelineDiagram'
+import { ContextAssemblyDiagram } from './diagrams/ContextAssemblyDiagram'
+import { FunctionCallingSequence } from './diagrams/FunctionCallingSequence'
+import { CircuitBreakerDiagram } from './diagrams/CircuitBreakerDiagram'
+import { OpenSpecWorkflowDiagram } from './diagrams/OpenSpecWorkflowDiagram'
+import { HarnessGatePipelineDiagram } from './diagrams/HarnessGatePipelineDiagram'
+import { PatternMapDiagram } from './diagrams/PatternMapDiagram'
 
 const componentMap: Record<string, React.ComponentType<Record<string, string>>> = {
   tokenizer: TokenizerDemo,
@@ -51,6 +61,16 @@ const componentMap: Record<string, React.ComponentType<Record<string, string>>> 
   uiStateMatrix: UIStateMatrix,
   costModel: UnitEconomicsModel,
   growthFunnel: GrowthFunnelSim,
+  patternSelector: PatternSelector,
+  gateConfigurator: GateConfigurator,
+  reActLoop: ReActLoopDiagram,
+  ragPipelineDiagram: RAGPipelineDiagram,
+  contextAssembly: ContextAssemblyDiagram,
+  functionCalling: FunctionCallingSequence,
+  circuitBreaker: CircuitBreakerDiagram,
+  openSpecWorkflow: OpenSpecWorkflowDiagram,
+  harnessGatePipeline: HarnessGatePipelineDiagram,
+  patternMap: PatternMapDiagram,
 }
 
 function parseInteractiveDirective(

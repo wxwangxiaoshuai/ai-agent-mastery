@@ -7,6 +7,9 @@ export type Difficulty = '入门' | '进阶' | '高级' | '专家'
 
 export type LessonType = '理论' | '实战' | '复盘'
 
+/** 能力层级：基础认知 → 独立实现 → 工程化 → 架构设计 → 产品交付 */
+export type SkillLevel = '基础认知' | '独立实现' | '工程化' | '架构设计' | '产品交付'
+
 export interface Lesson {
   /** 课程唯一编号，如 L01-01 */
   id: string
@@ -26,6 +29,8 @@ export interface Lesson {
   prerequisites?: string[]
   /** 对应的架构师能力维度（可选） */
   competency?: string
+  /** 能力层级（可选） */
+  skillLevel?: SkillLevel
 }
 
 export interface Project {

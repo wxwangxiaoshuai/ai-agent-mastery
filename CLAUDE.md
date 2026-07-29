@@ -3,7 +3,7 @@
 ## 项目概述
 
 Vite + React 18 + TypeScript + Tailwind CSS 3 + React Router 6 构建的 AI Agent 开发课程站点。
-19 个模块、109 节课、19 个实战项目，7 大阶段，暗/亮双主题。
+19 个模块、119 节课、19 个实战项目，7 大阶段，暗/亮双主题。
 
 > 这组数字由 `pnpm check` 的 C11 检查项守护，改动课程数据后请同步更新本行与 README。
 
@@ -84,6 +84,16 @@ pnpm build        # 构建（check + tsc + vite）
 | uiStateMatrix | UIStateMatrix | 前端 UI 状态矩阵覆盖自检 |
 | costModel | UnitEconomicsModel | 单位经济模型与毛利率推演 |
 | growthFunnel | GrowthFunnelSim | 增长漏斗与留存复利模拟 |
+| patternSelector | PatternSelector | 设计模式选择决策树交互 |
+| gateConfigurator | GateConfigurator | 交互式门禁配置器 |
+| reActLoop | ReActLoopDiagram | ReAct 循环状态图 |
+| ragPipelineDiagram | RAGPipelineDiagram | RAG 数据流架构图 |
+| contextAssembly | ContextAssemblyDiagram | Context 组装流程图 |
+| functionCalling | FunctionCallingSequence | Function Calling 调用链时序图 |
+| circuitBreaker | CircuitBreakerDiagram | Circuit Breaker 三态转换图 |
+| openSpecWorkflow | OpenSpecWorkflowDiagram | OpenSpec + Superpowers 工作流全貌 |
+| harnessGatePipeline | HarnessGatePipelineDiagram | Harness 门禁管道全景图 |
+| patternMap | PatternMapDiagram | Agent 设计模式全景分类图 |
 
 > 此表必须与 `src/components/MarkdownRenderer.tsx` 的 `componentMap` 保持一致，
 > 由 `pnpm check` 的 C10 检查项守护。**不要在此表登记尚未实现的组件**——
@@ -94,7 +104,7 @@ pnpm build        # 构建（check + tsc + vite）
 
 按模块 ID 递增，每个模块内的 lesson 也按顺序开发。
 **约定：每个模块开发时，课程内容和项目内容必须一并补齐。**
-当前进度：M1-M16（技术主线）全部开发完毕。M17（10 节课 + P17）已完成。M18（6 节课 + P18）已完成。M19（6 节课 + P19）已完成。全部 19 个模块（109 节课 + 19 个项目）开发完毕。
+当前进度：M1-M16（技术主线）全部开发完毕。M17（15 节课 + P17）已完成。M18（7 节课 + P18）已完成。M19（7 节课 + P19）已完成。全部 19 个模块（119 节课 + 19 个项目）框架已定义，10 节新课内容待编写。
 
 ## 关键文件结构
 
