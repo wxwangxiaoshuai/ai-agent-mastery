@@ -50,7 +50,7 @@ const nodes = [
     height: H_PATTERN,
   }),
 
-  n('q1', '可预定义\n步骤？', COL[0], Y_QUESTION, {
+  n('q1', '步骤线性\n且固定？', COL[0], Y_QUESTION, {
     color: 'amber',
     width: 110,
     height: H_QUESTION,
@@ -76,7 +76,7 @@ const nodes = [
     height: H_QUESTION,
   }),
 
-  n('fallback', '默认 →\nParallel', COL[4], 320, {
+  n('fallback', '默认 →\n单次 LLM', COL[4], 320, {
     color: 'emerald',
     size: 'sm',
     width: 110,
@@ -144,7 +144,7 @@ export function PatternMapDiagram() {
   return (
     <DiagramShell
       title="Agent 设计模式全景地图"
-      description="从左到右回答决策问题：「是」向上选中该列模式（节点上已标注对应课程模块）；「否」进入下一问；全部为否则默认 Parallelization。"
+      description="从左到右回答决策问题：「是」向上选中该列模式（节点上已标注对应课程模块）；「否」进入下一问；全部为否则默认单次 LLM 调用。"
       height={460}
       nodes={nodes}
       edges={edges}

@@ -1,5 +1,24 @@
 /* React Flow theme — tech / architecture aesthetic */
 
+/* Stroke tokens: dark uses -500; light overrides to -400 for WCAG non-text ≥ 3:1 */
+:root {
+  --diagram-stroke-brand: var(--brand-500);
+  --diagram-stroke-emerald: var(--emerald-500);
+  --diagram-stroke-amber: var(--amber-500);
+  --diagram-stroke-fuchsia: var(--fuchsia-500);
+  --diagram-stroke-danger: var(--danger-500);
+  --diagram-stroke-violet: var(--violet-500);
+}
+
+html.light {
+  --diagram-stroke-brand: var(--brand-400);
+  --diagram-stroke-emerald: var(--emerald-400);
+  --diagram-stroke-amber: var(--amber-400);
+  --diagram-stroke-fuchsia: var(--fuchsia-400);
+  --diagram-stroke-danger: var(--danger-400);
+  --diagram-stroke-violet: var(--violet-400);
+}
+
 .diagram-rf {
   --xy-background-color: transparent;
   --xy-attribution-background-color: transparent;
@@ -185,28 +204,28 @@ html.light .diagram-node--brand {
 html.light .diagram-node--emerald {
   background: rgb(16 185 129 / 0.1);
   border-color: rgb(var(--emerald-400) / 0.55);
-  color: rgb(var(--emerald-400) / 1);
+  color: rgb(var(--emerald-300) / 1);
   box-shadow: 0 1px 4px rgb(var(--emerald-500) / 0.1);
 }
 
 html.light .diagram-node--amber {
   background: rgb(245 158 11 / 0.12);
   border-color: rgb(var(--amber-400) / 0.55);
-  color: rgb(var(--amber-400) / 1);
+  color: rgb(var(--amber-300) / 1);
   box-shadow: 0 1px 4px rgb(var(--amber-500) / 0.1);
 }
 
 html.light .diagram-node--fuchsia {
   background: rgb(217 70 239 / 0.1);
   border-color: rgb(var(--fuchsia-400) / 0.55);
-  color: rgb(var(--fuchsia-400) / 1);
+  color: rgb(var(--fuchsia-300) / 1);
   box-shadow: 0 1px 4px rgb(var(--fuchsia-500) / 0.1);
 }
 
 html.light .diagram-node--danger {
   background: rgb(239 68 68 / 0.1);
   border-color: rgb(var(--danger-400) / 0.55);
-  color: rgb(var(--danger-400) / 1);
+  color: rgb(var(--danger-300) / 1);
   box-shadow: 0 1px 4px rgb(var(--danger-500) / 0.1);
 }
 
@@ -220,7 +239,7 @@ html.light .diagram-node--ink {
 html.light .diagram-node--violet {
   background: rgb(139 92 246 / 0.1);
   border-color: rgb(var(--violet-400) / 0.55);
-  color: rgb(var(--violet-400) / 1);
+  color: rgb(var(--violet-300) / 1);
   box-shadow: 0 1px 4px rgb(var(--violet-500) / 0.1);
 }
 
@@ -386,6 +405,6 @@ html.light .diagram-group--danger .diagram-group__label {
 }
 
 html.light .diagram-node__caption {
-  opacity: 0.75;
+  opacity: 0.85;
   color: inherit;
 }

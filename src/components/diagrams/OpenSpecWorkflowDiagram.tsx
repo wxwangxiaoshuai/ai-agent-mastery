@@ -17,9 +17,9 @@ const nodes = [
   n('plan', 'writing-plans', 300, 40, { color: 'emerald', width: 110, height: 48, parentId: 'lane-process' }),
   n('tdd', 'TDD', 460, 40, { color: 'emerald', width: 110, height: 48, parentId: 'lane-process' }),
   n('review', 'code-review', 620, 40, { color: 'emerald', width: 110, height: 48, parentId: 'lane-process' }),
-  n('g0', 'Gate 0-2', 140, 45, { color: 'amber', width: 110, height: 48, parentId: 'lane-gate' }),
-  n('g3', 'Gate 3-5', 460, 45, { color: 'amber', width: 110, height: 48, parentId: 'lane-gate' }),
-  n('g6', 'Gate 6-8', 620, 45, { color: 'amber', width: 110, height: 48, parentId: 'lane-gate' }),
+  n('g0', 'Gate 0-3', 140, 45, { color: 'amber', width: 110, height: 48, parentId: 'lane-gate' }),
+  n('g3', 'Gate 4-6', 460, 45, { color: 'amber', width: 110, height: 48, parentId: 'lane-gate' }),
+  n('g6', 'Gate 7-8', 620, 45, { color: 'amber', width: 110, height: 48, parentId: 'lane-gate' }),
 ]
 
 const edges = [

@@ -11,6 +11,7 @@ import '@xyflow/react/dist/style.css'
 import './theme.css'
 import { defaultNodeTypes } from './nodes'
 import { defaultEdgeTypes, markerFor } from './edges'
+import { layoutEdges } from './layout'
 import type { DiagramColor } from './types'
 import type { DiagramEdgeData } from './edges'
 
@@ -58,20 +59,19 @@ function DiagramCanvas({
     [nodes],
   )
 
-  const styledEdges = useMemo(
-    () =>
-      edges.map((edge) => {
-        const data = edge.data as DiagramEdgeData | undefined
-        const accent = (data?.accent ?? 'ink') as DiagramColor
-        return {
-          ...edge,
-          type: edge.type ?? 'diagram',
-          zIndex: 0,
-          markerEnd: markerFor(accent),
-        }
-      }),
-    [edges],
-  )
+  const styledEdges = useMemo(() => {
+    const laidOut = layoutEdges(nodes, edges)
+    return laidOut.map((edge) => {
+      const data = edge.data as DiagramEdgeData | undefined
+      const accent = (data?.accent ?? 'ink') as DiagramColor
+      return {
+        ...edge,
+        type: edge.type ?? 'diagram',
+        zIndex: 0,
+        markerEnd: markerFor(accent),
+      }
+    })
+  }, [nodes, edges])
 
   return (
     <div className="card p-5 not-prose">

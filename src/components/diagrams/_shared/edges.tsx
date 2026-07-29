@@ -18,23 +18,23 @@ export type DiagramEdgeData = {
 }
 
 const ACCENT_STROKE: Record<DiagramColor, string> = {
-  brand: 'rgb(var(--brand-500) / 1)',
-  emerald: 'rgb(var(--emerald-500) / 1)',
-  amber: 'rgb(var(--amber-500) / 1)',
-  fuchsia: 'rgb(var(--fuchsia-500) / 1)',
-  danger: 'rgb(var(--danger-500) / 1)',
+  brand: 'rgb(var(--diagram-stroke-brand) / 1)',
+  emerald: 'rgb(var(--diagram-stroke-emerald) / 1)',
+  amber: 'rgb(var(--diagram-stroke-amber) / 1)',
+  fuchsia: 'rgb(var(--diagram-stroke-fuchsia) / 1)',
+  danger: 'rgb(var(--diagram-stroke-danger) / 1)',
   ink: 'rgb(var(--ink-400) / 1)',
-  violet: 'rgb(var(--violet-500) / 1)',
+  violet: 'rgb(var(--diagram-stroke-violet) / 1)',
 }
 
 const ACCENT_MARKER: Record<DiagramColor, string> = {
-  brand: 'rgb(var(--brand-500) / 1)',
-  emerald: 'rgb(var(--emerald-500) / 1)',
-  amber: 'rgb(var(--amber-500) / 1)',
-  fuchsia: 'rgb(var(--fuchsia-500) / 1)',
-  danger: 'rgb(var(--danger-500) / 1)',
+  brand: 'rgb(var(--diagram-stroke-brand) / 1)',
+  emerald: 'rgb(var(--diagram-stroke-emerald) / 1)',
+  amber: 'rgb(var(--diagram-stroke-amber) / 1)',
+  fuchsia: 'rgb(var(--diagram-stroke-fuchsia) / 1)',
+  danger: 'rgb(var(--diagram-stroke-danger) / 1)',
   ink: 'rgb(var(--ink-400) / 1)',
-  violet: 'rgb(var(--violet-500) / 1)',
+  violet: 'rgb(var(--diagram-stroke-violet) / 1)',
 }
 
 export function markerFor(accent: DiagramColor = 'ink') {

@@ -5,6 +5,7 @@ import type { DiagramEdgeData } from './edges'
 export { DiagramShell } from './DiagramShell'
 export { defaultNodeTypes, DiagramNode, DiagramGroup, DiagramAnnotation } from './nodes'
 export { defaultEdgeTypes, DiagramEdge, defaultMarkerEnd } from './edges'
+export { layoutEdges, absoluteBoxes } from './layout'
 export type { DiagramColor, DiagramNodeData, DiagramGroupData, DiagramAnnotationData } from './types'
 export type { DiagramEdgeData } from './edges'
 
