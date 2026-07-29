@@ -95,7 +95,7 @@ pnpm build        # 构建（check + tsc + vite）
 | reActLoop | ReActLoopDiagram | ReAct 循环状态图 |
 | ragPipelineDiagram | RAGPipelineDiagram | RAG 数据流架构图 |
 | contextAssembly | ContextAssemblyDiagram | Context 组装流程图 |
-| functionCalling | FunctionCallingSequence | Function Calling 调用链时序图 |
+| functionCalling | FunctionCallingSequence | Function Calling 调用链泳道图 |
 | circuitBreaker | CircuitBreakerDiagram | Circuit Breaker 三态转换图 |
 | openSpecWorkflow | OpenSpecWorkflowDiagram | OpenSpec + Superpowers 工作流全貌 |
 | harnessGatePipeline | HarnessGatePipelineDiagram | Harness 门禁管道全景图 |
