@@ -137,7 +137,7 @@ function DiagramCanvas({
           </p>
         ) : null}
         {narrow ? (
-          <p className="mt-1 text-[11px] text-ink-500">可双指缩放 / 拖动平移，右下角有缩放控件</p>
+          <p className="mt-1 text-[11px] text-ink-500">可用右下角控件缩放查看</p>
         ) : null}
       </figcaption>
       <div className="diagram-rf" style={{ height }} aria-describedby={srId}>
@@ -155,7 +155,8 @@ function DiagramCanvas({
           elementsSelectable={false}
           edgesFocusable={false}
           nodesFocusable={false}
-          panOnDrag
+          panOnDrag={false}
+          panOnScroll={false}
           zoomOnScroll={false}
           zoomOnPinch
           zoomOnDoubleClick={false}
