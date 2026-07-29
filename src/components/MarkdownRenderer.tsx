@@ -43,6 +43,10 @@ import { MultiAgentTopologyDiagram } from './diagrams/MultiAgentTopologyDiagram'
 import { SupervisorPatternDiagram } from './diagrams/SupervisorPatternDiagram'
 import { DeploymentArchDiagram } from './diagrams/DeploymentArchDiagram'
 import { AgentPlatformDiagram } from './diagrams/AgentPlatformDiagram'
+import { CursorArchDiagram } from './diagrams/CursorArchDiagram'
+import { DevinArchDiagram } from './diagrams/DevinArchDiagram'
+import { PerplexityArchDiagram } from './diagrams/PerplexityArchDiagram'
+import { GrowthEngineDiagram } from './diagrams/GrowthEngineDiagram'
 
 const componentMap: Record<string, React.ComponentType<Record<string, string>>> = {
   tokenizer: TokenizerDemo,
@@ -85,6 +89,10 @@ const componentMap: Record<string, React.ComponentType<Record<string, string>>> 
   supervisorPattern: SupervisorPatternDiagram,
   deploymentArch: DeploymentArchDiagram,
   agentPlatform: AgentPlatformDiagram,
+  cursorArch: CursorArchDiagram,
+  devinArch: DevinArchDiagram,
+  perplexityArch: PerplexityArchDiagram,
+  growthEngine: GrowthEngineDiagram,
 }
 
 function parseInteractiveDirective(

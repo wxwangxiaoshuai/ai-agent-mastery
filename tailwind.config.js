@@ -40,6 +40,37 @@ export default {
           900: 'rgb(var(--brand-900) / <alpha-value>)',
           950: 'rgb(var(--brand-950) / <alpha-value>)',
         },
+        // diagram semantic colors — backed by CSS variables for theme switching
+        emerald: {
+          300: 'rgb(var(--emerald-300) / <alpha-value>)',
+          400: 'rgb(var(--emerald-400) / <alpha-value>)',
+          500: 'rgb(var(--emerald-500) / <alpha-value>)',
+        },
+        amber: {
+          300: 'rgb(var(--amber-300) / <alpha-value>)',
+          400: 'rgb(var(--amber-400) / <alpha-value>)',
+          500: 'rgb(var(--amber-500) / <alpha-value>)',
+        },
+        fuchsia: {
+          300: 'rgb(var(--fuchsia-300) / <alpha-value>)',
+          400: 'rgb(var(--fuchsia-400) / <alpha-value>)',
+          500: 'rgb(var(--fuchsia-500) / <alpha-value>)',
+        },
+        violet: {
+          300: 'rgb(var(--violet-300) / <alpha-value>)',
+          400: 'rgb(var(--violet-400) / <alpha-value>)',
+          500: 'rgb(var(--violet-500) / <alpha-value>)',
+        },
+        danger: {
+          300: 'rgb(var(--danger-300) / <alpha-value>)',
+          400: 'rgb(var(--danger-400) / <alpha-value>)',
+          500: 'rgb(var(--danger-500) / <alpha-value>)',
+        },
+        cyan: {
+          300: 'rgb(var(--cyan-300) / <alpha-value>)',
+          400: 'rgb(var(--cyan-400) / <alpha-value>)',
+          500: 'rgb(var(--cyan-500) / <alpha-value>)',
+        },
       },
       keyframes: {
         'fade-up': {

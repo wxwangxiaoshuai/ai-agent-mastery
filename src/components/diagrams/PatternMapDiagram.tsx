@@ -5,26 +5,26 @@
 import { ArchitectureDiagram, type DiagramLayer, type DiagramNode, type DiagramEdge } from './ArchitectureDiagram'
 
 const layers: DiagramLayer[] = [
-  { id: 'patterns', label: '五大基础模式', y: 2, height: 30, color: 'brand' },
-  { id: 'modules', label: '课程模块映射', y: 34, height: 30, color: 'emerald' },
-  { id: 'decision', label: '模式选择决策树', y: 66, height: 26, color: 'amber' },
+  { id: 'patterns', label: '五大基础模式', y: 2, height: 14, color: 'brand' },
+  { id: 'modules', label: '课程模块映射', y: 18, height: 14, color: 'emerald' },
+  { id: 'decision', label: '模式选择决策树', y: 34, height: 14, color: 'amber' },
 ]
 
 const nodes: DiagramNode[] = [
-  { id: 'chain', label: 'Prompt\nChaining', x: 3, y: 12, color: 'brand' },
-  { id: 'route', label: 'Routing', x: 22, y: 12, color: 'brand' },
-  { id: 'parallel', label: 'Parallelization', x: 41, y: 12, color: 'brand' },
-  { id: 'orch', label: 'Orchestrator\n-Workers', x: 60, y: 12, color: 'brand' },
-  { id: 'eval', label: 'Evaluator\n-Optimizer', x: 79, y: 12, color: 'brand' },
-  { id: 'm2', label: 'M2 Prompt', x: 3, y: 44, color: 'emerald' },
-  { id: 'm6', label: 'M6 工具', x: 22, y: 44, color: 'emerald' },
-  { id: 'm11', label: 'M11 多Agent', x: 41, y: 44, color: 'emerald' },
-  { id: 'm5', label: 'M5 Agent', x: 60, y: 44, color: 'emerald' },
-  { id: 'm13', label: 'M13 评估', x: 79, y: 44, color: 'emerald' },
-  { id: 'q1', label: '可预定义\n步骤？', x: 15, y: 72, color: 'amber' },
-  { id: 'q2', label: '可并行？', x: 40, y: 72, color: 'amber' },
-  { id: 'q3', label: '需动态\n拆任务？', x: 60, y: 72, color: 'amber' },
-  { id: 'q4', label: '有质量\n门禁？', x: 80, y: 72, color: 'amber' },
+  { id: 'chain', label: 'Prompt\nChaining', x: 3, y: 6, color: 'brand' },
+  { id: 'route', label: 'Routing', x: 22, y: 6, color: 'brand' },
+  { id: 'parallel', label: 'Parallelization', x: 41, y: 6, color: 'brand' },
+  { id: 'orch', label: 'Orchestrator\n-Workers', x: 60, y: 6, color: 'brand' },
+  { id: 'eval', label: 'Evaluator\n-Optimizer', x: 79, y: 6, color: 'brand' },
+  { id: 'm2', label: 'M2 Prompt', x: 3, y: 22, color: 'emerald' },
+  { id: 'm6', label: 'M6 工具', x: 22, y: 22, color: 'emerald' },
+  { id: 'm11', label: 'M11 多Agent', x: 41, y: 22, color: 'emerald' },
+  { id: 'm5', label: 'M5 Agent', x: 60, y: 22, color: 'emerald' },
+  { id: 'm13', label: 'M13 评估', x: 79, y: 22, color: 'emerald' },
+  { id: 'q1', label: '可预定义\n步骤？', x: 15, y: 38, color: 'amber' },
+  { id: 'q2', label: '可并行？', x: 40, y: 38, color: 'amber' },
+  { id: 'q3', label: '需动态\n拆任务？', x: 60, y: 38, color: 'amber' },
+  { id: 'q4', label: '有质量\n门禁？', x: 80, y: 38, color: 'amber' },
 ]
 
 const edges: DiagramEdge[] = [
@@ -48,7 +48,7 @@ export function PatternMapDiagram() {
       layers={layers}
       nodes={nodes}
       edges={edges}
-      height={440}
+      height={320}
     />
   )
 }

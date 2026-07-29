@@ -5,13 +5,13 @@
 import { ArchitectureDiagram, type DiagramLayer, type DiagramNode, type DiagramEdge } from './ArchitectureDiagram'
 
 const nodes: DiagramNode[] = [
-  { id: 'start', label: 'START', x: 50, y: 5, color: 'emerald' },
-  { id: 'node_a', label: 'Node A\n推理', x: 50, y: 18, color: 'brand' },
-  { id: 'cond', label: '条件\n判断', x: 50, y: 33, color: 'amber' },
-  { id: 'node_b', label: 'Node B\n工具调用', x: 25, y: 48, color: 'fuchsia' },
-  { id: 'node_c', label: 'Node C\n生成回答', x: 75, y: 48, color: 'emerald' },
-  { id: 'checkpoint', label: 'Checkpoint\n状态快照', x: 85, y: 18, color: 'ink' },
-  { id: 'end', label: 'END', x: 50, y: 63, color: 'danger' },
+  { id: 'start', label: 'START', x: 50, y: 3, color: 'emerald' },
+  { id: 'node_a', label: 'Node A\n推理', x: 50, y: 10, color: 'brand' },
+  { id: 'cond', label: '条件\n判断', x: 50, y: 18, color: 'amber' },
+  { id: 'node_b', label: 'Node B\n工具调用', x: 25, y: 26, color: 'fuchsia' },
+  { id: 'node_c', label: 'Node C\n生成回答', x: 75, y: 26, color: 'emerald' },
+  { id: 'checkpoint', label: 'Checkpoint\n状态快照', x: 85, y: 10, color: 'ink' },
+  { id: 'end', label: 'END', x: 50, y: 34, color: 'danger' },
 ]
 
 const edges: DiagramEdge[] = [
@@ -33,7 +33,7 @@ export function LangGraphStateDiagram() {
       layers={[]}
       nodes={nodes}
       edges={edges}
-      height={380}
+      height={280}
     />
   )
 }

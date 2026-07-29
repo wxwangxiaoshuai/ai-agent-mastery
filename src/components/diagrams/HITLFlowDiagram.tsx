@@ -5,22 +5,22 @@
 import { ArchitectureDiagram, type DiagramLayer, type DiagramNode, type DiagramEdge } from './ArchitectureDiagram'
 
 const layers: DiagramLayer[] = [
-  { id: 'auto', label: 'Agent 自主执行区', y: 10, height: 12, color: 'brand' },
-  { id: 'gate', label: 'HITL 审批门禁', y: 28, height: 12, color: 'amber' },
-  { id: 'human', label: '人工决策区', y: 46, height: 12, color: 'fuchsia' },
-  { id: 'result', label: '执行结果', y: 64, height: 12, color: 'emerald' },
+  { id: 'auto', label: 'Agent 自主执行区', y: 5, height: 7, color: 'brand' },
+  { id: 'gate', label: 'HITL 审批门禁', y: 14, height: 7, color: 'amber' },
+  { id: 'human', label: '人工决策区', y: 23, height: 7, color: 'fuchsia' },
+  { id: 'result', label: '执行结果', y: 32, height: 7, color: 'emerald' },
 ]
 
 const nodes: DiagramNode[] = [
-  { id: 'agent', label: 'Agent\n执行', x: 5, y: 13, color: 'brand' },
-  { id: 'tool', label: '工具\n调用', x: 25, y: 13, color: 'brand' },
-  { id: 'risk', label: '风险\n判断', x: 45, y: 13, color: 'amber' },
-  { id: 'low', label: '低风险\n自动放行', x: 65, y: 13, color: 'emerald' },
-  { id: 'pause', label: '暂停\n等待审核', x: 45, y: 31, color: 'amber' },
-  { id: 'review', label: '人工\n审核', x: 45, y: 49, color: 'fuchsia' },
-  { id: 'approve', label: '批准\n继续', x: 25, y: 67, color: 'emerald' },
-  { id: 'reject', label: '拒绝\n回退', x: 65, y: 67, color: 'danger' },
-  { id: 'timeout', label: '超时\n降级', x: 85, y: 49, color: 'amber' },
+  { id: 'agent', label: 'Agent\n执行', x: 5, y: 7, color: 'brand' },
+  { id: 'tool', label: '工具\n调用', x: 25, y: 7, color: 'brand' },
+  { id: 'risk', label: '风险\n判断', x: 45, y: 7, color: 'amber' },
+  { id: 'low', label: '低风险\n自动放行', x: 65, y: 7, color: 'emerald' },
+  { id: 'pause', label: '暂停\n等待审核', x: 45, y: 16, color: 'amber' },
+  { id: 'review', label: '人工\n审核', x: 45, y: 25, color: 'fuchsia' },
+  { id: 'approve', label: '批准\n继续', x: 25, y: 34, color: 'emerald' },
+  { id: 'reject', label: '拒绝\n回退', x: 65, y: 34, color: 'danger' },
+  { id: 'timeout', label: '超时\n降级', x: 85, y: 25, color: 'amber' },
 ]
 
 const edges: DiagramEdge[] = [
@@ -45,7 +45,7 @@ export function HITLFlowDiagram() {
       layers={layers}
       nodes={nodes}
       edges={edges}
-      height={420}
+      height={280}
     />
   )
 }

@@ -5,24 +5,24 @@
 import { ArchitectureDiagram, type DiagramLayer, type DiagramNode, type DiagramEdge } from './ArchitectureDiagram'
 
 const layers: DiagramLayer[] = [
-  { id: 'l1', label: '工作记忆（Working Memory）—— 当前对话', y: 10, height: 10, color: 'brand' },
-  { id: 'l2', label: '短期记忆（Short-term）—— 摘要 + 滑动窗口', y: 28, height: 10, color: 'emerald' },
-  { id: 'l3', label: '长期记忆（Long-term）—— 向量库 + 结构化存储', y: 46, height: 10, color: 'amber' },
-  { id: 'l4', label: '程序记忆（Procedural）—— Skill 库 + 经验', y: 64, height: 10, color: 'fuchsia' },
+  { id: 'l1', label: '工作记忆（Working Memory）—— 当前对话', y: 5, height: 7, color: 'brand' },
+  { id: 'l2', label: '短期记忆（Short-term）—— 摘要 + 滑动窗口', y: 13, height: 7, color: 'emerald' },
+  { id: 'l3', label: '长期记忆（Long-term）—— 向量库 + 结构化存储', y: 21, height: 7, color: 'amber' },
+  { id: 'l4', label: '程序记忆（Procedural）—— Skill 库 + 经验', y: 29, height: 7, color: 'fuchsia' },
 ]
 
 const nodes: DiagramNode[] = [
-  { id: 'user', label: '用户\n输入', x: 5, y: 13, color: 'ink' },
-  { id: 'retrieve', label: '检索\n相关记忆', x: 22, y: 13, color: 'brand' },
-  { id: 'assemble', label: '组装\n上下文', x: 39, y: 13, color: 'brand' },
-  { id: 'llm', label: 'LLM\n推理', x: 56, y: 13, color: 'brand' },
-  { id: 'extract', label: '提取\n关键信息', x: 73, y: 13, color: 'emerald' },
-  { id: 'summarize', label: '生成\n摘要', x: 73, y: 31, color: 'emerald' },
-  { id: 'store_lt', label: '持久化\n长期记忆', x: 73, y: 49, color: 'amber' },
-  { id: 'skill', label: '沉淀\nSkill', x: 73, y: 67, color: 'fuchsia' },
-  { id: 'compressor', label: '压缩\n旧对话', x: 56, y: 31, color: 'emerald' },
-  { id: 'vec_db', label: '向量\n数据库', x: 39, y: 49, color: 'amber' },
-  { id: 'skill_db', label: 'Skill\n注册表', x: 39, y: 67, color: 'fuchsia' },
+  { id: 'user', label: '用户\n输入', x: 5, y: 7, color: 'ink' },
+  { id: 'retrieve', label: '检索\n相关记忆', x: 22, y: 7, color: 'brand' },
+  { id: 'assemble', label: '组装\n上下文', x: 39, y: 7, color: 'brand' },
+  { id: 'llm', label: 'LLM\n推理', x: 56, y: 7, color: 'brand' },
+  { id: 'extract', label: '提取\n关键信息', x: 73, y: 7, color: 'emerald' },
+  { id: 'summarize', label: '生成\n摘要', x: 73, y: 15, color: 'emerald' },
+  { id: 'store_lt', label: '持久化\n长期记忆', x: 73, y: 23, color: 'amber' },
+  { id: 'skill', label: '沉淀\nSkill', x: 73, y: 31, color: 'fuchsia' },
+  { id: 'compressor', label: '压缩\n旧对话', x: 56, y: 15, color: 'emerald' },
+  { id: 'vec_db', label: '向量\n数据库', x: 39, y: 23, color: 'amber' },
+  { id: 'skill_db', label: 'Skill\n注册表', x: 39, y: 31, color: 'fuchsia' },
 ]
 
 const edges: DiagramEdge[] = [
@@ -49,7 +49,7 @@ export function MemoryLayersDiagram() {
       layers={layers}
       nodes={nodes}
       edges={edges}
-      height={420}
+      height={430}
     />
   )
 }

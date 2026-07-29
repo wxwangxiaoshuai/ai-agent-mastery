@@ -5,20 +5,20 @@
 import { ArchitectureDiagram, type DiagramLayer, type DiagramNode, type DiagramEdge } from './ArchitectureDiagram'
 
 const layers: DiagramLayer[] = [
-  { id: 'user', label: '用户', y: 2, height: 18, color: 'ink' },
-  { id: 'agent', label: 'Agent（LLM + 推理）', y: 22, height: 18, color: 'brand' },
-  { id: 'tools', label: '工具层', y: 42, height: 18, color: 'emerald' },
+  { id: 'user', label: '用户', y: 2, height: 10, color: 'ink' },
+  { id: 'agent', label: 'Agent（LLM + 推理）', y: 14, height: 10, color: 'brand' },
+  { id: 'tools', label: '工具层', y: 26, height: 10, color: 'emerald' },
 ]
 
 const nodes: DiagramNode[] = [
-  { id: 'u1', label: '用户输入', x: 3, y: 8, color: 'ink' },
-  { id: 'a1', label: '解析意图', x: 3, y: 28, color: 'brand' },
-  { id: 'a2', label: '选择工具', x: 22, y: 28, color: 'brand' },
-  { id: 'a3', label: '解析结果', x: 41, y: 28, color: 'brand' },
-  { id: 'a4', label: '生成回答', x: 60, y: 28, color: 'brand' },
-  { id: 't1', label: 'Tool A\n执行', x: 22, y: 48, color: 'emerald' },
-  { id: 't2', label: 'Tool B\n执行', x: 41, y: 48, color: 'emerald' },
-  { id: 'u2', label: '最终回复', x: 80, y: 8, color: 'ink' },
+  { id: 'u1', label: '用户输入', x: 3, y: 5, color: 'ink' },
+  { id: 'a1', label: '解析意图', x: 3, y: 17, color: 'brand' },
+  { id: 'a2', label: '选择工具', x: 22, y: 17, color: 'brand' },
+  { id: 'a3', label: '解析结果', x: 41, y: 17, color: 'brand' },
+  { id: 'a4', label: '生成回答', x: 60, y: 17, color: 'brand' },
+  { id: 't1', label: 'Tool A\n执行', x: 22, y: 29, color: 'emerald' },
+  { id: 't2', label: 'Tool B\n执行', x: 41, y: 29, color: 'emerald' },
+  { id: 'u2', label: '最终回复', x: 80, y: 5, color: 'ink' },
 ]
 
 const edges: DiagramEdge[] = [
@@ -41,7 +41,7 @@ export function FunctionCallingSequence() {
       layers={layers}
       nodes={nodes}
       edges={edges}
-      height={360}
+      height={280}
     />
   )
 }

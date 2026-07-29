@@ -68,23 +68,7 @@ Copilot 不是停在补全，它在演进——这个演进路径本身就是架
 
 Cursor 是"原生 Agent"的编程助手——不是补全为主，而是**Agent 主动完成多步编码任务**。架构核心是 **Codebase 索引 + 工具链 + 多轮编辑**：
 
-```
-Cursor Agent 架构（简化）：
-  用户："给这个函数加错误处理"
-    │
-    ├─→ 1. Codebase 索引：embedding 索引整个仓库
-    │      · 离线构建 + 增量更新
-    │      · 检索相关文件/符号
-    │
-    ├─→ 2. 上下文组装：检索结果 + 当前文件 + 用户指令
-    │
-    ├─→ 3. Agent Loop（M5）：
-    │      Thought → Action(读文件/改文件/跑测试) → Observation → ...
-    │
-    ├─→ 4. 多轮编辑：逐个文件改，带 diff 预览
-    │
-    └─→ 5. 验证：跑测试/lint，失败则修复循环
-```
+::interactive{type="cursorArch"}
 
 ### Cursor 的关键架构决策
 

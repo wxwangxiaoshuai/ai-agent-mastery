@@ -5,21 +5,21 @@
 import { ArchitectureDiagram, type DiagramLayer, type DiagramNode, type DiagramEdge } from './ArchitectureDiagram'
 
 const layers: DiagramLayer[] = [
-  { id: 'static', label: '静态底座', y: 2, height: 22, color: 'brand' },
-  { id: 'dynamic', label: '动态注入', y: 26, height: 22, color: 'emerald' },
-  { id: 'assemble', label: '组装与输出', y: 50, height: 22, color: 'amber' },
+  { id: 'static', label: '静态底座', y: 2, height: 12, color: 'brand' },
+  { id: 'dynamic', label: '动态注入', y: 16, height: 12, color: 'emerald' },
+  { id: 'assemble', label: '组装与输出', y: 30, height: 12, color: 'amber' },
 ]
 
 const nodes: DiagramNode[] = [
-  { id: 'sys', label: 'System\nPrompt', x: 3, y: 8, color: 'brand' },
-  { id: 'rules', label: '项目约定', x: 22, y: 8, color: 'brand' },
-  { id: 'tools', label: '工具定义', x: 41, y: 8, color: 'brand' },
-  { id: 'history', label: '对话历史', x: 3, y: 32, color: 'emerald' },
-  { id: 'rag', label: 'RAG 检索', x: 22, y: 32, color: 'emerald' },
-  { id: 'user', label: '用户输入', x: 41, y: 32, color: 'emerald' },
-  { id: 'priority', label: '优先级\n排序', x: 10, y: 56, color: 'amber' },
-  { id: 'budget', label: 'Token\n预算', x: 30, y: 56, color: 'amber' },
-  { id: 'output', label: '最终\nContext', x: 50, y: 56, color: 'ink' },
+  { id: 'sys', label: 'System\nPrompt', x: 3, y: 5, color: 'brand' },
+  { id: 'rules', label: '项目约定', x: 22, y: 5, color: 'brand' },
+  { id: 'tools', label: '工具定义', x: 41, y: 5, color: 'brand' },
+  { id: 'history', label: '对话历史', x: 3, y: 19, color: 'emerald' },
+  { id: 'rag', label: 'RAG 检索', x: 22, y: 19, color: 'emerald' },
+  { id: 'user', label: '用户输入', x: 41, y: 19, color: 'emerald' },
+  { id: 'priority', label: '优先级\n排序', x: 10, y: 33, color: 'amber' },
+  { id: 'budget', label: 'Token\n预算', x: 30, y: 33, color: 'amber' },
+  { id: 'output', label: '最终\nContext', x: 50, y: 33, color: 'ink' },
 ]
 
 const edges: DiagramEdge[] = [
@@ -41,7 +41,7 @@ export function ContextAssemblyDiagram() {
       layers={layers}
       nodes={nodes}
       edges={edges}
-      height={380}
+      height={280}
     />
   )
 }

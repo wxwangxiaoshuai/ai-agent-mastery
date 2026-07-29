@@ -75,7 +75,7 @@ export function ArchitectureDiagram({
       <svg
         viewBox={`0 0 1000 ${height}`}
         className="w-full rounded-lg"
-        style={{ background: 'var(--ink-900)' }}
+        style={{ background: 'rgb(var(--ink-900) / 1)' }}
         role="img"
         aria-label={title}
       >
@@ -88,16 +88,14 @@ export function ArchitectureDiagram({
               width={980}
               height={l.height * 10}
               rx={6}
-              fill={`var(--${l.color}-500)`}
-              fillOpacity={0.08}
-              stroke={`var(--${l.color}-500)`}
-              strokeOpacity={0.2}
+              fill={`rgb(var(--${l.color}-500) / 0.08)`}
+              stroke={`rgb(var(--${l.color}-500) / 0.2)`}
               strokeWidth={1}
             />
             <text
               x={24}
               y={l.y * 10 + 18}
-              fill={`var(--${l.color}-400)`}
+              fill={`rgb(var(--${l.color}-400) / 1)`}
               fontSize={12}
               fontWeight={600}
             >
@@ -121,7 +119,7 @@ export function ArchitectureDiagram({
               <path
                 d={`M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`}
                 fill="none"
-                stroke="var(--ink-500)"
+                stroke="rgb(var(--ink-500) / 1)"
                 strokeWidth={1.5}
                 strokeDasharray={e.dashed ? '6 3' : undefined}
                 markerEnd={`url(#arrow-${id})`}
@@ -131,7 +129,7 @@ export function ArchitectureDiagram({
                   x={mx}
                   y={Math.min(y1, y2) - 6}
                   textAnchor="middle"
-                  fill="var(--ink-400)"
+                  fill="rgb(var(--ink-400) / 1)"
                   fontSize={10}
                 >
                   {e.label}
@@ -152,7 +150,7 @@ export function ArchitectureDiagram({
             markerHeight={6}
             orient="auto"
           >
-            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-500)" />
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="rgb(var(--ink-500) / 1)" />
           </marker>
         </defs>
 
@@ -168,10 +166,8 @@ export function ArchitectureDiagram({
                 width={pos.w}
                 height={pos.h}
                 rx={5}
-                fill={`var(--${c}-500)`}
-                fillOpacity={0.15}
-                stroke={`var(--${c}-500)`}
-                strokeOpacity={0.5}
+                fill={`rgb(var(--${c}-500) / 0.15)`}
+                stroke={`rgb(var(--${c}-500) / 0.5)`}
                 strokeWidth={1.5}
               />
               <text
@@ -179,7 +175,7 @@ export function ArchitectureDiagram({
                 y={pos.y + pos.h / 2 + 1}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fill={`var(--${c}-300)`}
+                fill={`rgb(var(--${c}-300) / 1)`}
                 fontSize={11}
                 fontWeight={500}
               >

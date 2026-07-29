@@ -5,21 +5,21 @@
 import { ArchitectureDiagram, type DiagramLayer, type DiagramNode, type DiagramEdge } from './ArchitectureDiagram'
 
 const layers: DiagramLayer[] = [
-  { id: 'sup', label: 'Supervisor 层 —— 决策与调度', y: 10, height: 12, color: 'amber' },
-  { id: 'workers', label: 'Worker 层 —— 并行执行', y: 28, height: 12, color: 'brand' },
-  { id: 'output', label: '综合输出层', y: 46, height: 12, color: 'emerald' },
+  { id: 'sup', label: 'Supervisor 层 —— 决策与调度', y: 5, height: 7, color: 'amber' },
+  { id: 'workers', label: 'Worker 层 —— 并行执行', y: 14, height: 7, color: 'brand' },
+  { id: 'output', label: '综合输出层', y: 23, height: 7, color: 'emerald' },
 ]
 
 const nodes: DiagramNode[] = [
-  { id: 'task', label: '用户\n任务', x: 5, y: 13, color: 'ink' },
-  { id: 'plan', label: '规划\n拆解', x: 25, y: 13, color: 'amber' },
-  { id: 'dispatch', label: '派发\n任务', x: 45, y: 13, color: 'amber' },
-  { id: 'w1', label: 'Worker\n搜索', x: 25, y: 31, color: 'brand' },
-  { id: 'w2', label: 'Worker\n分析', x: 45, y: 31, color: 'brand' },
-  { id: 'w3', label: 'Worker\n撰写', x: 65, y: 31, color: 'brand' },
-  { id: 'collect', label: '收集\n结果', x: 45, y: 49, color: 'emerald' },
-  { id: 'synthesize', label: '综合\n输出', x: 65, y: 49, color: 'emerald' },
-  { id: 'loop', label: '质量\n检查', x: 85, y: 31, color: 'amber' },
+  { id: 'task', label: '用户\n任务', x: 5, y: 7, color: 'ink' },
+  { id: 'plan', label: '规划\n拆解', x: 25, y: 7, color: 'amber' },
+  { id: 'dispatch', label: '派发\n任务', x: 45, y: 7, color: 'amber' },
+  { id: 'w1', label: 'Worker\n搜索', x: 25, y: 16, color: 'brand' },
+  { id: 'w2', label: 'Worker\n分析', x: 45, y: 16, color: 'brand' },
+  { id: 'w3', label: 'Worker\n撰写', x: 65, y: 16, color: 'brand' },
+  { id: 'collect', label: '收集\n结果', x: 45, y: 25, color: 'emerald' },
+  { id: 'synthesize', label: '综合\n输出', x: 65, y: 25, color: 'emerald' },
+  { id: 'loop', label: '质量\n检查', x: 85, y: 16, color: 'amber' },
 ]
 
 const edges: DiagramEdge[] = [
@@ -44,7 +44,7 @@ export function SupervisorPatternDiagram() {
       layers={layers}
       nodes={nodes}
       edges={edges}
-      height={380}
+      height={260}
     />
   )
 }

@@ -101,6 +101,10 @@ pnpm build        # 构建（check + tsc + vite）
 | supervisorPattern | SupervisorPatternDiagram | Supervisor 模式消息流 |
 | deploymentArch | DeploymentArchDiagram | Agent 生产部署架构图 |
 | agentPlatform | AgentPlatformDiagram | Agent 平台分层架构图 |
+| cursorArch | CursorArchDiagram | Cursor Agent 模式架构拆解 |
+| devinArch | DevinArchDiagram | Devin 自主编程架构拆解 |
+| perplexityArch | PerplexityArchDiagram | Perplexity 搜索→推理→引用→生成架构 |
+| growthEngine | GrowthEngineDiagram | 增长引擎循环 |
 
 > 此表必须与 `src/components/MarkdownRenderer.tsx` 的 `componentMap` 保持一致，
 > 由 `pnpm check` 的 C10 检查项守护。**不要在此表登记尚未实现的组件**——

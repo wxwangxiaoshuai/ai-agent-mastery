@@ -5,25 +5,25 @@
 import { ArchitectureDiagram, type DiagramNode, type DiagramEdge } from './ArchitectureDiagram'
 
 const nodes: DiagramNode[] = [
-  // 链式 (y: 10-22)
-  { id: 'c1', label: 'A', x: 5, y: 12, color: 'brand' },
-  { id: 'c2', label: 'B', x: 20, y: 12, color: 'brand' },
-  { id: 'c3', label: 'C', x: 35, y: 12, color: 'brand' },
-  // 星型 (y: 32-44)
-  { id: 's_center', label: 'Hub', x: 20, y: 42, color: 'amber' },
-  { id: 's1', label: 'A', x: 5, y: 34, color: 'brand' },
-  { id: 's2', label: 'B', x: 20, y: 34, color: 'brand' },
-  { id: 's3', label: 'C', x: 35, y: 34, color: 'brand' },
-  // 网状 (y: 54-66)
-  { id: 'm1', label: 'A', x: 5, y: 60, color: 'fuchsia' },
-  { id: 'm2', label: 'B', x: 20, y: 56, color: 'fuchsia' },
-  { id: 'm3', label: 'C', x: 35, y: 60, color: 'fuchsia' },
-  { id: 'm4', label: 'D', x: 20, y: 66, color: 'fuchsia' },
-  // 层级 (y: 76-90)
-  { id: 'h_top', label: 'Supervisor', x: 20, y: 78, color: 'emerald' },
-  { id: 'h_a', label: 'Worker A', x: 5, y: 88, color: 'brand' },
-  { id: 'h_b', label: 'Worker B', x: 20, y: 88, color: 'brand' },
-  { id: 'h_c', label: 'Worker C', x: 35, y: 88, color: 'brand' },
+  // 链式 (y: 6-8)
+  { id: 'c1', label: 'A', x: 5, y: 6, color: 'brand' },
+  { id: 'c2', label: 'B', x: 20, y: 6, color: 'brand' },
+  { id: 'c3', label: 'C', x: 35, y: 6, color: 'brand' },
+  // 星型 (y: 13-18)
+  { id: 's_center', label: 'Hub', x: 20, y: 18, color: 'amber' },
+  { id: 's1', label: 'A', x: 5, y: 13, color: 'brand' },
+  { id: 's2', label: 'B', x: 20, y: 13, color: 'brand' },
+  { id: 's3', label: 'C', x: 35, y: 13, color: 'brand' },
+  // 网状 (y: 22-26)
+  { id: 'm1', label: 'A', x: 5, y: 24, color: 'fuchsia' },
+  { id: 'm2', label: 'B', x: 20, y: 22, color: 'fuchsia' },
+  { id: 'm3', label: 'C', x: 35, y: 24, color: 'fuchsia' },
+  { id: 'm4', label: 'D', x: 20, y: 26, color: 'fuchsia' },
+  // 层级 (y: 30-34)
+  { id: 'h_top', label: 'Supervisor', x: 20, y: 30, color: 'emerald' },
+  { id: 'h_a', label: 'Worker A', x: 5, y: 34, color: 'brand' },
+  { id: 'h_b', label: 'Worker B', x: 20, y: 34, color: 'brand' },
+  { id: 'h_c', label: 'Worker C', x: 35, y: 34, color: 'brand' },
 ]
 
 const edges: DiagramEdge[] = [

@@ -5,21 +5,21 @@
 import { ArchitectureDiagram, type DiagramLayer, type DiagramNode, type DiagramEdge } from './ArchitectureDiagram'
 
 const layers: DiagramLayer[] = [
-  { id: 'index', label: '索引管道（离线）', y: 2, height: 38, color: 'brand' },
-  { id: 'query', label: '检索管道（在线）', y: 43, height: 38, color: 'emerald' },
+  { id: 'index', label: '索引管道（离线）', y: 2, height: 16, color: 'brand' },
+  { id: 'query', label: '检索管道（在线）', y: 20, height: 16, color: 'emerald' },
 ]
 
 const nodes: DiagramNode[] = [
-  { id: 'docs', label: '文档', x: 3, y: 10, color: 'ink' },
-  { id: 'chunk', label: '分块', x: 20, y: 10, color: 'brand' },
-  { id: 'embed', label: 'Embedding', x: 37, y: 10, color: 'brand' },
-  { id: 'store', label: '向量库', x: 54, y: 10, color: 'brand' },
-  { id: 'question', label: '问题', x: 3, y: 55, color: 'ink' },
-  { id: 'qembed', label: 'Query\nEmbedding', x: 20, y: 55, color: 'emerald' },
-  { id: 'search', label: '检索', x: 37, y: 55, color: 'emerald' },
-  { id: 'rerank', label: 'Rerank', x: 54, y: 55, color: 'emerald' },
-  { id: 'llm', label: 'LLM 生成', x: 71, y: 55, color: 'emerald' },
-  { id: 'answer', label: '回答', x: 88, y: 55, color: 'ink' },
+  { id: 'docs', label: '文档', x: 3, y: 6, color: 'ink' },
+  { id: 'chunk', label: '分块', x: 20, y: 6, color: 'brand' },
+  { id: 'embed', label: 'Embedding', x: 37, y: 6, color: 'brand' },
+  { id: 'store', label: '向量库', x: 54, y: 6, color: 'brand' },
+  { id: 'question', label: '问题', x: 3, y: 26, color: 'ink' },
+  { id: 'qembed', label: 'Query\nEmbedding', x: 20, y: 26, color: 'emerald' },
+  { id: 'search', label: '检索', x: 37, y: 26, color: 'emerald' },
+  { id: 'rerank', label: 'Rerank', x: 54, y: 26, color: 'emerald' },
+  { id: 'llm', label: 'LLM 生成', x: 71, y: 26, color: 'emerald' },
+  { id: 'answer', label: '回答', x: 88, y: 26, color: 'ink' },
 ]
 
 const edges: DiagramEdge[] = [
@@ -42,7 +42,7 @@ export function RAGPipelineDiagram() {
       layers={layers}
       nodes={nodes}
       edges={edges}
-      height={380}
+      height={280}
     />
   )
 }
