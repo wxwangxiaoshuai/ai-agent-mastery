@@ -60,6 +60,10 @@ html.light {
   /* keep nodes crisp */
 }
 
+.diagram-rf .react-flow__pane {
+  cursor: default !important;
+}
+
 .diagram-rf .react-flow__handle {
   pointer-events: none !important;
   opacity: 0 !important;
