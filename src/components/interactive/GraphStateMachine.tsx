@@ -79,10 +79,10 @@ export function GraphStateMachine() {
         {NODES.map((n, idx) => (
           <div key={n} className="flex flex-1 items-center">
             <div
-              className={`flex-1 rounded-lg border px-2 py-2 text-center text-[11px] font-medium transition-all ${
+              className={`flex-1 rounded-lg border px-2 py-2 text-center text-[11px] font-semibold transition-all ${
                 f.node === n
-                  ? 'border-brand-500 bg-brand-500 text-white shadow-sm'
-                  : 'border-ink-700 bg-ink-800/40 text-ink-400'
+                  ? 'interactive-selected shadow-md ring-2 ring-brand-400/40'
+                  : 'border-ink-700 bg-ink-800/40 text-ink-300'
               }`}
             >
               {n}
@@ -97,12 +97,12 @@ export function GraphStateMachine() {
           <button
             key={idx}
             onClick={() => setI(idx)}
-            className={`h-7 w-7 rounded-md border text-[11px] font-medium transition-colors ${
+            className={`h-7 w-7 rounded-md border text-[11px] font-semibold transition-colors ${
               idx === i
-                ? 'border-brand-500 bg-brand-500 text-white'
+                ? 'interactive-selected'
                 : t.kind === 'loop'
-                  ? 'border-amber-500/40 bg-amber-500/15 text-amber-300'
-                  : 'border-ink-700 bg-ink-800/40 text-ink-500'
+                  ? 'border-amber-500/50 bg-amber-500/20 text-amber-300'
+                  : 'border-ink-700 bg-ink-800/40 text-ink-400'
             }`}
             title={t.label}
           >
@@ -137,20 +137,20 @@ ${Object.entries(f.state)
         <button
           onClick={() => setI((x) => Math.max(0, x - 1))}
           disabled={i === 0}
-          className="rounded-lg border border-ink-700 px-3 py-1.5 text-xs text-ink-300 disabled:opacity-40"
+          className="rounded-lg border border-ink-700 px-3 py-1.5 text-xs font-medium text-ink-200 disabled:opacity-40"
         >
           上一步
         </button>
         <button
           onClick={() => setI((x) => Math.min(TRACE.length - 1, x + 1))}
           disabled={i === TRACE.length - 1}
-          className="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600 disabled:opacity-40"
+          className="interactive-selected rounded-lg px-3 py-1.5 text-xs shadow-sm disabled:opacity-40"
         >
           下一步
         </button>
         <button
           onClick={() => setI(0)}
-          className="rounded-lg border border-ink-700 px-3 py-1.5 text-xs text-ink-400"
+          className="rounded-lg border border-ink-700 px-3 py-1.5 text-xs font-medium text-ink-300"
         >
           重置
         </button>
