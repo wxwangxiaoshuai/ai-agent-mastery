@@ -15,6 +15,8 @@ export type DiagramEdgeData = {
   accent?: DiagramColor
   curve?: 'step' | 'bezier'
   animated?: boolean
+  /** Peer / undirected link — no arrowhead */
+  undirected?: boolean
 }
 
 const ACCENT_STROKE: Record<DiagramColor, string> = {
@@ -91,12 +93,14 @@ export function DiagramEdge({
       ? 'rgb(var(--ink-500) / 0.85)'
       : 'rgb(var(--ink-400) / 1)'
 
+  const endMarker = data?.undirected ? undefined : markerEnd
+
   return (
     <>
       <BaseEdge
         id={id}
         path={path}
-        markerEnd={markerEnd}
+        markerEnd={endMarker}
         style={{
           ...style,
           stroke,

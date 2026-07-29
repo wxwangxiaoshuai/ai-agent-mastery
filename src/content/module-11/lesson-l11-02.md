@@ -22,7 +22,7 @@ Supervisor 不做的（"手"）：
 
 **常见错误**：把 supervisor 写成"全能 Agent"——既调度又干活。这样它会上下文爆炸、职责混乱。**supervisor 只负责"想"，下属负责"做"**。这个分工和人类组织一样：主管不替程序员写代码。
 
-Supervisor 模式的核心——任务 → 规划拆解 → 并行派发 Worker → 收集结果 → 综合输出 → 质量检查：
+Supervisor 模式的核心——任务 → 规划拆解 → 并行派发 Worker → 收集结果 → 质量检查 → 综合输出：
 
 ::interactive{type="supervisorPattern"}
 

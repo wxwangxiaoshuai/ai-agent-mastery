@@ -13,11 +13,11 @@ const nodes = [
   g('lane-ci', '第二级 · Pre-push / CI（Gate 4-6）', 0, 130, W, 110, 'emerald'),
   g('lane-archive', '第三级 · 归档前（Gate 7-8）', 0, 260, W, 110, 'violet'),
 
-  n('start', '开始', 16, Y, { color: 'ink', width: 64, height: H, parentId: 'lane-precommit' }),
-  n('g0', 'Gate 0\n类型检查', 100, Y, { color: 'brand', width: 120, height: H, parentId: 'lane-precommit' }),
-  n('g1', 'Gate 1\nLint', 250, Y, { color: 'brand', width: 110, height: H, parentId: 'lane-precommit' }),
-  n('g2', 'Gate 2\n课程校验', 390, Y, { color: 'brand', width: 120, height: H, parentId: 'lane-precommit' }),
-  n('g3', 'Gate 3\n安全扫描', 540, Y, { color: 'brand', width: 120, height: H, parentId: 'lane-precommit' }),
+  n('start', '开始', 16, Y, { color: 'ink', width: 96, height: H, parentId: 'lane-precommit' }),
+  n('g0', 'Gate 0\n类型检查', 130, Y, { color: 'brand', width: 120, height: H, parentId: 'lane-precommit' }),
+  n('g1', 'Gate 1\nLint', 280, Y, { color: 'brand', width: 110, height: H, parentId: 'lane-precommit' }),
+  n('g2', 'Gate 2\n课程校验', 420, Y, { color: 'brand', width: 120, height: H, parentId: 'lane-precommit' }),
+  n('g3', 'Gate 3\n安全扫描', 570, Y, { color: 'brand', width: 120, height: H, parentId: 'lane-precommit' }),
 
   n('g4', 'Gate 4\n测试', 100, Y, { color: 'emerald', width: 120, height: H, parentId: 'lane-ci' }),
   n('g5', 'Gate 5\n构建', 280, Y, { color: 'emerald', width: 120, height: H, parentId: 'lane-ci' }),
@@ -25,7 +25,7 @@ const nodes = [
 
   n('g7', 'Gate 7\n人工确认', 100, Y, { color: 'violet', width: 130, height: H, parentId: 'lane-archive' }),
   n('g8', 'Gate 8\n产物完整性', 300, Y, { color: 'violet', width: 140, height: H, parentId: 'lane-archive' }),
-  n('done', '完成', 500, Y, { color: 'ink', width: 64, height: H, parentId: 'lane-archive' }),
+  n('done', '完成', 500, Y, { color: 'ink', width: 96, height: H, parentId: 'lane-archive' }),
 ]
 
 const edges = [

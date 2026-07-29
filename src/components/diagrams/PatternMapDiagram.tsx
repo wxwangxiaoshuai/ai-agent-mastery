@@ -79,7 +79,7 @@ const nodes = [
   n('fallback', '默认 →\n单次 LLM', COL[4], 320, {
     color: 'emerald',
     size: 'sm',
-    width: 110,
+    width: 100,
     height: 52,
     caption: 'fallback',
   }),

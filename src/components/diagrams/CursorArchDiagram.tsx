@@ -26,18 +26,18 @@ const nodes = [
 
 const edges = [
   e('user', 'editor', { label: '输入' }),
-  e('editor', 'loop', { label: '触发', sourceHandle: 'b', targetHandle: 't' }),
-  e('editor', 'index', { label: '打开仓', dashed: true, sourceHandle: 'b', targetHandle: 't' }),
+  e('editor', 'loop', { label: '触发', fromSide: 's', toSide: 'n' }),
+  e('editor', 'index', { label: '打开仓', dashed: true, fromSide: 's', toSide: 'n' }),
   e('index', 'context', { label: '检索' }),
   e('context', 'loop', { label: '注入' }),
-  e('loop', 'read', { label: '调用', sourceHandle: 'b', targetHandle: 't', id: 'loop-read' }),
-  e('loop', 'write', { label: '调用', sourceHandle: 'b', targetHandle: 't', id: 'loop-write' }),
-  e('loop', 'command', { label: '调用', sourceHandle: 'b', targetHandle: 't', id: 'loop-cmd' }),
+  e('loop', 'read', { label: '调用', fromSide: 's', toSide: 'n', id: 'loop-read' }),
+  e('loop', 'write', { label: '调用', fromSide: 's', toSide: 'n', id: 'loop-write' }),
+  e('loop', 'command', { label: '调用', fromSide: 's', toSide: 'n', id: 'loop-cmd' }),
   e('command', 'sandbox', { label: '隔离执行' }),
-  e('read', 'verify', { label: '结果', dashed: true, sourceHandle: 'b', targetHandle: 't', id: 'read-v' }),
-  e('write', 'verify', { label: '结果', dashed: true, sourceHandle: 'b', targetHandle: 't', id: 'write-v' }),
-  e('sandbox', 'verify', { label: '结果', sourceHandle: 'b', targetHandle: 't' }),
-  e('verify', 'diff', { label: '成功预览', dashed: true, sourceHandle: 't', targetHandle: 'b' }),
+  e('read', 'verify', { label: '结果', dashed: true, fromSide: 's', toSide: 'n', id: 'read-v' }),
+  e('write', 'verify', { label: '结果', dashed: true, fromSide: 's', toSide: 'n', id: 'write-v' }),
+  e('sandbox', 'verify', { label: '结果', fromSide: 's', toSide: 'n' }),
+  e('verify', 'diff', { label: '成功预览', dashed: true, fromSide: 'n', toSide: 's' }),
   e('verify', 'loop', {
     label: '继续/重试',
     dashed: true,
@@ -46,17 +46,22 @@ const edges = [
     accent: 'emerald',
     id: 'verify-loop',
   }),
-  e('loop', 'checkpoint', { label: '保存', dashed: true, sourceHandle: 'b', targetHandle: 't' }),
+  e('loop', 'checkpoint', { label: '保存', dashed: true, fromSide: 's', toSide: 'n' }),
   e('checkpoint', 'rollback', { label: '恢复', dashed: true }),
-  e('write', 'hitl', { label: '敏感写', dashed: true, sourceHandle: 'b', targetHandle: 't', id: 'w-hitl' }),
-  e('command', 'hitl', { label: '敏感命令', dashed: true, sourceHandle: 'b', targetHandle: 't', id: 'c-hitl' }),
+  e('write', 'hitl', { label: '敏感写', dashed: true, fromSide: 's', toSide: 'n', id: 'w-hitl' }),
+  e('command', 'hitl', { label: '敏感命令', dashed: true, fromSide: 's', toSide: 'n', id: 'c-hitl' }),
+  // Close dangling sinks: user closes the loop
+  e('diff', 'user', { label: '接受/拒绝', accent: 'brand', fromSide: 'w', toSide: 'e', id: 'diff-user' }),
+  e('hitl', 'user', { label: '人审结论', dashed: true, fromSide: 'n', toSide: 's', id: 'hitl-user' }),
+  e('hitl', 'loop', { label: '批准继续', dashed: true, fromSide: 'n', toSide: 'e', accent: 'emerald', id: 'hitl-loop' }),
+  e('rollback', 'loop', { label: '回到上一 Checkpoint', dashed: true, fromSide: 'n', toSide: 's', id: 'rb-loop' }),
 ]
 
 export function CursorArchDiagram() {
   return (
     <DiagramShell
       title="Cursor Agent 模式架构拆解"
-      description="用户指令 → 编辑器集成 → Codebase 索引(RAG) → 上下文组装 → Agent Loop → 并行调用读/写/命令（沙箱）→ 验证循环 → Diff 预览或继续/重试回环。Checkpoint 可回滚，敏感操作 HITL 人审。"
+      description="用户指令 → 编辑器 → Codebase 索引 → 上下文组装 → Agent Loop → 读/写/命令（沙箱）→ 验证 → Diff 预览由用户接受/拒绝；Checkpoint 可回滚到 Loop，敏感操作经 HITL 后人审闭环。"
       height={600}
       nodes={nodes}
       edges={edges}
