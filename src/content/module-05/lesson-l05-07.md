@@ -13,6 +13,10 @@ Agent 开发不是每次都从零发明架构。就像 GoF 设计模式之于面
 
 Anthropic 在 2024 年 12 月的 _Building effective agents_ 一文中将 Agent 设计模式归纳为 5 类基础模式。这是业界最权威的分类框架之一，也是本节的主线。
 
+先看一张全景分类图，把所有模式在坐标系里定位——横轴是自主程度，纵轴是任务复杂度：
+
+::interactive{type="patternMap"}
+
 ### 五大基础模式
 
 #### 1. Prompt Chaining：链式串联
@@ -126,10 +130,6 @@ Anthropic 在 2024 年 12 月的 _Building effective agents_ 一文中将 Agent 
 - 翻译 → 质量评估 → 修正 → 再评估
 
 **在课程中的位置**：M5 Reflection + M13 评估体系。
-
-### 模式全景图
-
-::interactive{type="patternMap"}
 
 ### 模式选择决策树
 

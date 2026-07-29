@@ -36,6 +36,13 @@ import { CircuitBreakerDiagram } from './diagrams/CircuitBreakerDiagram'
 import { OpenSpecWorkflowDiagram } from './diagrams/OpenSpecWorkflowDiagram'
 import { HarnessGatePipelineDiagram } from './diagrams/HarnessGatePipelineDiagram'
 import { PatternMapDiagram } from './diagrams/PatternMapDiagram'
+import { MemoryLayersDiagram } from './diagrams/MemoryLayersDiagram'
+import { LangGraphStateDiagram } from './diagrams/LangGraphStateDiagram'
+import { HITLFlowDiagram } from './diagrams/HITLFlowDiagram'
+import { MultiAgentTopologyDiagram } from './diagrams/MultiAgentTopologyDiagram'
+import { SupervisorPatternDiagram } from './diagrams/SupervisorPatternDiagram'
+import { DeploymentArchDiagram } from './diagrams/DeploymentArchDiagram'
+import { AgentPlatformDiagram } from './diagrams/AgentPlatformDiagram'
 
 const componentMap: Record<string, React.ComponentType<Record<string, string>>> = {
   tokenizer: TokenizerDemo,
@@ -71,6 +78,13 @@ const componentMap: Record<string, React.ComponentType<Record<string, string>>> 
   openSpecWorkflow: OpenSpecWorkflowDiagram,
   harnessGatePipeline: HarnessGatePipelineDiagram,
   patternMap: PatternMapDiagram,
+  memoryLayersDiagram: MemoryLayersDiagram,
+  langGraphState: LangGraphStateDiagram,
+  hitlFlow: HITLFlowDiagram,
+  multiAgentTopologyDiagram: MultiAgentTopologyDiagram,
+  supervisorPattern: SupervisorPatternDiagram,
+  deploymentArch: DeploymentArchDiagram,
+  agentPlatform: AgentPlatformDiagram,
 }
 
 function parseInteractiveDirective(

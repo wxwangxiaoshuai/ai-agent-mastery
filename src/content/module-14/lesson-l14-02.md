@@ -156,6 +156,85 @@ AI 编程助手通用架构：
 
 **这些模式对应你学过的**：RAG(M4)、上下文工程(M3)、Agent Loop(M5)、工具(M6)、沙箱(M9)、HITL(L10-03)。**全书技术在一个产品里全用上了**——这是为什么编程助手是好教材。
 
+### 动手实现：Codebase 索引的最小原型
+
+Cursor 的 Codebase 索引是 RAG 在代码场景的落地——用 embedding 索引整个仓库，按需检索。下面是一个最小原型，展示索引构建和符号级检索：
+
+```python
+"""codebase_index.py —— AI 编程助手的 Codebase 索引最小原型"""
+import ast
+import os
+from pathlib import Path
+
+# 简化版：用 ast 提取函数/类定义，按文件路径分块
+# 生产环境会用 tree-sitter 做更精确的语法解析 + embedding 索引
+
+def extract_symbols(file_path: str) -> list[dict]:
+    """从 Python 文件中提取函数和类定义作为"代码块"。"""
+    with open(file_path) as f:
+        try:
+            tree = ast.parse(f.read())
+        except SyntaxError:
+            return []
+
+    symbols = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            symbols.append({
+                "type": "function",
+                "name": node.name,
+                "file": file_path,
+                "lineno": node.lineno,
+                "docstring": ast.get_docstring(node) or "",
+            })
+        elif isinstance(node, ast.ClassDef):
+            symbols.append({
+                "type": "class",
+                "name": node.name,
+                "file": file_path,
+                "lineno": node.lineno,
+                "docstring": ast.get_docstring(node) or "",
+                "methods": [m.name for m in node.body if isinstance(m, ast.FunctionDef)],
+            })
+    return symbols
+
+def build_index(root_dir: str) -> dict[str, list[dict]]:
+    """遍历目录，为每个 .py 文件提取符号，构建索引。"""
+    index: dict[str, list[dict]] = {}
+    for path in Path(root_dir).rglob("*.py"):
+        key = str(path.relative_to(root_dir))
+        symbols = extract_symbols(str(path))
+        if symbols:
+            index[key] = symbols
+    return index
+
+def search_index(index: dict, query: str) -> list[dict]:
+    """
+    简化版检索：按函数/类名模糊匹配。
+    生产环境会做 embedding 语义检索 + BM25 关键词混合。
+    """
+    results = []
+    for file_path, symbols in index.items():
+        for sym in symbols:
+            if query.lower() in sym["name"].lower():
+                results.append({**sym, "file": file_path})
+    return sorted(results, key=lambda s: len(s["name"]))  # 精确匹配优先
+
+# 用法
+idx = build_index("./my_project")
+hits = search_index(idx, "calculate")
+for h in hits[:5]:
+    print(f"{h['type']} {h['name']} ({h['file']}:{h['lineno']})")
+```
+
+这个原型展示了 AI 编程助手索引层的三个核心设计：
+
+1. **语法感知分块**：不是按固定行数切，而是按函数/类边界——这是 M4 分块策略在代码场景的特化
+2. **离线构建 + 增量更新**：遍历一次构建索引，文件变更时只更新变更文件
+3. **符号级检索**：返回的不是"文件"而是"函数/类"，让 AI 拿到精准上下文而非整文件
+
+真实的 Cursor/Copilot 在这个基础上加了 embedding 语义检索（"找个处理用户认证的函数"）、跨文件引用图、以及增量索引（只重解析变更文件）。
+
 ### 拆解的边界：别把推测当事实
 
 重要提醒——**这些都是基于公开行为和常识的架构推测，不是官方实现**：

@@ -27,7 +27,9 @@ Agent        →  自主循环，LLM 决定下一步做什么（模型决定流�
 
 ### Agent 的核心循环：感知 → 推理 → 行动
 
-所有 Agent 的内核都是同一个循环：
+所有 Agent 的内核都是同一个循环。
+
+::interactive{type="reActLoop"}
 
 ```
 while not done:

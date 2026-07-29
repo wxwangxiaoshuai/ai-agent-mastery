@@ -4,6 +4,10 @@ L17-13 和 L17-14 讲的是用 OpenSpec + Superpowers 做开发。但同样的�
 
 写代码你有判断力，AI 写的代码好不好你一眼能看出来。但竞品分析、定价建模、合规检查——这些你可能只做过一两次，甚至从没做过。这时候 AI 的作用不是"帮你写得更快"，是"帮你想得更全"。
 
+先用设计模式选择器感受一下决策树交互——同样的交互逻辑，在产品化决策中同样适用：输入你的场景，AI 帮你梳理决策路径：
+
+::interactive{type="patternSelector"}
+
 ### 三个场景：AI 辅助产品化决策
 
 #### 场景一：竞品扫描与需求验证
@@ -126,6 +130,46 @@ L18-06 讲了合规的基础知识。AI 可以帮你生成一份**针对你的�
 ```
 
 **注意**：定价分析的最终决定权在人。AI 提供的是"系统性地列出所有需要考虑的因素"，不是"告诉你该定多少钱"。定价涉及你的品牌定位、用户心理、竞争策略——这些 AI 不会懂。
+
+### 让 AI 帮你算单位经济中的关键数字
+
+AI 可以帮你生成定价分析脚本，但你必须验算。以下是一个让 AI 生成、你来验算的典型脚本：
+
+```python
+# 让 AI 帮你生成这个脚本的框架，然后自己验算每个数字
+def pricing_breakeven(
+    monthly_price: float,       # 订阅价
+    cost_per_call: float,       # 单次调用成本
+    avg_calls_per_user: float,  # 用户月均调用次数
+    fixed_monthly_cost: float,  # 月固定成本（服务器/域名/工具）
+    payment_fee_pct: float = 0.03,  # 支付抽成
+) -> dict:
+    """计算定价方案的盈亏平衡点。"""
+    revenue_per_user = monthly_price * (1 - payment_fee_pct)
+    cost_per_user = cost_per_call * avg_calls_per_user
+    gross_margin_per_user = revenue_per_user - cost_per_user
+
+    if gross_margin_per_user <= 0:
+        return {
+            "verdict": "不可行",
+            "reason": f"每用户毛利 ${gross_margin_per_user:.2f} ≤ 0，"
+                      f"用户越多亏越多。需涨价或降成本。",
+            "breakeven_users": None,
+        }
+
+    breakeven_users = fixed_monthly_cost / gross_margin_per_user
+
+    return {
+        "verdict": "可行" if breakeven_users < 100 else "需要更大规模",
+        "revenue_per_user": round(revenue_per_user, 2),
+        "cost_per_user": round(cost_per_user, 2),
+        "gross_margin_per_user": round(gross_margin_per_user, 2),
+        "breakeven_users": round(breakeven_users, 0),
+        "monthly_profit_at_100_users": round(gross_margin_per_user * 100 - fixed_monthly_cost, 2),
+    }
+```
+
+**AI 可能犯的错**：漏掉支付抽成、把月成本当年成本、用错单位。这些错误在你验算时一眼就能看出来——但如果你不验算就把数字写进 proposal，后面会很难发现。
 
 ### 三个原则
 

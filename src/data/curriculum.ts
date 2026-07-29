@@ -34,7 +34,7 @@ export const curriculum: Curriculum = {
       subtitle: '理解大模型的本质，搭建你的第一个 AI 应用',
       description:
         '不讲玄学，只讲原理与工程。这一章建立你对大语言模型的工作机制的工程化认知：' +
-        'Token、上下文窗口、概率采样、温度参数。并用 Python/TS 调用真实 LLM API，迈出 Agent 开发的第一步。',
+        'Token、上下文窗口、概率采样、温度参数。并用 Python 调用真实 LLM API，迈出 Agent 开发的第一步。',
       difficulty: '入门',
       hours: 8,
       icon: '🧱',
@@ -74,7 +74,7 @@ export const curriculum: Curriculum = {
           id: 'L01-03',
           title: '动手调用 LLM API',
           summary:
-            '用 OpenAI / Anthropic SDK 跑通你的第一次模型调用，打通开发环境。本节附一份 TypeScript 平行实现，供前端背景的同学对照；其余章节统一以 Python 为主线。',
+            '用 OpenAI / Anthropic SDK 跑通你的第一次模型调用，打通开发环境。统一以 Python 为主线。',
           duration: 50,
           type: '实战',
           objectives: [
@@ -83,7 +83,7 @@ export const curriculum: Curriculum = {
             '处理速率限制、重试与超时',
             '实现一个最小的命令行聊天程序',
           ],
-          tags: ['OpenAI SDK', 'Anthropic SDK', 'Streaming', 'Python', 'TypeScript'],
+          tags: ['OpenAI SDK', 'Anthropic SDK', 'Streaming', 'Python'],
           prerequisites: ['L01-01', 'L01-02'],
           competency: 'API 调用能力',
         },
@@ -116,7 +116,7 @@ export const curriculum: Curriculum = {
           '对话历史本地存储',
           '流式打字效果',
         ],
-        stack: ['Python/TS', 'OpenAI SDK', 'JSON 存储'],
+        stack: ['Python', 'OpenAI SDK', 'JSON 存储'],
       },
     },
 
@@ -2173,7 +2173,7 @@ export const curriculum: Curriculum = {
           title: 'AI Coding 工作流框架（上）：OpenSpec 规格驱动 + Superpowers 流程控制',
           summary: 'OpenSpec 定义"做什么"，Superpowers 指导"怎么做"，Harness 负责"谁检查"。',
           duration: 50,
-          type: '实战',
+          type: '理论',
           objectives: [
             '掌握 OpenSpec 四步工作流：explore → propose → apply → archive',
             '理解 Superpowers 14 个可组合 skills 的核心用法',
@@ -2188,7 +2188,7 @@ export const curriculum: Curriculum = {
           title: 'AI Coding 工作流框架（下）：Harness 质量门禁——三级防线让 AI 产出可控',
           summary: '在 AI 产出代码的每一个关键节点自动触发检查，不通过就阻断。Gate 0-8 全流程。',
           duration: 75,
-          type: '实战',
+          type: '理论',
           objectives: [
             '理解 Harness 门禁的 Gate 0-8 全流程及其在 OpenSpec+Superpowers 工作流中的位置',
             '掌握 pre-commit / pre-push / 归档前三级门禁的配置',
@@ -2486,7 +2486,7 @@ export const curriculum: Curriculum = {
           title: '用 AI Skills 驱动增长运营',
           summary: '把 OpenSpec + Superpowers 工作流用在内容营销、增长实验与用户反馈分析上。',
           duration: 45,
-          type: '实战',
+          type: '理论',
           objectives: [
             '用 AI 做关键词研究与内容日历规划',
             '用 Superpowers brainstorming 发散增长假设并设计实验',

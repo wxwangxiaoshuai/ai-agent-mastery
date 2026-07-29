@@ -2,6 +2,10 @@
 
 前面 15 个模块，Agent 的能力都靠"调用 API/工具"扩展。但有个巨大盲区——**那些没有 API 的软件**：老旧内部系统、桌面软件、需点点的网页操作。Computer Use 换了个思路：不靠 API，**直接看屏幕、点鼠标、敲键盘**，像人一样操作 GUI。这是 Agent 能力边界的重大扩展，也是可靠性挑战的深水区。
 
+先看一眼多模态对比面板——Computer Use 本质上是多模态输入（屏幕截图）加工具调用（鼠标/键盘），理解多模态的输入输出差异能帮你理解 Computer Use 的可靠性挑战：
+
+::interactive{type="multimodalDemo"}
+
 ### 从"调 API"到"操作 GUI"
 
 先理解 Computer Use 解决了 API 时代够不着的场景：

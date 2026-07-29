@@ -10,6 +10,7 @@ const navItems = [
   { to: '/curriculum', label: '课程大纲', end: false },
   { to: '/roadmap', label: '学习路线', end: false },
   { to: '/projects', label: '实战项目', end: false },
+  { to: '/faq', label: 'FAQ', end: false },
 ]
 
 function Logo() {

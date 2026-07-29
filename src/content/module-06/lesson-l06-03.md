@@ -2,6 +2,10 @@
 
 M5 的 ReAct Agent 每次只调一个工具——搜索完再搜索，串行执行。但很多场景中，多个工具调用之间没有依赖关系，可以**并行执行**，大幅缩短 Agent 的响应时间。
 
+先看 Function Calling 的完整调用链时序——从用户消息到模型返回 tool_calls，再到执行工具、回传结果、模型最终回答：
+
+::interactive{type="functionCalling"}
+
 ### 串行 vs 并行
 
 ```

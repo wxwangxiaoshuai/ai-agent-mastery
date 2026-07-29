@@ -186,6 +186,73 @@ def test_limit_is_capped():
 
 **验收标准**：规格写完后，AI 一轮生成的实现能通过 80% 以上的测试。通不过说明规格还有歧义，回去看是哪一条没写清楚——这个反馈比代码本身更有价值。
 
+### 规格的自检工具：用 AST 检查关键约束
+
+规格里的"不做什么"和"约束"是给 AI 看的，但 AI 可能忽略。这里给一个轻量自检脚本——不替代测试，但能在合并前抓到 AI 最常犯的三类"越过约束"的错：
+
+```python
+"""scripts/check_spec_constraints.py —— 检查实现是否遵守了规格中的关键约束"""
+
+import ast
+import sys
+from pathlib import Path
+
+def check_file(filepath: Path, constraints: dict) -> list[str]:
+    """检查单个文件是否违反规格约束。"""
+    issues = []
+    tree = ast.parse(filepath.read_text(encoding="utf-8"))
+
+    # 约束1：不改表结构 → 检查是否有 ALTER TABLE / DROP COLUMN
+    if constraints.get("no_schema_change"):
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                if "ALTER TABLE" in node.value or "DROP COLUMN" in node.value:
+                    issues.append(f"{filepath}:{node.lineno}: 疑似修改表结构，规格要求不改表")
+
+    # 约束2：不引入新依赖 → 检查是否有直接 import 非标准库
+    if constraints.get("no_new_deps"):
+        stdlib = {"os", "sys", "json", "re", "pathlib", "datetime", "typing", "collections"}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name.split(".")[0] not in stdlib:
+                        # 只告警，不做最终判断——标准库很大
+                        issues.append(f"{filepath}:{node.lineno}: import {alias.name} —— 是否为新依赖？")
+
+    # 约束3：不出现特定模式（如裸 except）
+    if constraints.get("no_bare_except"):
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ExceptHandler) and node.type is None:
+                issues.append(f"{filepath}:{node.lineno}: 裸 except，规格要求指定异常类型")
+
+    return issues
+
+def main():
+    constraints = {
+        "no_schema_change": True,
+        "no_new_deps": True,
+        "no_bare_except": True,
+    }
+
+    all_issues = []
+    for f in Path("src").rglob("*.py"):
+        all_issues.extend(check_file(f, constraints))
+
+    if all_issues:
+        print("规格约束检查未通过：")
+        for issue in all_issues:
+            print(f"  {issue}")
+        sys.exit(1)
+
+    print("规格约束检查通过。")
+    sys.exit(0)
+
+if __name__ == "__main__":
+    main()
+```
+
+这个脚本解决的是"规格写了但 AI 没遵守"的问题——pre-commit 时跑一遍，让机器帮你做 AI 最容易忽略的检查。和 L17-01 的边界检查脚本互补：边界检查盯"红线代码"，规格约束检查盯"AI 产出的合规性"。
+
 ### 要点总结
 
 - **对话式开发的问题不是效率，是没有任何地方记录"它该做什么"**。来回修正五轮后，代码是补丁摞补丁的，而且不可回溯。

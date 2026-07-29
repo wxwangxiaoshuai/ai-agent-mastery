@@ -6,6 +6,10 @@ M3 讲过上下文工程——System Prompt、Context 组装、Token 预算。�
 
 ::interactive{type="memoryLayers"}
 
+记忆四层路由的静态架构图——数据从产生到存储，每一层有明确的容量上限和存活时间：
+
+::interactive{type="memoryLayersDiagram"}
+
 ### 从人类的记忆说起
 
 人脑不是一块硬盘，而是多套独立的记忆系统协同工作。认知科学把人类记忆分成几类，理解它们能帮你设计 Agent 的记忆架构：

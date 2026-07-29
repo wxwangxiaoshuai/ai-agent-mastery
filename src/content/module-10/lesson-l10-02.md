@@ -6,6 +6,10 @@ L10-01 说所有框架底层都可画成"状态图"。LangGraph 直接把这张�
 
 ::interactive{type="graphOrchestrator"}
 
+LangGraph 的静态结构——节点、条件边、循环、checkpoint 如何构成一个完整的 Agent 执行图：
+
+::interactive{type="langGraphState"}
+
 ### LangGraph 的三个核心概念
 
 上手前先建立模型。LangGraph 一切围绕三件事：

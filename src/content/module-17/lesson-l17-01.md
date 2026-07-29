@@ -149,6 +149,56 @@ AI 生成的代码有一个特点：**它几乎总是能跑**。这比"跑不了
 
 **验收标准**：你的"红线"那一栏不是空的。如果你觉得没有任何代码是红线，说明你的项目还没到有人会因为它受损失的阶段——或者你低估了风险。
 
+### 用代码检查委托边界：一个规则验证脚本
+
+光写在 `AI_BOUNDARIES.md` 里容易忘。写一个简单的规则检查脚本，在 pre-commit 时自动触发——让机器帮你守住你写下的边界：
+
+```python
+"""scripts/check_boundaries.py —— 检查代码是否越过了 AI_BOUNDARIES.md 定下的红线"""
+
+import sys
+from pathlib import Path
+
+# 红线目录：这些目录下的文件必须自己写，检出 AI 生成痕迹则告警
+REDLINE_DIRS = ["billing/", "auth/", "permissions/"]
+
+# AI 常犯的坏习惯，在红线目录中出现则告警
+REDLINE_PATTERNS = [
+    ("# TODO: 完善错误处理", "占位注释——在红线代码里不允许"),
+    ("except Exception:", "裸 except Exception——请指定具体异常类型"),
+    ("import ", "疑似引入新依赖——请确认是否在允许列表"),
+]
+
+def check_file(filepath: Path) -> list[str]:
+    issues = []
+    content = filepath.read_text(encoding="utf-8")
+    for pattern, msg in REDLINE_PATTERNS:
+        if pattern in content:
+            issues.append(f"  {filepath}: {msg} (匹配: {pattern})")
+    return issues
+
+def main():
+    all_issues = []
+    for red_dir in REDLINE_DIRS:
+        for f in Path(red_dir).rglob("*.py"):
+            all_issues.extend(check_file(f))
+
+    if all_issues:
+        print("以下红线目录文件存在可疑内容：")
+        for issue in all_issues:
+            print(issue)
+        print("红线代码必须自己写，请检查上述问题后再提交。")
+        sys.exit(1)
+
+    print("边界检查通过。")
+    sys.exit(0)
+
+if __name__ == "__main__":
+    main()
+```
+
+这个脚本放在 `.husky/pre-commit` 里（L17-14 会讲怎么配置），每次提交前自动跑。**比贴在墙上的规则可靠**——墙上的规则会在赶进度时被忽略，pre-commit 的阻断不会。
+
 ### 要点总结
 
 - **AI Coding 的价值不是写得快，是让一个人维护得住更大的代码量**——所以判断标准应该是维护成本，不是生成速度。

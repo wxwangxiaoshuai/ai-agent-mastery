@@ -6,6 +6,10 @@ M10 你学会用一个或多个 Agent 编排复杂控制流。但一旦 Agent �
 
 ::interactive{type="topology"}
 
+四种拓扑的静态对比图——链式（顺序传递）、星型（中心 Hub）、网状（全连接）、层级（Supervisor→Workers）：
+
+::interactive{type="multiAgentTopologyDiagram"}
+
 ### 单 Agent 的天花板
 
 先说清为什么需要多个 Agent。单个 Agent 不是不行，是有上限：

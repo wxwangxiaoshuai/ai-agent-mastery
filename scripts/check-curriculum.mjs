@@ -133,7 +133,10 @@ const lessonFiles = contentFiles.filter((f) => f.isLesson)
       if (!componentMap[type]) {
         err('C2', `${f.rel} 引用了未注册的组件 type="${type}"`)
         bad++
-      } else if (!existsSync(join(ROOT, `src/components/interactive/${componentMap[type]}.tsx`))) {
+      } else if (
+        !existsSync(join(ROOT, `src/components/interactive/${componentMap[type]}.tsx`)) &&
+        !existsSync(join(ROOT, `src/components/diagrams/${componentMap[type]}.tsx`))
+      ) {
         err('C2', `${f.rel} 的 type="${type}" 映射到不存在的组件文件 ${componentMap[type]}.tsx`)
         bad++
       }

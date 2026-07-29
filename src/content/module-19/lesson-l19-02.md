@@ -138,6 +138,41 @@ https://yourapp.com/?from=blog-meeting-todo
 
 理想的顺序是：上线第一天就开始写，同时用一对一做冷启动。半年后，一对一带来的用户和内容带来的用户会开始交叉。
 
+### 用最小成本追踪内容效果
+
+不需要复杂的分析工具。一个简单的数据库表 + 来源标记就能告诉你哪篇文章在产生价值：
+
+```python
+# 在你的应用里加一个极简的内容归因追踪
+from dataclasses import dataclass
+from datetime import datetime
+
+@dataclass
+class ContentAttribution:
+    slug: str          # 文章标识，如 "meeting-todo-guide"
+    source: str        # 来源标记参数 ?from= 的值
+    visitor_count: int
+    signup_count: int
+    paying_count: int
+
+# 在注册路由里，从 URL 参数读取来源
+# GET /signup?from=blog-meeting-todo
+# → 存入 user 表的 acquisition_source 字段
+# → 每月跑一次归因查询：
+
+# SELECT acquisition_source, COUNT(*) AS users, SUM(lifetime_value) AS ltv
+# FROM users
+# WHERE created_at >= '2026-01-01'
+# GROUP BY acquisition_source
+# ORDER BY ltv DESC
+```
+
+三个字段就够了：`slug`（哪篇文章）、`signup_count`（带来多少注册）、`paying_count`（最终多少付费）。每月花五分钟看一遍，你就能知道：
+
+- 哪篇文章的转化率最高——同类型值得再写
+- 哪篇文章带来了最多注册但零付费——流量质量有问题，关键词意图可能偏了
+- 哪篇文章你以为是爆款但根本没带来注册——标题和内容之间的 gap 可能很大
+
 ### 动手 5 分钟
 
 规划你的第一批内容，重点是意图而不是关键词。

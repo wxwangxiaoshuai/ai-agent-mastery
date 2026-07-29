@@ -94,6 +94,13 @@ pnpm build        # 构建（check + tsc + vite）
 | openSpecWorkflow | OpenSpecWorkflowDiagram | OpenSpec + Superpowers 工作流全貌 |
 | harnessGatePipeline | HarnessGatePipelineDiagram | Harness 门禁管道全景图 |
 | patternMap | PatternMapDiagram | Agent 设计模式全景分类图 |
+| memoryLayersDiagram | MemoryLayersDiagram | 记忆四层路由静态图 |
+| langGraphState | LangGraphStateDiagram | LangGraph 状态图静态图 |
+| hitlFlow | HITLFlowDiagram | Human-in-the-Loop 中断流程 |
+| multiAgentTopologyDiagram | MultiAgentTopologyDiagram | 四种多 Agent 拓扑对比图 |
+| supervisorPattern | SupervisorPatternDiagram | Supervisor 模式消息流 |
+| deploymentArch | DeploymentArchDiagram | Agent 生产部署架构图 |
+| agentPlatform | AgentPlatformDiagram | Agent 平台分层架构图 |
 
 > 此表必须与 `src/components/MarkdownRenderer.tsx` 的 `componentMap` 保持一致，
 > 由 `pnpm check` 的 C10 检查项守护。**不要在此表登记尚未实现的组件**——
@@ -148,8 +155,8 @@ src/
 - 课程没有视频，全是图文+交互组件
 - 所有文本使用中文
 - **代码主线是 Python**。Agent 生态在 Python 侧完整得多，课程重点是架构与工程而非语言。
-  只有两处例外：L01-03 给一份 TypeScript 平行实现供前端同学对照；前端集成/UI 相关内容用 TypeScript/React。
-  不要在任何地方承诺"双语言" —— 全站 392 个 Python 代码块 vs 4 个 TypeScript，
+  只有以下例外使用 TypeScript/React：前端集成/UI 相关内容（L17-05、L17-06）、桌面端 Electron 章节（L17-11、L17-12）。
+  不要在任何地方承诺"双语言" —— 全站 438 个 Python 代码块 vs 16 个 TypeScript，
   假装双语言比坦白单语言伤害更大。C15 会守住这条。
 - 不要使用 `@apply` 引用 CSS 变量颜色（Tailwind 3 会 bake 值）
 - 亮色模式下代码高亮色在 `index.css` 中单独覆盖

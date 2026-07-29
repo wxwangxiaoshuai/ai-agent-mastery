@@ -158,6 +158,57 @@
 
 **验收标准**：那三个失败原因里，至少有一个是你之前没认真想过的。如果三个你都早想过并且都有答案，说明你的提问还是太温和了——再逼一轮。
 
+### 用市场数据做验证：一个最小竞品探测器
+
+竞品调研最怕 AI 编造信息。这里给一个"用真实数据验证假设"的最小脚本——不依赖 AI，直接抓公开数据做决策参考：
+
+```python
+"""scripts/competitor_snapshot.py —— 竞品公开数据快照，辅助可行性判断"""
+import json
+import time
+from urllib.request import Request, urlopen
+from pathlib import Path
+
+# 目标竞品主页（你手动确定的真实 URL，不是 AI 生成的）
+COMPETITORS = [
+    {"name": "Readwise", "url": "https://readwise.io"},
+    {"name": "Notion", "url": "https://notion.so"},
+    # 这里填你真实查到的竞品 URL
+]
+
+def check_site(name: str, url: str) -> dict:
+    """检查一个竞品站点是否存活、返回什么状态码。"""
+    try:
+        req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        resp = urlopen(req, timeout=10)
+        return {"name": name, "url": url, "status": resp.status, "alive": True}
+    except Exception as e:
+        return {"name": name, "url": url, "status": 0, "alive": False, "error": str(e)}
+
+def main():
+    results = [check_site(c["name"], c["url"]) for c in COMPETITORS]
+
+    alive = [r for r in results if r["alive"]]
+    dead = [r for r in results if not r["alive"]]
+
+    print(f"竞品快照 ({time.strftime('%Y-%m-%d')}):")
+    print(f"  存活: {len(alive)}/{len(results)}")
+    print(f"  未响应: {len(dead)}/{len(results)}")
+
+    for r in dead:
+        print(f"  ⚠ {r['name']} ({r['url']}): {r.get('error', 'unknown')}")
+
+    # 保存快照，三个月后可以对比看哪些竞品倒了（市场变化信号）
+    snapshot_path = Path("docs/competitor_snapshot.json")
+    snapshot_path.parent.mkdir(exist_ok=True)
+    snapshot_path.write_text(json.dumps(results, indent=2, ensure_ascii=False))
+
+if __name__ == "__main__":
+    main()
+```
+
+这个脚本的价值不是"自动化"——跑一次只要 5 秒。价值在于**它只记录可核实的事实**（站点是否存活、返回什么状态码），不包含任何推测。三个月后回来看这张快照，你能看到客观的市场变化，而不是自己脑补的"我觉得他们做得不好"。
+
 ### 要点总结
 
 - **"你觉得怎么样"是征求认可的问题，模型会附和。** 换成征求反对（指定挑刺角色）、先否后肯、或者把判断题改成可核实的信息题。

@@ -165,7 +165,9 @@ def test_customer_service_safe():
 
 ### 测试覆盖率与质量门禁
 
-Agent 测试也要量化——覆盖率与门禁：
+Agent 测试也要量化——覆盖率与门禁。用下面的配置器动手调整各层门禁的阈值，感受不同严格程度对通过率的影响：
+
+::interactive{type="gateConfigurator"}
 
 ```yaml
 # 覆盖率：单元测试的代码行 + 关键路径覆盖

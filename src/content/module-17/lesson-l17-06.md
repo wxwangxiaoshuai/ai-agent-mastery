@@ -1,5 +1,7 @@
 ## AI 生成生产级前端 UI（下）：状态、可访问性与响应式
 
+> 本课标注"前端特例"——涉及 UI 组件与状态管理，使用 TypeScript/React。
+
 上一节把「长什么样」约束住了。这一节处理更难的一半：**同一个界面在不同情况下长什么样**。
 
 一个列表页，AI 默认给你的是「有 20 条数据、网络正常、鼠标可用、1440px 宽」的那一格。剩下几十格它不会主动想，而用户恰恰是在那几十格里骂人的。
@@ -182,6 +184,81 @@ switch (state.status) {
 3. 拔掉鼠标，只用 Tab 和 Enter 走一遍这个页面的主流程，记录卡住的位置。
 
 **验收标准**：你能说出这个页面有多少格状态、其中多少格是你**主动决定不做**的（而不是没想到）；键盘走查至少暴露 1 处此前没注意到的问题。如果键盘走查一路顺畅，多半是你走得太快 —— 重点看焦点在对话框和下拉菜单里的行为。
+
+### 用 Playwright 做基础可访问性自动检查
+
+键盘走查和视觉检查是人的事，但几条硬规则可以自动化。下面是一个最小 Playwright 脚本，30 秒跑完，能拦住 AI 产出的低级 a11y 问题：
+
+```typescript
+// tests/a11y-smoke.spec.ts —— 每次生成 UI 后跑一遍
+import { test, expect } from '@playwright/test';
+
+test.describe('可访问性冒烟检查', () => {
+  test('所有按钮都有可区分的文本或 aria-label', async ({ page }) => {
+    await page.goto('/');
+    const buttons = page.locator('button');
+    const count = await buttons.count();
+    for (let i = 0; i < count; i++) {
+      const btn = buttons.nth(i);
+      const text = (await btn.textContent()) || '';
+      const ariaLabel = await btn.getAttribute('aria-label');
+      const title = await btn.getAttribute('title');
+      // 纯图标按钮必须有 aria-label 或 title
+      if (text.trim() === '' && !ariaLabel && !title) {
+        const html = await btn.evaluate(el => el.outerHTML);
+        console.log(`无文本且无 aria-label 的按钮: ${html.substring(0, 100)}`);
+      }
+    }
+  });
+
+  test('375px 宽度下无横向滚动', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.goto('/');
+    const hasHorizontalScroll = await page.evaluate(() => {
+      return document.documentElement.scrollWidth > document.documentElement.clientWidth;
+    });
+    expect(hasHorizontalScroll).toBe(false);
+  });
+
+  test('所有图片有 alt 文本', async ({ page }) => {
+    await page.goto('/');
+    const images = page.locator('img');
+    const count = await images.count();
+    for (let i = 0; i < count; i++) {
+      const alt = await images.nth(i).getAttribute('alt');
+      // alt 可以为空字符串（装饰性图片），但不能缺失
+      expect(alt, `img[${i}] 缺少 alt 属性`).not.toBeNull();
+    }
+  });
+
+  test('焦点样式没有被移除', async ({ page }) => {
+    await page.goto('/');
+    // 检查全局样式是否禁用了 outline
+    const hasOutlineNone = await page.evaluate(() => {
+      const styles = document.querySelectorAll('style');
+      for (const s of styles) {
+        if (s.textContent?.includes('outline: none') || s.textContent?.includes('outline:none')) {
+          return true;
+        }
+      }
+      return false;
+    });
+    // 有 outline: none 但没提供 focus-visible 替代 = 违规
+    if (hasOutlineNone) {
+      const hasFocusVisible = await page.evaluate(() => {
+        const styles = document.querySelectorAll('style');
+        for (const s of styles) {
+          if (s.textContent?.includes(':focus-visible')) return true;
+        }
+        return false;
+      });
+      expect(hasFocusVisible, 'outline: none 但没有 focus-visible 替代样式').toBe(true);
+    }
+  });
+});
+```
+
+这组测试不替代人工走查——它关注的是 AI 生成代码最常见的 a11y 漏法：无标签按钮、375px 撑破、图片缺 alt、焦点被移除。四条都是硬规则，AI 不该犯，但会犯。跑一次 30 秒，拦住了就不用人工看了。
 
 ### 要点总结
 

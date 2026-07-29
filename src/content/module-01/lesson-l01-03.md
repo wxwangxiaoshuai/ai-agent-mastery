@@ -3,24 +3,83 @@
 这一节调通你的第一个 LLM API 调用。目标是跑通**同步调用**和**流式调用**两种模式，覆盖 OpenAI 和 Anthropic 两家主流 API，并建立一个最小的命令行聊天程序。
 
 > **关于语言**：本课程的代码主线是 **Python** —— Agent 领域的框架、SDK、评测工具在 Python 侧生态完整得多，
-> 而本课程的重点是 Agent 的架构与工程，不是语言本身。这一节额外给出一份 TypeScript 平行实现，
-> 让前端背景的同学能把概念映射过去；后续章节除了前端集成相关的部分，都只给 Python。
-> 如果你只写 TypeScript，读 Python 示例不会有障碍 —— 它们刻意写得直白，没有语言技巧。
+> 而本课程的重点是 Agent 的架构与工程，不是语言本身。后续章节除了前端集成相关的部分，都只给 Python。
 
 ### 环境准备
 
-**Python 环境**：
+**Python 版本**：建议 Python 3.11+，本课程所有代码均在此版本下验证。Agent 生态的核心库（LangChain、LangGraph、MCP SDK）都要求 3.10+。
+
+**虚拟环境**：不要直接在系统 Python 里装依赖。用虚拟环境隔离项目依赖，避免版本冲突：
 
 ```bash
-pip install openai anthropic python-dotenv
+# 方式一：Python 内置 venv（无需额外安装）
+python3 -m venv .venv
+source .venv/bin/activate  # macOS/Linux
+# .venv\Scripts\activate   # Windows
+
+# 方式二：uv（推荐，更快更现代）
+# 安装 uv：curl -LsSf https://astral.sh/uv/install.sh | sh
+uv venv
+source .venv/bin/activate
 ```
 
-**TypeScript 环境**：
+**依赖管理**：
 
 ```bash
-npm install openai @anthropic-ai/sdk dotenv
-# 或
-pnpm add openai @anthropic-ai/sdk dotenv
+# 方式一：pip + requirements.txt（传统）
+pip install openai anthropic python-dotenv
+
+# 方式二：uv + pyproject.toml（推荐）
+uv pip install openai anthropic python-dotenv
+```
+
+如果使用 uv + pyproject.toml 管理项目：
+
+```toml
+# pyproject.toml
+[project]
+name = "my-first-agent"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.0",
+    "anthropic>=0.30",
+    "python-dotenv>=1.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.5",
+]
+```
+
+```bash
+uv sync           # 安装所有依赖
+uv sync --dev     # 含开发依赖
+```
+
+**项目结构建议**：从第一天就养成好习惯，不要把所有代码堆在一个文件里：
+
+```
+my-first-agent/
+  .venv/              # 虚拟环境（不提交）
+  .env                # API Key（不提交）
+  .gitignore
+  pyproject.toml      # 项目元数据与依赖
+  main.py             # 入口
+  README.md           # 项目说明
+```
+
+**`.gitignore` 最小内容**：
+
+```bash
+# .gitignore
+.venv/
+.env
+__pycache__/
+*.pyc
+.DS_Store
 ```
 
 **API Key 管理**：永远不要把 API Key 硬编码到代码里。推荐使用 `.env` 文件管理：
@@ -35,11 +94,6 @@ ANTHROPIC_API_KEY="sk-ant-..."
 # Python：用 python-dotenv 自动加载 .env
 from dotenv import load_dotenv
 load_dotenv()  # 加载 .env 文件中的环境变量
-```
-
-```typescript
-// TypeScript：用 Node.js 的 dotenv
-import 'dotenv/config'  // 自动加载 .env
 ```
 
 > **安全提醒**：务必将 `.env` 加入 `.gitignore`。API Key 泄露是真实的安全事故。
@@ -134,51 +188,6 @@ print()
 > **工程建议**：如果你希望代码同时兼容两家 API，可以封装一个统一接口。后续 M5 的 Agent Loop 会用到这个思路。
 >
 > **模型名说明**：本节示例使用别名（如 `gpt-4o`、`claude-sonnet-5`），方便上手。生产环境建议钉死快照 ID（见 L01-04），避免厂商无声升级导致行为变化。
-
----
-
-### TypeScript 调用示例
-
-**OpenAI 同步调用**：
-
-```typescript
-import OpenAI from "openai";
-
-const client = new OpenAI();
-
-const response = await client.chat.completions.create({
-  model: "gpt-4o",
-  messages: [
-    { role: "system", content: "你是一个 AI 技术助手。" },
-    { role: "user", content: "用一句话介绍什么是 Agent。" },
-  ],
-  temperature: 0.7,
-  max_tokens: 200,
-});
-
-console.log(response.choices[0].message.content);
-```
-
-**Anthropic 流式调用**：
-
-```typescript
-import Anthropic from "@anthropic-ai/sdk";
-
-const client = new Anthropic();
-
-const stream = await client.messages.stream({
-  model: "claude-sonnet-5",
-  max_tokens: 500,
-  messages: [{ role: "user", content: "写一首关于 AI 的五言绝句。" }],
-});
-
-for await (const event of stream) {
-  if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-    process.stdout.write(event.delta.text);
-  }
-}
-console.log();
-```
 
 ---
 

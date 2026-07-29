@@ -186,6 +186,70 @@ if __name__ == "__main__":
 
 **验收标准**：只凭约定文件生成的代码，你不需要为了"风格对齐"做任何修改。需要改的地方，就是约定文件里缺的那一条——补上去。
 
+### 约定文件的自动验证：检查 AI 产出是否遵守约定
+
+约定文件写了三层，但 AI 有时候会忽略。写一个简单的验证脚本，在合并前检查 AI 产出是否越过了约定里的禁止事项：
+
+```python
+"""scripts/check_conventions.py —— 检查代码是否遵守 CONVENTIONS.md 的关键约定"""
+
+import ast
+import sys
+from pathlib import Path
+
+def check_import_direction(filepath: Path) -> list[str]:
+    """检查依赖方向：routers → services → models，禁止反向 import。"""
+    issues = []
+    content = filepath.read_text(encoding="utf-8")
+    tree = ast.parse(content)
+
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            module = node.module or ""
+            # 检查 service 层是否 import 了 fastapi（违反"不 import fastapi"）
+            if "services" in str(filepath) and "fastapi" in module:
+                issues.append(f"{filepath}: import fastapi in service layer")
+            # 检查 model 层是否有业务方法（违反"model 不写业务方法"）
+            if "models" in str(filepath):
+                for n in ast.walk(tree):
+                    if isinstance(n, ast.FunctionDef) and n.name not in ("__init__", "__repr__", "__str__"):
+                        if not n.name.startswith("_"):
+                            issues.append(f"{filepath}:{n.lineno}: model 中出现方法 {n.name}，约定禁止在 model 中写业务方法")
+
+    return issues
+
+def check_no_print_in_service(filepath: Path) -> list[str]:
+    """检查 service 层是否用了 print（应用 logger）。"""
+    if "services" not in str(filepath):
+        return []
+    content = filepath.read_text(encoding="utf-8")
+    tree = ast.parse(content)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "print":
+            return [f"{filepath}:{node.lineno}: 在 service 层使用 print，约定要求用 logger"]
+    return []
+
+def main():
+    all_issues = []
+    for f in Path("src").rglob("*.py"):
+        all_issues.extend(check_import_direction(f))
+        all_issues.extend(check_no_print_in_service(f))
+
+    if all_issues:
+        print("约定检查未通过：")
+        for issue in all_issues:
+            print(f"  {issue}")
+        sys.exit(1)
+
+    print("约定检查通过。")
+    sys.exit(0)
+
+if __name__ == "__main__":
+    main()
+```
+
+这个脚本和 L17-01 的边界检查、L17-03 的规格约束检查一起，构成了 AI 产出的三道自动防线——**边界检查盯红线、规格约束盯合规、约定检查盯风格**。三道都在 pre-commit 时跑，比人工 review 覆盖得全且不会累。
+
 ### 要点总结
 
 - 三层上下文：**项目约定**（静态，写一次用很久）、**任务相关代码**（动态，按需检索）、**负面约束**（最易漏，防住的问题最多）。多数人只做了第二层。

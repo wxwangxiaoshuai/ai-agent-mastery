@@ -14,6 +14,10 @@ L17-13 讲了 OpenSpec（定义"做什么"）和 Superpowers（指导"怎么做"
 
 **Harness 门禁的核心逻辑**：把"检查"从"建议"变成"硬阻断"。门禁不通过，代码进不了仓库。
 
+下图是 Harness 门禁管道的全景——从代码生成到最终归档，三级防线、九道门禁各自检查什么：
+
+::interactive{type="harnessGatePipeline"}
+
 ### 三级防线架构
 
 ```

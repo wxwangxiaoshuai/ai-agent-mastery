@@ -238,3 +238,5 @@ response = robust_call(
 - 所有 API 调用必须设超时——没有超时的调用等于无限等待
 - Deadline Propagation：超时从顶层传导到底层，子调用不超过父调用的剩余时间
 - 生产环境标配：max_retries=3、base_delay=1s、timeout=30s、只重试暂时性错误
+- 抖动（Jitter）是关键：没有抖动的指数退避会让多个客户端在同一时刻同时重试，形成雪崩
+- 重试是 Harness 的第一道防线，但不是最后一道——重试耗尽后应触发降级或熔断，而不是继续死等

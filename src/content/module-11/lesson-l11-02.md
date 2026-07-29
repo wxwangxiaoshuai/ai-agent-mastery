@@ -22,6 +22,10 @@ Supervisor 不做的（"手"）：
 
 **常见错误**：把 supervisor 写成"全能 Agent"——既调度又干活。这样它会上下文爆炸、职责混乱。**supervisor 只负责"想"，下属负责"做"**。这个分工和人类组织一样：主管不替程序员写代码。
 
+Supervisor 模式的核心——任务 → 规划拆解 → 并行派发 Worker → 收集结果 → 综合输出 → 质量检查：
+
+::interactive{type="supervisorPattern"}
+
 ### 用 LangGraph 实现 Supervisor
 
 LangGraph 的 supervisor 核心是一个**路由节点**——它根据当前 state 决定下一步派给哪个下属，下属执行完回 supervisor，如此循环直到完成：

@@ -6,6 +6,10 @@ LLM 的知识停留在训练数据截止日。问它"公司最新的差旅政策
 
 ::interactive{type="ragPipeline"}
 
+再来看看 RAG 的数据流全景——从用户提问到最终回答，数据在系统中如何流转：
+
+::interactive{type="ragPipelineDiagram"}
+
 ### RAG 的本质：开卷考试
 
 把 LLM 想象成一个参加考试的学生：

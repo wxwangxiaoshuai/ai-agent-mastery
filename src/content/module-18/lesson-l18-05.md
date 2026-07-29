@@ -136,6 +136,86 @@ async def daily_cost_alert(threshold: float = 5.0):
 
 留存时长怎么算、怎么提升，是 L19-03 的内容。这里只强调一点：**在留存数据出来之前，不要花钱买量**。
 
+### 把模型变成可操作的仪表盘
+
+算出单位经济模型之后，下一步是把它变成一个你每周能看的数字。不需要复杂的 BI 工具，一个 SQL 查询加一个定时脚本就够了。
+
+```python
+# weekly_unit_economics.py —— 每周跑一次，输出到终端或 Slack
+import asyncio
+from datetime import datetime, timedelta
+
+async def weekly_report(db, week_start: str):
+    """生成一周的单位经济报表。"""
+
+    # 1. 收入
+    revenue = await db.fetchval('''
+        SELECT COALESCE(SUM(amount_usd), 0)
+        FROM payments
+        WHERE created_at >= $1 AND created_at < $1::date + 7
+          AND status = 'succeeded'
+    ''', week_start)
+
+    # 2. 推理成本（按模型拆分）
+    cost_by_model = await db.fetch('''
+        SELECT model, SUM(cost_usd) AS total, COUNT(*) AS calls,
+               AVG(input_tokens) AS avg_in, AVG(output_tokens) AS avg_out
+        FROM api_calls
+        WHERE created_at >= $1 AND created_at < $1::date + 7
+        GROUP BY model ORDER BY total DESC
+    ''', week_start)
+
+    # 3. 用户分层
+    tiers = await db.fetch('''
+        SELECT
+          CASE
+            WHEN monthly_cost < 0.5 THEN 'light'
+            WHEN monthly_cost < 5.0 THEN 'normal'
+            WHEN monthly_cost < 20.0 THEN 'heavy'
+            ELSE 'extreme'
+          END AS tier,
+          COUNT(*) AS users,
+          AVG(monthly_cost) AS avg_cost,
+          SUM(monthly_cost) AS total_cost
+        FROM user_monthly_costs
+        WHERE month = $1
+        GROUP BY tier ORDER BY avg_cost DESC
+    ''', week_start[:7])
+
+    # 4. 异常用户告警
+    outliers = await db.fetch('''
+        SELECT user_id, SUM(cost_usd) AS c, COUNT(*) AS n
+        FROM api_calls
+        WHERE created_at >= $1 AND created_at < $1::date + 7
+        GROUP BY user_id
+        HAVING SUM(cost_usd) > 10.0
+        ORDER BY c DESC LIMIT 10
+    ''', week_start)
+
+    # 打印报告
+    total_cost = sum(r['total'] for r in cost_by_model)
+    active_users = sum(r['users'] for r in tiers)
+    gross_margin = (revenue - total_cost) / revenue * 100 if revenue > 0 else 0
+
+    print(f"=== 周报 {week_start} ===")
+    print(f"收入: ${revenue:.2f} | 推理成本: ${total_cost:.2f} | 毛利率: {gross_margin:.0f}%")
+    print(f"活跃付费用户: {active_users}")
+    print(f"\n按模型成本:")
+    for r in cost_by_model:
+        print(f"  {r['model']}: ${r['total']:.2f} ({r['calls']} calls, "
+              f"avg in={r['avg_in']:.0f} out={r['avg_out']:.0f})")
+    print(f"\n用户分层:")
+    for r in tiers:
+        print(f"  {r['tier']}: {r['users']} users, avg ${r['avg_cost']:.2f}, "
+              f"total ${r['total_cost']:.2f}")
+    if outliers:
+        print(f"\n⚠️ 异常用户（周成本 > $10）:")
+        for r in outliers:
+            print(f"  user {r['user_id']}: ${r['c']:.2f} ({r['n']} calls)")
+```
+
+这个脚本每周跑一次，花 30 秒看完，你就能回答三个最关键的问题：**钱从哪来、钱花到哪去了、有没有异常**。比任何仪表盘都实用。
+
 ### 动手 5 分钟
 
 建立你的单位经济模型，重点是找出风险敞口。

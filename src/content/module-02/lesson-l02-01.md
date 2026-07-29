@@ -178,22 +178,6 @@ prompt = ANALYSIS_PROMPT.substitute(
 )
 ```
 
-**TypeScript 模板示例**：
-
-```typescript
-function buildPrompt(role: string, content: string, format: string): string {
-  return `你是一位 ${role}。
-请分析以下内容：${content}
-输出格式要求：${format}`;
-}
-
-const prompt = buildPrompt(
-  "代码安全审计专家",
-  "def eval_input(user_input): return eval(user_input)",
-  'JSON: {"risk_level": "high/medium/low", "issues": [...], "fixes": [...]}',
-);
-```
-
 模板化的好处：
 - 同一个 Prompt 结构可以复用到不同场景
 - 修改变量值就能快速迭代

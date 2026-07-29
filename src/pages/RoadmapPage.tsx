@@ -96,12 +96,80 @@ export function RoadmapPage() {
             <div className="text-4xl">🏆</div>
             <h3 className="mt-3 text-xl font-bold text-ink-50">毕业 · Agent 开发专家</h3>
             <p className="mt-2 max-w-md text-sm text-ink-400">
-              完成全部 9 个模块与毕业设计后，你将具备独立设计、开发、部署生产级 Agent 系统的全栈能力。
+              完成全部 19 个模块与毕业设计后，你将具备独立设计、开发、部署生产级 Agent 系统的全栈能力。
             </p>
             <Link to="/projects" className="btn-primary mt-5">
               查看毕业设计要求
             </Link>
           </div>
+        </div>
+      </div>
+
+      {/* Quick-start paths */}
+      <div className="mx-auto mt-16 max-w-3xl">
+        <div className="mx-auto max-w-2xl text-center">
+          <span className="section-eyebrow">不知道该从哪里开始？</span>
+          <h2 className="section-title">选择你的起点</h2>
+          <p className="mt-4 text-ink-400">
+            不同背景的学习者有不同的最优路径。对照下面的描述，找到最适合你的入口。
+          </p>
+        </div>
+
+        <div className="mt-10 grid gap-4 sm:grid-cols-2">
+          {[
+            {
+              label: '完全没接触过 LLM',
+              icon: '🌱',
+              start: 'M1',
+              desc: '从 Token 是什么开始，一步步建立对 LLM 的工程化认知。这是最长但最扎实的路径。',
+              path: '/curriculum/1',
+            },
+            {
+              label: '会用 ChatGPT 但没写过 Agent',
+              icon: '🔧',
+              start: 'M2',
+              desc: '你已经知道 LLM 能干什么，直接学 Prompt 工程和结构化输出，把"聊天"变成"工程"。',
+              path: '/curriculum/2',
+            },
+            {
+              label: '已经写过 ReAct Agent',
+              icon: '⚡',
+              start: 'M7',
+              desc: '你过了"调通第一个 Agent"的阶段，现在需要让它可靠——Harness 工程化、熔断、降级。',
+              path: '/curriculum/7',
+            },
+            {
+              label: '在做独立产品，需要变现',
+              icon: '🚀',
+              start: 'M17',
+              desc: '技术不是你的瓶颈，选品、定价、增长才是。从 M17 AI Coding 提效开始，直达 M18/M19 商业化。',
+              path: '/curriculum/17',
+            },
+          ].map((p) => (
+            <Link
+              key={p.path}
+              to={p.path}
+              className="card card-hover group p-5"
+            >
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">{p.icon}</span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-ink-50">{p.label}</span>
+                    <span className="rounded bg-brand-500/15 px-1.5 py-0.5 text-[10px] font-bold text-brand-300">
+                      {p.start}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 text-sm leading-relaxed text-ink-400">
+                    {p.desc}
+                  </p>
+                  <span className="mt-2 inline-block text-xs text-ink-500 transition-colors group-hover:text-brand-400">
+                    从 {p.start} 开始 →
+                  </span>
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
     </div>

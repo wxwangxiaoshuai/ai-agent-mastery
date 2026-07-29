@@ -132,6 +132,93 @@ Agent 在 research_skill 的上下文中使用 Function Calling
 
 Function Calling 仍然是底层机制——Agent 调用工具的方式没变。Skills 改变的是**Agent 能看到哪些工具**和**Agent 以什么角色去调用它们**。
 
+### Skill 的生命周期
+
+一个 Skill 在 Agent 运行时有四个阶段：
+
+```
+注册 → 匹配 → 激活 → 卸载
+
+1. 注册：Agent 启动时，SkillRegistry 加载所有已定义 Skill
+2. 匹配：用户输入到来，Registry 用 nano 模型做意图→Skill 匹配
+3. 激活：匹配到的 Skill 的 system_prompt 注入上下文，工具列表激活
+4. 卸载：任务完成或切换任务时，Skill 的 system_prompt 移除，工具列表回收
+```
+
+**激活和卸载是 Skills 系统的关键**。如果没有卸载，Agent 的上下文会越来越长（每个 Skill 的 system_prompt 都留在里面），工具列表会越来越臃肿，最终回到"50 个函数平铺"的状态。
+
+```python
+class SkillAwareAgent:
+    """带 Skill 注册表的 Agent——运行时按意图加载/卸载 Skill。"""
+
+    def __init__(self, registry: SkillRegistry, max_steps: int = 10):
+        self.registry = registry
+        self.max_steps = max_steps
+        self.active_skill: Skill | None = None
+        self.base_system_prompt = "你是一个通用的 AI 助手。"
+
+    def run(self, user_input: str) -> str:
+        # Phase 1: Skill 匹配
+        candidates = self.registry.find_by_intent(user_input)
+        if candidates:
+            self.active_skill = candidates[0]
+            system_prompt = self.active_skill.system_prompt
+            active_tools = self.active_skill.tools
+        else:
+            self.active_skill = None
+            system_prompt = self.base_system_prompt
+            active_tools = list(TOOL_MAP.keys())
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_input},
+        ]
+
+        # Phase 2: Agent Loop（只暴露当前 Skill 的工具）
+        for _ in range(self.max_steps):
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages,
+                tools=[t for t in TOOLS_SCHEMA if t["function"]["name"] in active_tools],
+                temperature=0,
+            )
+            msg = response.choices[0].message
+            if not msg.tool_calls:
+                return msg.content
+            messages.append(msg)
+            for tc in msg.tool_calls:
+                fn = TOOL_MAP[tc.function.name]
+                result = fn(**json.loads(tc.function.arguments))
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc.id,
+                    "content": str(result),
+                })
+
+        return "达到最大步数限制。"
+
+    def reset_skill(self):
+        """任务完成后卸载 Skill，回收上下文和工具列表。"""
+        self.active_skill = None
+```
+
+**关键设计点**：
+
+- `active_tools` 在匹配到 Skill 后只包含该 Skill 的工具——不是全部 50 个函数。这是权限最小化在代码层面的落地。
+- `reset_skill()` 在任务完成后清理——防止上下文膨胀和工具泄漏。
+- 没有匹配到 Skill 时 fallback 到全部工具——保证在"不知道用什么 Skill"时 Agent 仍能工作。
+
+### Skills 与 P6 项目的结合
+
+P6 项目要求构建一个多工具 Agent。学完这节后，你应该在 P6 的基础上做一次 Skills 重构：
+
+1. 把 P6 的四类工具（搜索、代码执行、数据库查询、文件操作）按"能力包"分组
+2. 为每个组定义 Skill 结构（id、description、system_prompt、tools、schema）
+3. 实现 SkillRegistry 和 SkillAwareAgent
+4. 对比重构前后：Agent 在"研究类任务"和"数据分析类任务"上的工具选择准确率是否有提升
+
+这个重构是 P6 进阶挑战的一部分——从"能调工具"到"聪明地调工具"。
+
 ### 动手 5 分钟
 
 1. 列出你 P6 项目中的全部工具（搜索、代码执行、数据库查询、文件操作等），把它们按"能力包"分组——每个组就是一个 Skill 的雏形。

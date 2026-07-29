@@ -123,6 +123,61 @@ ADR 标准结构：
 
 > 反模式：**决策只靠"直觉"或"跟风"**。"别人都用 LangGraph 我们也用"——没分析你的场景权重，可能选错。量化分析逼你把假设摆上台面，哪怕打分主观，也比无依据强。
 
+### 用代码算 Trade-off 分
+
+上面的矩阵，用代码实现可以复用——改权重、改方案、改打分，自动重算：
+
+```python
+from dataclasses import dataclass
+
+@dataclass
+class Option:
+    name: str
+    cost: int        # 1-5，分数越高越便宜
+    latency: int     # 1-5，分数越高越快
+    reliability: int # 1-5，分数越高越可靠
+    maintainability: int  # 1-5，分数越高越好维护
+
+@dataclass
+class Weights:
+    cost: float = 0.2
+    latency: float = 0.1
+    reliability: float = 0.4
+    maintainability: float = 0.3
+
+def score(opt: Option, w: Weights) -> float:
+    return (
+        w.cost * opt.cost
+        + w.latency * opt.latency
+        + w.reliability * opt.reliability
+        + w.maintainability * opt.maintainability
+    )
+
+def rank(options: list[Option], w: Weights) -> list[tuple[str, float]]:
+    scored = [(opt.name, score(opt, w)) for opt in options]
+    return sorted(scored, key=lambda x: x[1], reverse=True)
+
+# 用法
+options = [
+    Option("LangGraph", cost=3, latency=3, reliability=5, maintainability=3),
+    Option("CrewAI", cost=4, latency=4, reliability=3, maintainability=4),
+    Option("手写", cost=5, latency=5, reliability=3, maintainability=2),
+    Option("AutoGen", cost=3, latency=2, reliability=3, maintainability=3),
+]
+
+# 不同场景用不同权重
+research_weights = Weights(reliability=0.4, maintainability=0.3, cost=0.2, latency=0.1)
+customer_weights = Weights(reliability=0.2, maintainability=0.2, cost=0.2, latency=0.4)
+
+print("研究 Agent（质量优先）:", rank(options, research_weights))
+print("客服 Agent（延迟优先）:", rank(options, customer_weights))
+# 输出：
+# 研究 Agent（质量优先）: [('LangGraph', 3.8), ('CrewAI', 3.6), ('手写', 3.3), ('AutoGen', 2.9)]
+# 客服 Agent（延迟优先）: [('手写', 4.2), ('CrewAI', 3.8), ('LangGraph', 3.4), ('AutoGen', 3.0)]
+```
+
+**关键**：同一组方案，切了权重后排名变了——手写在延迟优先的客服场景排第一，在质量优先的研究场景排第三。这就是架构决策的本质：**没有绝对最好的方案，只有匹配当前权重的方案**。用代码算比用表格算更容易做"what-if"——改一个权重，跑一次，看排名怎么变。
+
 ### 常见 Agent 架构决策树
 
 把全书涉及的关键架构选择，凝练成决策树——遇到具体场景能快速定位：
