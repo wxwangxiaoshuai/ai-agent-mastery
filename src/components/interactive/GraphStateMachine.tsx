@@ -81,8 +81,8 @@ export function GraphStateMachine() {
             <div
               className={`flex-1 rounded-lg border px-2 py-2 text-center text-[11px] font-medium transition-all ${
                 f.node === n
-                  ? 'border-brand-500/50 bg-brand-500/20 text-brand-200'
-                  : 'border-ink-700 bg-ink-800/40 text-ink-500'
+                  ? 'border-brand-500 bg-brand-500 text-white shadow-sm'
+                  : 'border-ink-700 bg-ink-800/40 text-ink-400'
               }`}
             >
               {n}
@@ -97,11 +97,11 @@ export function GraphStateMachine() {
           <button
             key={idx}
             onClick={() => setI(idx)}
-            className={`h-7 w-7 rounded-md border text-[11px] transition-colors ${
+            className={`h-7 w-7 rounded-md border text-[11px] font-medium transition-colors ${
               idx === i
-                ? 'border-brand-500/40 bg-brand-500/20 text-brand-300'
+                ? 'border-brand-500 bg-brand-500 text-white'
                 : t.kind === 'loop'
-                  ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+                  ? 'border-amber-500/40 bg-amber-500/15 text-amber-300'
                   : 'border-ink-700 bg-ink-800/40 text-ink-500'
             }`}
             title={t.label}
@@ -144,7 +144,7 @@ ${Object.entries(f.state)
         <button
           onClick={() => setI((x) => Math.min(TRACE.length - 1, x + 1))}
           disabled={i === TRACE.length - 1}
-          className="rounded-lg border border-brand-500/30 bg-brand-500/20 px-3 py-1.5 text-xs text-brand-300 disabled:opacity-40"
+          className="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600 disabled:opacity-40"
         >
           下一步
         </button>
