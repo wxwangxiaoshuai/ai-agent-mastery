@@ -6,18 +6,18 @@ import { DiagramShell, n, e, g } from './_shared'
 
 const nodes = [
   g('lane-chain', '链式 —— 顺序传递 · 成本最低', 0, 0, 720, 100, 'brand'),
-  g('lane-star', '星型 —— 中心 Hub 调度', 0, 120, 720, 120, 'amber'),
-  g('lane-hier', '层级 —— Supervisor → Workers · O(n)', 0, 260, 720, 140, 'emerald'),
-  g('lane-mesh', '网状 —— 全连接对等 · O(n²) 最高', 0, 420, 720, 150, 'fuchsia'),
+  g('lane-star', '星型 —— 中心 Hub 调度', 0, 120, 720, 130, 'amber'),
+  g('lane-hier', '层级 —— Supervisor → Workers · O(n)', 0, 270, 720, 140, 'emerald'),
+  g('lane-mesh', '网状 —— 全连接对等 · O(n²) 最高', 0, 430, 720, 150, 'fuchsia'),
 
   n('c1', 'A', 60, 40, { color: 'brand', size: 'sm', width: 68, parentId: 'lane-chain' }),
   n('c2', 'B', 220, 40, { color: 'brand', size: 'sm', width: 68, parentId: 'lane-chain' }),
   n('c3', 'C', 380, 40, { color: 'brand', size: 'sm', width: 68, parentId: 'lane-chain' }),
 
-  n('s1', 'A', 60, 45, { color: 'brand', size: 'sm', width: 68, parentId: 'lane-star' }),
-  n('s_center', 'Hub', 280, 45, { color: 'amber', size: 'sm', width: 72, parentId: 'lane-star' }),
-  n('s2', 'B', 480, 30, { color: 'brand', size: 'sm', width: 68, parentId: 'lane-star' }),
-  n('s3', 'C', 480, 75, { color: 'brand', size: 'sm', width: 68, parentId: 'lane-star' }),
+  n('s1', 'A', 60, 40, { color: 'brand', size: 'sm', width: 68, parentId: 'lane-star' }),
+  n('s_center', 'Hub', 280, 40, { color: 'amber', size: 'sm', width: 72, parentId: 'lane-star' }),
+  n('s2', 'B', 480, 22, { color: 'brand', size: 'sm', width: 68, parentId: 'lane-star' }),
+  n('s3', 'C', 480, 72, { color: 'brand', size: 'sm', width: 68, parentId: 'lane-star' }),
 
   n('h_top', 'Supervisor', 260, 35, { color: 'emerald', width: 110, parentId: 'lane-hier' }),
   n('h_a', 'Worker A', 60, 90, { color: 'brand', width: 96, parentId: 'lane-hier' }),

@@ -1,7 +1,8 @@
-import { useId, useMemo } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import {
   ReactFlow,
   ReactFlowProvider,
+  Controls,
   type Edge,
   type Node,
   type NodeTypes,
@@ -59,6 +60,18 @@ function buildSrDescription(title: string, description: string | undefined, node
   return parts.join('。')
 }
 
+function useNarrowScreen() {
+  const [narrow, setNarrow] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)')
+    const apply = () => setNarrow(mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
+  return narrow
+}
+
 function DiagramCanvas({
   title,
   description,
@@ -68,11 +81,14 @@ function DiagramCanvas({
   nodeTypes,
   edgeTypes,
   fitViewPadding = 0.14,
-  minZoom = 0.4,
+  minZoom: minZoomProp = 0.4,
   maxZoom = 1.35,
 }: DiagramShellProps) {
   const descId = useId()
   const srId = useId()
+  const narrow = useNarrowScreen()
+  const minZoom = narrow ? Math.min(minZoomProp, 0.2) : minZoomProp
+
   const mergedNodeTypes = useMemo(
     () => ({ ...defaultNodeTypes, ...nodeTypes }),
     [nodeTypes],
@@ -120,6 +136,9 @@ function DiagramCanvas({
             {description}
           </p>
         ) : null}
+        {narrow ? (
+          <p className="mt-1 text-[11px] text-ink-500">可双指缩放 / 拖动平移，右下角有缩放控件</p>
+        ) : null}
       </figcaption>
       <div className="diagram-rf" style={{ height }} aria-describedby={srId}>
         <ReactFlow
@@ -146,7 +165,9 @@ function DiagramCanvas({
           defaultEdgeOptions={{
             type: 'diagram',
           }}
-        />
+        >
+          <Controls showInteractive={false} position="bottom-right" />
+        </ReactFlow>
       </div>
       <p id={srId} className="diagram-sr-only">
         {srText}
