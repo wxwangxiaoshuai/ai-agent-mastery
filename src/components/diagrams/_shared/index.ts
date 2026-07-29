@@ -5,6 +5,7 @@ import type { DiagramEdgeData } from './edges'
 export { DiagramShell } from './DiagramShell'
 export { defaultNodeTypes, DiagramNode, DiagramGroup, DiagramAnnotation } from './nodes'
 export { defaultEdgeTypes, DiagramEdge, defaultMarkerEnd } from './edges'
+export { layoutEdges, absoluteBoxes } from './layout'
 export type { DiagramColor, DiagramNodeData, DiagramGroupData, DiagramAnnotationData } from './types'
 export type { DiagramEdgeData } from './edges'
 
@@ -19,6 +20,28 @@ type NodeOpts = {
   extent?: 'parent'
 }
 
+/** Size-class width bounds — keep React Flow handle math aligned with CSS. */
+const WIDTH_BOUNDS = {
+  sm: { min: 68, max: 100 },
+  md: { min: 96, max: 160 },
+  hub: { min: 140, max: 200 },
+} as const
+
+function clampWidth(
+  width: number | undefined,
+  size: 'sm' | 'md' | undefined,
+  emphasis: DiagramNodeData['emphasis'],
+): number | undefined {
+  if (width == null) return undefined
+  const bounds =
+    emphasis === 'hub' ? WIDTH_BOUNDS.hub : size === 'sm' ? WIDTH_BOUNDS.sm : WIDTH_BOUNDS.md
+  const clamped = Math.min(bounds.max, Math.max(bounds.min, width))
+  if (import.meta.env.DEV && clamped !== width) {
+    console.warn(`[diagrams] n() width ${width} clamped to ${clamped} (size=${size ?? 'md'})`)
+  }
+  return clamped
+}
+
 /** Create a fixed-position diagram node. */
 export function n(
   id: string,
@@ -28,13 +51,19 @@ export function n(
   opts: NodeOpts = {},
 ): Node<DiagramNodeData> {
   const { color = 'brand', width, height, size, caption, emphasis, parentId, extent } = opts
+  const w = clampWidth(width, size, emphasis)
   return {
     id,
     type: 'diagram',
     position: { x, y },
     data: { label, color, size, caption, emphasis },
-    ...(width != null || height != null
-      ? { style: { ...(width != null ? { width } : {}), ...(height != null ? { height } : {}) } }
+    ...(w != null || height != null
+      ? {
+          style: {
+            ...(w != null ? { width: w, minWidth: w, maxWidth: w } : {}),
+            ...(height != null ? { height } : {}),
+          },
+        }
       : {}),
     ...(parentId ? { parentId, extent: extent ?? 'parent' } : {}),
     draggable: false,
@@ -88,6 +117,7 @@ type EdgeOpts = {
   accent?: DiagramColor
   curve?: 'step' | 'bezier'
   animated?: boolean
+  undirected?: boolean
   fromSide?: Side
   toSide?: Side
   sourceHandle?: string
@@ -107,7 +137,7 @@ export function e(
   target: string,
   opts: EdgeOpts = {},
 ): Edge<DiagramEdgeData> {
-  const { label, dashed, accent, curve, animated, fromSide, toSide, id } = opts
+  const { label, dashed, accent, curve, animated, undirected, fromSide, toSide, id } = opts
   const sourceHandle =
     asSourceHandle(opts.sourceHandle) ?? (fromSide ? SOURCE_HANDLE[fromSide] : undefined)
   const targetHandle = opts.targetHandle ?? (toSide ? TARGET_HANDLE[toSide] : undefined)
@@ -118,7 +148,7 @@ export function e(
     source,
     target,
     type: 'diagram',
-    data: { label, dashed, accent, curve, animated },
+    data: { label, dashed, accent, curve, animated, undirected },
     ...(sourceHandle ? { sourceHandle } : {}),
     ...(targetHandle ? { targetHandle } : {}),
   }

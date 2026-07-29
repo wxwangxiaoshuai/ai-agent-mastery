@@ -6,7 +6,7 @@ M10 你学会用一个或多个 Agent 编排复杂控制流。但一旦 Agent �
 
 ::interactive{type="topology"}
 
-四种拓扑的静态对比图——链式（顺序传递）、星型（中心 Hub）、网状（全连接）、层级（Supervisor→Workers）：
+四种拓扑的静态对比图——按协调成本递增排列：链式（顺序传递）→ 星型（中心 Hub）→ 层级（Supervisor→Workers）→ 网状（全连接对等）：
 
 ::interactive{type="multiAgentTopologyDiagram"}
 

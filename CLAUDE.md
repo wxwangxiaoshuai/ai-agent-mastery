@@ -37,6 +37,12 @@ pnpm build        # 构建（check + tsc + vite）
 | C13 | `stages` 区间连续且覆盖全部模块，全站阶段数表述一致 | error |
 | C14 | `models.ts` 的模型白名单校准日期未超过 180 天 | warn |
 | C15 | 文案不承诺做不到的语言覆盖（Python 主线） | error |
+| C16 | 静态图边的 source/target 必须存在于该图节点集 | error |
+| C17 | 静态图不允许入度=出度=0 的孤立节点（annotation 豁免） | error |
+| C18 | 静态图显式 `width` 必须落在 size 类 `[min,max]` 区间 | error |
+| C19 | 静态图节点包围盒不得重叠、不得超出所属泳道 | error |
+| C20 | 边未显式指定端口时报 warn（运行时由 `layoutEdges` 推断） | warn |
+| C21 | 内容 Markdown 不得含 NUL / 二进制污染字节 | error |
 
 ## 模块开发工作流
 
@@ -89,7 +95,7 @@ pnpm build        # 构建（check + tsc + vite）
 | reActLoop | ReActLoopDiagram | ReAct 循环状态图 |
 | ragPipelineDiagram | RAGPipelineDiagram | RAG 数据流架构图 |
 | contextAssembly | ContextAssemblyDiagram | Context 组装流程图 |
-| functionCalling | FunctionCallingSequence | Function Calling 调用链时序图 |
+| functionCalling | FunctionCallingSequence | Function Calling 调用链泳道图 |
 | circuitBreaker | CircuitBreakerDiagram | Circuit Breaker 三态转换图 |
 | openSpecWorkflow | OpenSpecWorkflowDiagram | OpenSpec + Superpowers 工作流全貌 |
 | harnessGatePipeline | HarnessGatePipelineDiagram | Harness 门禁管道全景图 |

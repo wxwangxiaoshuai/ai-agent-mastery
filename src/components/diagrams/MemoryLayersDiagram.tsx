@@ -4,10 +4,10 @@
 import { DiagramShell, n, e, g } from './_shared'
 
 const nodes = [
-  g('lane-l1', '工作记忆 —— 当前对话', 0, 0, 860, 110, 'brand'),
-  g('lane-l2', '短期记忆 —— 摘要 + 滑动窗口', 0, 130, 860, 110, 'emerald'),
-  g('lane-l3', '长期记忆 —— 向量库 + 结构化存储', 0, 260, 860, 110, 'amber'),
-  g('lane-l4', '程序记忆 —— Skill 库 + 经验', 0, 390, 860, 110, 'fuchsia'),
+  g('lane-l1', '工作记忆 —— 当前对话 · 容量≈上下文窗口 · TTL=会话内', 0, 0, 860, 110, 'brand'),
+  g('lane-l2', '短期记忆 —— 摘要+滑动窗口 · 容量≈N 轮 · TTL=天级', 0, 130, 860, 110, 'emerald'),
+  g('lane-l3', '长期记忆 —— 向量库 · 容量≈∞ · TTL=永久', 0, 260, 860, 110, 'amber'),
+  g('lane-l4', '程序记忆 —— Skill 库 · 容量≈技能数 · TTL=版本化永久', 0, 390, 860, 110, 'fuchsia'),
   n('user', '用户\n输入', 20, 40, { color: 'ink', parentId: 'lane-l1' }),
   n('retrieve', '检索\n相关记忆', 180, 40, { color: 'brand', parentId: 'lane-l1' }),
   n('assemble', '组装\n上下文', 360, 40, { color: 'brand', parentId: 'lane-l1' }),
@@ -48,7 +48,7 @@ export function MemoryLayersDiagram() {
   return (
     <DiagramShell
       title="记忆四层路由"
-      description="用户输入 → 从长期/程序记忆检索并注入工作上下文 → LLM 推理 → 提取关键信息分流到短期摘要、长期向量库与 Skill 库；下轮再读回组装。"
+      description="用户输入 → 从长期/程序记忆检索并注入工作上下文 → LLM 推理 → 提取关键信息分流到短期摘要、长期向量库与 Skill 库。每层标注容量上限与 TTL。"
       height={560}
       nodes={nodes}
       edges={edges}

@@ -48,6 +48,13 @@ const PATTERNS: Record<string, PatternInfo> = {
     example: '代码生成 → review → 修改 → 再 review；文章草稿 → 打分 → 修订 → 再打分。',
     module: 'M5 Reflection + M13 评估',
   },
+  single: {
+    name: '单次 LLM 调用',
+    description: '一次 Prompt → 一次回复，不引入多步工作流。',
+    when: '任务简单、步骤不可拆、也没有客观质量门禁可迭代。',
+    example: '问答、摘要、简单改写、一次性代码片段。',
+    module: 'M1 · M2 基础对话',
+  },
 }
 
 type DecisionNode = {
@@ -57,7 +64,7 @@ type DecisionNode = {
 }
 
 const DECISION_TREE: DecisionNode = {
-  question: '任务步骤是否可以预先确定？',
+  question: '任务步骤是否线性且固定？',
   yes: 'chain',
   no: {
     question: '输入类型差异大，需要不同处理方式？',
@@ -71,7 +78,7 @@ const DECISION_TREE: DecisionNode = {
         no: {
           question: '有明确的客观质量标准可以评估产出？',
           yes: 'evaluator',
-          no: 'parallel',
+          no: 'single',
         },
       },
     },

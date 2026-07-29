@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { Suspense, lazy, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
@@ -28,25 +28,72 @@ import { UnitEconomicsModel } from './interactive/UnitEconomicsModel'
 import { GrowthFunnelSim } from './interactive/GrowthFunnelSim'
 import { PatternSelector } from './interactive/PatternSelector'
 import { GateConfigurator } from './interactive/GateConfigurator'
-import { ReActLoopDiagram } from './diagrams/ReActLoopDiagram'
-import { RAGPipelineDiagram } from './diagrams/RAGPipelineDiagram'
-import { ContextAssemblyDiagram } from './diagrams/ContextAssemblyDiagram'
-import { FunctionCallingSequence } from './diagrams/FunctionCallingSequence'
-import { CircuitBreakerDiagram } from './diagrams/CircuitBreakerDiagram'
-import { OpenSpecWorkflowDiagram } from './diagrams/OpenSpecWorkflowDiagram'
-import { HarnessGatePipelineDiagram } from './diagrams/HarnessGatePipelineDiagram'
-import { PatternMapDiagram } from './diagrams/PatternMapDiagram'
-import { MemoryLayersDiagram } from './diagrams/MemoryLayersDiagram'
-import { LangGraphStateDiagram } from './diagrams/LangGraphStateDiagram'
-import { HITLFlowDiagram } from './diagrams/HITLFlowDiagram'
-import { MultiAgentTopologyDiagram } from './diagrams/MultiAgentTopologyDiagram'
-import { SupervisorPatternDiagram } from './diagrams/SupervisorPatternDiagram'
-import { DeploymentArchDiagram } from './diagrams/DeploymentArchDiagram'
-import { AgentPlatformDiagram } from './diagrams/AgentPlatformDiagram'
-import { CursorArchDiagram } from './diagrams/CursorArchDiagram'
-import { DevinArchDiagram } from './diagrams/DevinArchDiagram'
-import { PerplexityArchDiagram } from './diagrams/PerplexityArchDiagram'
-import { GrowthEngineDiagram } from './diagrams/GrowthEngineDiagram'
+
+// Diagrams are static + pull in @xyflow/react — lazy-load so lessons without
+// diagrams don't pay the chunk cost on first paint.
+const ReActLoopDiagram = lazy(() =>
+  import('./diagrams/ReActLoopDiagram').then((m) => ({ default: m.ReActLoopDiagram })),
+)
+const RAGPipelineDiagram = lazy(() =>
+  import('./diagrams/RAGPipelineDiagram').then((m) => ({ default: m.RAGPipelineDiagram })),
+)
+const ContextAssemblyDiagram = lazy(() =>
+  import('./diagrams/ContextAssemblyDiagram').then((m) => ({ default: m.ContextAssemblyDiagram })),
+)
+const FunctionCallingSequence = lazy(() =>
+  import('./diagrams/FunctionCallingSequence').then((m) => ({ default: m.FunctionCallingSequence })),
+)
+const CircuitBreakerDiagram = lazy(() =>
+  import('./diagrams/CircuitBreakerDiagram').then((m) => ({ default: m.CircuitBreakerDiagram })),
+)
+const OpenSpecWorkflowDiagram = lazy(() =>
+  import('./diagrams/OpenSpecWorkflowDiagram').then((m) => ({ default: m.OpenSpecWorkflowDiagram })),
+)
+const HarnessGatePipelineDiagram = lazy(() =>
+  import('./diagrams/HarnessGatePipelineDiagram').then((m) => ({
+    default: m.HarnessGatePipelineDiagram,
+  })),
+)
+const PatternMapDiagram = lazy(() =>
+  import('./diagrams/PatternMapDiagram').then((m) => ({ default: m.PatternMapDiagram })),
+)
+const MemoryLayersDiagram = lazy(() =>
+  import('./diagrams/MemoryLayersDiagram').then((m) => ({ default: m.MemoryLayersDiagram })),
+)
+const LangGraphStateDiagram = lazy(() =>
+  import('./diagrams/LangGraphStateDiagram').then((m) => ({ default: m.LangGraphStateDiagram })),
+)
+const HITLFlowDiagram = lazy(() =>
+  import('./diagrams/HITLFlowDiagram').then((m) => ({ default: m.HITLFlowDiagram })),
+)
+const MultiAgentTopologyDiagram = lazy(() =>
+  import('./diagrams/MultiAgentTopologyDiagram').then((m) => ({
+    default: m.MultiAgentTopologyDiagram,
+  })),
+)
+const SupervisorPatternDiagram = lazy(() =>
+  import('./diagrams/SupervisorPatternDiagram').then((m) => ({
+    default: m.SupervisorPatternDiagram,
+  })),
+)
+const DeploymentArchDiagram = lazy(() =>
+  import('./diagrams/DeploymentArchDiagram').then((m) => ({ default: m.DeploymentArchDiagram })),
+)
+const AgentPlatformDiagram = lazy(() =>
+  import('./diagrams/AgentPlatformDiagram').then((m) => ({ default: m.AgentPlatformDiagram })),
+)
+const CursorArchDiagram = lazy(() =>
+  import('./diagrams/CursorArchDiagram').then((m) => ({ default: m.CursorArchDiagram })),
+)
+const DevinArchDiagram = lazy(() =>
+  import('./diagrams/DevinArchDiagram').then((m) => ({ default: m.DevinArchDiagram })),
+)
+const PerplexityArchDiagram = lazy(() =>
+  import('./diagrams/PerplexityArchDiagram').then((m) => ({ default: m.PerplexityArchDiagram })),
+)
+const GrowthEngineDiagram = lazy(() =>
+  import('./diagrams/GrowthEngineDiagram').then((m) => ({ default: m.GrowthEngineDiagram })),
+)
 
 const componentMap: Record<string, React.ComponentType<Record<string, string>>> = {
   tokenizer: TokenizerDemo,
@@ -298,7 +345,15 @@ function InteractiveBlock({
       </div>
     )
   }
-  return <Comp {...props} />
+  return (
+    <Suspense
+      fallback={
+        <div className="card animate-pulse p-8 text-center text-xs text-ink-500">加载图示…</div>
+      }
+    >
+      <Comp {...props} />
+    </Suspense>
+  )
 }
 
 export { componentMap }

@@ -210,6 +210,19 @@ body {
     color: rgb(var(--btn-hover-text) / 1);
   }
 
+  /* High-contrast selected chip for interactive demos (works in dark + light) */
+  .interactive-selected {
+    border-color: rgb(var(--brand-600) / 1) !important;
+    background-color: rgb(var(--brand-600) / 1) !important;
+    color: #ffffff !important;
+    font-weight: 600;
+  }
+  html.light .interactive-selected {
+    border-color: rgb(var(--brand-700) / 1) !important;
+    background-color: rgb(var(--brand-700) / 1) !important;
+    color: #ffffff !important;
+  }
+
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium;
   }

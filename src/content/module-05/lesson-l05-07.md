@@ -13,7 +13,7 @@ Agent 开发不是每次都从零发明架构。就像 GoF 设计模式之于面
 
 Anthropic 在 2024 年 12 月的 _Building effective agents_ 一文中将 Agent 设计模式归纳为 5 类基础模式。这是业界最权威的分类框架之一，也是本节的主线。
 
-先看一张全景分类图，把所有模式在坐标系里定位——横轴是自主程度，纵轴是任务复杂度：
+先看一张决策树全景图——从左到右逐问筛选，把五大模式定位到对应分支：
 
 ::interactive{type="patternMap"}
 
@@ -136,7 +136,7 @@ Anthropic 在 2024 年 12 月的 _Building effective agents_ 一文中将 Agent 
 用下面这个决策树来为你的任务选模式。核心问题只有四个：
 
 ```
-任务步骤可以预先确定？
+任务步骤是否线性且固定？
   ├─ 是 → Prompt Chaining
   └─ 否 → 输入类型差异大，需要不同处理方式？
            ├─ 是 → Routing
@@ -146,7 +146,7 @@ Anthropic 在 2024 年 12 月的 _Building effective agents_ 一文中将 Agent 
                              ├─ 是 → Orchestrator-Workers
                              └─ 否 → 有明确的客观质量标准？
                                       ├─ 是 → Evaluator-Optimizer
-                                      └─ 否 → Parallelization（多数情况兜底）
+                                      └─ 否 → 单次 LLM 调用（多数情况兜底）
 ```
 
 ::interactive{type="patternSelector"}

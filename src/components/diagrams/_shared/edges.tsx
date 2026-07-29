@@ -15,26 +15,28 @@ export type DiagramEdgeData = {
   accent?: DiagramColor
   curve?: 'step' | 'bezier'
   animated?: boolean
+  /** Peer / undirected link — no arrowhead */
+  undirected?: boolean
 }
 
 const ACCENT_STROKE: Record<DiagramColor, string> = {
-  brand: 'rgb(var(--brand-500) / 1)',
-  emerald: 'rgb(var(--emerald-500) / 1)',
-  amber: 'rgb(var(--amber-500) / 1)',
-  fuchsia: 'rgb(var(--fuchsia-500) / 1)',
-  danger: 'rgb(var(--danger-500) / 1)',
+  brand: 'rgb(var(--diagram-stroke-brand) / 1)',
+  emerald: 'rgb(var(--diagram-stroke-emerald) / 1)',
+  amber: 'rgb(var(--diagram-stroke-amber) / 1)',
+  fuchsia: 'rgb(var(--diagram-stroke-fuchsia) / 1)',
+  danger: 'rgb(var(--diagram-stroke-danger) / 1)',
   ink: 'rgb(var(--ink-400) / 1)',
-  violet: 'rgb(var(--violet-500) / 1)',
+  violet: 'rgb(var(--diagram-stroke-violet) / 1)',
 }
 
 const ACCENT_MARKER: Record<DiagramColor, string> = {
-  brand: 'rgb(var(--brand-500) / 1)',
-  emerald: 'rgb(var(--emerald-500) / 1)',
-  amber: 'rgb(var(--amber-500) / 1)',
-  fuchsia: 'rgb(var(--fuchsia-500) / 1)',
-  danger: 'rgb(var(--danger-500) / 1)',
+  brand: 'rgb(var(--diagram-stroke-brand) / 1)',
+  emerald: 'rgb(var(--diagram-stroke-emerald) / 1)',
+  amber: 'rgb(var(--diagram-stroke-amber) / 1)',
+  fuchsia: 'rgb(var(--diagram-stroke-fuchsia) / 1)',
+  danger: 'rgb(var(--diagram-stroke-danger) / 1)',
   ink: 'rgb(var(--ink-400) / 1)',
-  violet: 'rgb(var(--violet-500) / 1)',
+  violet: 'rgb(var(--diagram-stroke-violet) / 1)',
 }
 
 export function markerFor(accent: DiagramColor = 'ink') {
@@ -91,12 +93,14 @@ export function DiagramEdge({
       ? 'rgb(var(--ink-500) / 0.85)'
       : 'rgb(var(--ink-400) / 1)'
 
+  const endMarker = data?.undirected ? undefined : markerEnd
+
   return (
     <>
       <BaseEdge
         id={id}
         path={path}
-        markerEnd={markerEnd}
+        markerEnd={endMarker}
         style={{
           ...style,
           stroke,

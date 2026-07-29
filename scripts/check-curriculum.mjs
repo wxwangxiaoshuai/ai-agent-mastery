@@ -512,6 +512,267 @@ function srcTsxFiles() {
   if (!bad) ok('C15', `语言定位与实际一致（Python 代码块 ${py} 个 / TypeScript 系 ${ts} 个）`)
 }
 
+// ------------------------------------------- C16–C20 静态图结构守护
+{
+  const WIDTH_BOUNDS = {
+    sm: { min: 68, max: 100 },
+    md: { min: 96, max: 160 },
+    hub: { min: 140, max: 200 },
+  }
+  const diagramDir = join(ROOT, 'src/components/diagrams')
+  const diagramFiles = readdirSync(diagramDir)
+    .filter((f) => f.endsWith('.tsx'))
+    .map((f) => ({ name: f, text: readFileSync(join(diagramDir, f), 'utf-8') }))
+
+  const NUM = String.raw`(?:-?\d+(?:\.\d+)?|[A-Za-z_][\w]*)`
+  const EXPR = String.raw`(?:-?\d+(?:\.\d+)?|[A-Za-z_][\w]*(?:\[[\d]+\])?)`
+
+  let edgeBad = 0
+  let isoBad = 0
+  let widthBad = 0
+  let overlapBad = 0
+  let unsetPorts = 0
+  let edgeTotal = 0
+
+  for (const file of diagramFiles) {
+    const { name, text } = file
+
+    /** @type {Record<string, number>} */
+    const consts = {}
+    for (const m of text.matchAll(/const\s+([A-Za-z_][\w]*)\s*=\s*(-?\d+(?:\.\d+)?)/g)) {
+      consts[m[1]] = Number(m[2])
+    }
+    /** @type {Record<string, number[]>} */
+    const arrays = {}
+    for (const m of text.matchAll(
+      /const\s+([A-Za-z_][\w]*)\s*=\s*\[([^\]]+)\]/g,
+    )) {
+      arrays[m[1]] = m[2].split(',').map((s) => Number(s.trim())).filter((n) => Number.isFinite(n))
+    }
+
+    function resolve(expr) {
+      if (expr == null) return null
+      const t = expr.trim()
+      if (/^-?\d+(\.\d+)?$/.test(t)) return Number(t)
+      const idx = t.match(/^([A-Za-z_][\w]*)\[(\d+)\]$/)
+      if (idx && arrays[idx[1]] && arrays[idx[1]][Number(idx[2])] != null) {
+        return arrays[idx[1]][Number(idx[2])]
+      }
+      if (Object.prototype.hasOwnProperty.call(consts, t)) return consts[t]
+      return null
+    }
+
+    /** @type {Map<string, any>} */
+    const nodes = new Map()
+
+    for (const m of text.matchAll(
+      new RegExp(
+        String.raw`\bg\(\s*'([^']+)'\s*,\s*'[^']*'\s*,\s*(${EXPR})\s*,\s*(${EXPR})\s*,\s*(${EXPR})\s*,\s*(${EXPR})`,
+        'g',
+      ),
+    )) {
+      const x = resolve(m[2])
+      const y = resolve(m[3])
+      const w = resolve(m[4])
+      const h = resolve(m[5])
+      if (x == null || y == null || w == null || h == null) continue
+      nodes.set(m[1], { x, y, w, h, type: 'group', size: 'md', emphasis: 'default' })
+    }
+
+    for (const m of text.matchAll(
+      new RegExp(
+        String.raw`\bann\(\s*'([^']+)'\s*,\s*'[^']*'\s*,\s*(${EXPR})\s*,\s*(${EXPR})\s*\)`,
+        'g',
+      ),
+    )) {
+      const x = resolve(m[2])
+      const y = resolve(m[3])
+      if (x == null || y == null) continue
+      nodes.set(m[1], {
+        x,
+        y,
+        w: 160,
+        h: 24,
+        type: 'annotation',
+        size: 'md',
+        emphasis: 'default',
+      })
+    }
+
+    for (const m of text.matchAll(
+      new RegExp(
+        String.raw`\bn\(\s*'([^']+)'\s*,\s*(?:'[^']*'|"[^"]*")\s*,\s*(${EXPR})\s*,\s*(${EXPR})(?:\s*,\s*\{([^}]*)\})?`,
+        'g',
+      ),
+    )) {
+      const id = m[1]
+      const x = resolve(m[2])
+      const y = resolve(m[3])
+      if (x == null || y == null) continue
+      const opts = m[4] ?? ''
+      const widthTok = opts.match(/width:\s*([^\s,}]+)/)?.[1]
+      const heightTok = opts.match(/height:\s*([^\s,}]+)/)?.[1]
+      const size = opts.match(/size:\s*'(\w+)'/)?.[1] ?? 'md'
+      const emphasis = opts.match(/emphasis:\s*'(\w+)'/)?.[1] ?? 'default'
+      const parentId = opts.match(/parentId:\s*'([^']+)'/)?.[1]
+      const explicitWidth = widthTok != null ? resolve(widthTok) : null
+      const explicitHeight = heightTok != null ? resolve(heightTok) : null
+      const w = explicitWidth ?? (size === 'sm' ? 84 : 110)
+      const h = explicitHeight ?? 48
+      nodes.set(id, {
+        x,
+        y,
+        w,
+        h,
+        type: 'diagram',
+        size,
+        emphasis,
+        parentId,
+        explicitWidth,
+      })
+    }
+
+    // Also collect node ids that failed numeric resolve but appear as n('id'...
+    // so C16 can still validate edge endpoints against declared ids.
+    const declaredIds = new Set(nodes.keys())
+    for (const m of text.matchAll(/\b(?:n|g|ann)\(\s*'([^']+)'/g)) declaredIds.add(m[1])
+
+    const edges = []
+    for (const m of text.matchAll(
+      /\be\(\s*'([^']+)'\s*,\s*'([^']+)'(?:\s*,\s*\{([^}]*)\})?/g,
+    )) {
+      const opts = m[3] ?? ''
+      const hasPort = /fromSide:|toSide:|sourceHandle:|targetHandle:/.test(opts)
+      edges.push({ source: m[1], target: m[2], hasPort })
+    }
+    edgeTotal += edges.length
+
+    for (const edge of edges) {
+      if (!declaredIds.has(edge.source) || !declaredIds.has(edge.target)) {
+        err('C16', `${name} 边 ${edge.source}→${edge.target} 引用了不存在的节点`)
+        edgeBad++
+      }
+      if (!edge.hasPort) unsetPorts++
+    }
+
+    const degree = new Map()
+    for (const id of declaredIds) degree.set(id, { in: 0, out: 0 })
+    for (const edge of edges) {
+      if (degree.has(edge.source)) degree.get(edge.source).out++
+      if (degree.has(edge.target)) degree.get(edge.target).in++
+    }
+    for (const id of declaredIds) {
+      const node = nodes.get(id)
+      // Skip groups/annotations; also skip ids we couldn't fully parse as diagram nodes
+      // but are only groups — if not in nodes map, check type via source scan
+      if (node?.type === 'group' || node?.type === 'annotation') continue
+      // If id is only a group/ann that failed resolve, detect from source:
+      if (!node) {
+        const isGroup = new RegExp(String.raw`\bg\(\s*'${id}'`).test(text)
+        const isAnn = new RegExp(String.raw`\bann\(\s*'${id}'`).test(text)
+        if (isGroup || isAnn) continue
+      }
+      const d = degree.get(id)
+      if (d && d.in === 0 && d.out === 0) {
+        err('C17', `${name} 存在孤立节点 "${id}"（入度=出度=0）`)
+        isoBad++
+      }
+    }
+
+    for (const [id, node] of nodes) {
+      if (node.type !== 'diagram' || node.explicitWidth == null) continue
+      const bounds =
+        node.emphasis === 'hub'
+          ? WIDTH_BOUNDS.hub
+          : node.size === 'sm'
+            ? WIDTH_BOUNDS.sm
+            : WIDTH_BOUNDS.md
+      if (node.explicitWidth < bounds.min || node.explicitWidth > bounds.max) {
+        err(
+          'C18',
+          `${name} 节点 "${id}" width=${node.explicitWidth} 超出 ${node.size}/${node.emphasis} 区间 [${bounds.min},${bounds.max}]`,
+        )
+        widthBad++
+      }
+    }
+
+    const abs = new Map()
+    for (const [id, node] of nodes) {
+      let x = node.x
+      let y = node.y
+      if (node.parentId && nodes.has(node.parentId)) {
+        const p = nodes.get(node.parentId)
+        x += p.x
+        y += p.y
+      }
+      abs.set(id, { ...node, ax: x, ay: y })
+    }
+
+    const diagramNodes = [...abs.entries()].filter(([, n]) => n.type === 'diagram')
+    for (let i = 0; i < diagramNodes.length; i++) {
+      const [idA, a] = diagramNodes[i]
+      for (let j = i + 1; j < diagramNodes.length; j++) {
+        const [idB, b] = diagramNodes[j]
+        const overlap =
+          a.ax < b.ax + b.w &&
+          a.ax + a.w > b.ax &&
+          a.ay < b.ay + b.h &&
+          a.ay + a.h > b.ay
+        if (overlap) {
+          err('C19', `${name} 节点包围盒重叠：${idA} ∩ ${idB}`)
+          overlapBad++
+        }
+      }
+      if (a.parentId && abs.has(a.parentId)) {
+        const p = abs.get(a.parentId)
+        const inside =
+          a.ax >= p.ax - 1 &&
+          a.ay >= p.ay - 1 &&
+          a.ax + a.w <= p.ax + p.w + 1 &&
+          a.ay + a.h <= p.ay + p.h + 1
+        if (!inside) {
+          err('C19', `${name} 节点 "${idA}" 超出所属泳道 "${a.parentId}"`)
+          overlapBad++
+        }
+      }
+    }
+  }
+
+  if (!edgeBad) ok('C16', `静态图边引用全部有效（${diagramFiles.length} 个文件 / ${edgeTotal} 条边）`)
+  if (!isoBad) ok('C17', '静态图无孤立节点（annotation 已豁免）')
+  if (!widthBad) ok('C18', '显式 width 均落在 size 类区间内')
+  if (!overlapBad) ok('C19', '节点包围盒无重叠且未越出泳道')
+  if (unsetPorts === 0) {
+    ok('C20', '全部边已显式指定端口')
+  } else {
+    warn(
+      'C20',
+      `${unsetPorts}/${edgeTotal} 条边未显式指定端口（运行时由 layoutEdges 按坐标推断）`,
+    )
+  }
+}
+
+// ------------------------------------------------ C21 内容文件禁止 NUL 字节
+{
+  let bad = 0
+  function walkMd(dir) {
+    for (const f of readdirSync(join(ROOT, dir))) {
+      const rel = `${dir}/${f}`
+      const full = join(ROOT, rel)
+      if (statSync(full).isDirectory()) walkMd(rel)
+      else if (f.endsWith('.md')) {
+        const buf = readFileSync(full)
+        if (buf.includes(0)) {
+          err('C21', `${rel} 含 NUL 字节（${buf.filter((b) => b === 0).length} 处）—— 请截断损坏尾部`)
+          bad++
+        }
+      }
+    }
+  }
+  walkMd('src/content')
+  if (!bad) ok('C21', '内容 Markdown 无 NUL / 二进制污染')
+}
+
 // ------------------------------------------------------------------ 输出
 const GREEN = '\x1b[32m'
 const YELLOW = '\x1b[33m'
