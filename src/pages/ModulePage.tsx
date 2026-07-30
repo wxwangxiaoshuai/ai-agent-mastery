@@ -180,14 +180,14 @@ export function ModulePage() {
               className="card card-hover block border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent p-6"
             >
               <div className="mb-3 flex items-center gap-2">
-                <span className="text-2xl">🎯</span>
-                <h3 className="text-base font-bold text-ink-50">本模块实战项目</h3>
+                <span className="shrink-0 text-2xl">🎯</span>
+                <h3 className="min-w-0 truncate text-base font-bold text-ink-50">本模块实战项目</h3>
                 {isProjectComplete(module.project.id) && (
-                  <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-400">
+                  <span className="shrink-0 whitespace-nowrap rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-400">
                     ✓ 已完成
                   </span>
                 )}
-                <span className="ml-auto text-xs text-amber-400">查看详情 →</span>
+                <span className="ml-auto shrink-0 whitespace-nowrap text-xs text-amber-400">查看详情 →</span>
               </div>
               <h4 className="text-lg font-bold text-amber-300">
                 {module.project.title}
