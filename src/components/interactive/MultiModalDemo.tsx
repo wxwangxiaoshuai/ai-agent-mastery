@@ -121,7 +121,7 @@ const modalityMeta: Record<
 > = {
   image: {
     label: '视觉',
-    badge: 'border-brand-500/40 bg-brand-500/10 text-brand-300',
+    badge: 'border-brand-500/40 bg-brand-500/10 text-ink-100',
     tokenHint: '1 张图约 1–2k token；大图需压缩再 base64',
   },
   audio: {
@@ -172,10 +172,10 @@ export function MultiModalDemo() {
             key={m}
             type="button"
             onClick={() => switchModality(m)}
-            className={`rounded-lg border px-3 py-1.5 text-xs transition-colors ${
+            className={`rounded-lg px-3 py-1.5 text-xs transition-colors ${
               modality === m
-                ? 'border-brand-500/50 bg-brand-500/15 text-brand-200'
-                : 'border-ink-700 bg-ink-900/40 text-ink-400 hover:border-ink-600 hover:text-ink-200'
+                ? 'interactive-selected interactive-focus'
+                : 'interactive-chip interactive-focus'
             }`}
           >
             {modalityMeta[m].label}
@@ -191,8 +191,8 @@ export function MultiModalDemo() {
             onClick={() => setActiveId(s.id)}
             className={`rounded-md px-2.5 py-1 text-[11px] transition-colors ${
               activeId === s.id
-                ? 'bg-ink-700 text-ink-100'
-                : 'bg-ink-900/50 text-ink-500 hover:text-ink-300'
+                ? 'interactive-selected interactive-focus'
+                : 'interactive-chip interactive-focus'
             }`}
           >
             {s.title}
@@ -201,21 +201,21 @@ export function MultiModalDemo() {
       </div>
 
       <div className="mb-4 rounded-lg border border-ink-700/80 bg-ink-900/40 px-3 py-2">
-        <div className="font-mono text-[11px] text-brand-300">{scenario.inputLabel}</div>
+        <div className="font-mono text-[11px] text-ink-100">{scenario.inputLabel}</div>
         <p className="mt-1 text-xs text-ink-400">{scenario.inputHint}</p>
         <p className="mt-1 text-[11px] text-ink-500">{meta.tokenHint}</p>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
-        <div className="rounded-lg border border-rose-500/25 bg-rose-500/5 p-3">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-rose-300/90">
+        <div className="rounded-lg border border-danger-500/25 bg-danger-500/5 p-3">
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-danger-300">
             纯文本路径
           </div>
           <p className="mb-2 text-xs text-ink-400">
             <span className="text-ink-500">做法：</span>
             {scenario.textOnly.how}
           </p>
-          <p className="mb-2 text-xs text-rose-300/80">
+          <p className="mb-2 text-xs text-danger-300">
             <span className="text-ink-500">损失：</span>
             {scenario.textOnly.loss}
           </p>
@@ -225,21 +225,21 @@ export function MultiModalDemo() {
         </div>
 
         <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/5 p-3">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-300/90">
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-300">
             多模态路径
           </div>
           <div className="mb-2 flex flex-wrap gap-1.5">
             {scenario.multimodal.pipeline.map((step, i) => (
               <span
                 key={step}
-                className="inline-flex items-center gap-1 rounded border border-emerald-500/20 bg-ink-950/40 px-1.5 py-0.5 text-[10px] text-emerald-200/90"
+                className="inline-flex items-center gap-1 rounded border border-emerald-500/20 bg-ink-950/40 px-1.5 py-0.5 text-[10px] text-emerald-300"
               >
                 <span className="text-ink-500">{i + 1}.</span>
                 {step}
               </span>
             ))}
           </div>
-          <pre className="overflow-x-auto rounded-md border border-ink-700/60 bg-ink-950/50 p-2 font-mono text-[10px] leading-relaxed text-emerald-200/90">
+          <pre className="overflow-x-auto rounded-md border border-ink-700/60 bg-ink-950/50 p-2 font-mono text-[10px] leading-relaxed text-emerald-300">
             {JSON.stringify(scenario.multimodal.output, null, 2)}
           </pre>
         </div>

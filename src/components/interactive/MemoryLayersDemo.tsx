@@ -45,7 +45,7 @@ const LAYERS: Layer[] = [
     desc: '从多次事件中抽出的稳定事实与偏好',
     ttl: '长期，直到被新事实推翻',
     store: '结构化 KV + 向量库',
-    color: 'border-brand-500/30 bg-brand-500/10 text-brand-300',
+    color: 'border-brand-500/30 bg-brand-500/10 text-ink-100',
   },
   {
     key: 'procedural',
@@ -108,10 +108,10 @@ export function MemoryLayersDemo() {
           <button
             key={e.text}
             onClick={() => setI(idx)}
-            className={`w-full rounded-lg border px-3 py-2 text-left text-xs transition-colors ${
+            className={`w-full rounded-lg px-3 py-2 text-left text-xs transition-colors ${
               idx === i
-                ? 'border-brand-500/40 bg-brand-500/15 text-ink-100'
-                : 'border-ink-700 bg-ink-800/40 text-ink-400 hover:text-ink-200'
+                ? 'interactive-selected interactive-focus'
+                : 'interactive-chip interactive-focus'
             }`}
           >
             {e.text}

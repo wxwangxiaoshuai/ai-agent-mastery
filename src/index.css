@@ -223,6 +223,28 @@ body {
     color: #ffffff !important;
   }
 
+  /* Idle chip for interactive demos */
+  .interactive-chip {
+    border: 1px solid rgb(var(--ink-700) / 1);
+    background-color: rgb(var(--ink-800) / 0.4);
+    color: rgb(var(--ink-400) / 1);
+  }
+  .interactive-chip:hover {
+    border-color: rgb(var(--ink-600) / 1);
+    color: rgb(var(--ink-200) / 1);
+  }
+
+  /* Keyboard focus ring for interactive controls */
+  .interactive-focus {
+    outline: none;
+  }
+  .interactive-focus:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px rgb(var(--ink-950) / 1),
+      0 0 0 4px rgb(var(--brand-400) / 0.6);
+  }
+
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium;
   }

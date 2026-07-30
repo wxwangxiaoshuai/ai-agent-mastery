@@ -168,7 +168,9 @@ ls openspec/changes/archive/dark-mode/tasks.md 2>/dev/null || exit 1
 
 ### 门禁配置：按项目风险等级
 
-不是所有项目都需要 9 个 Gate。按风险等级配置：
+不是所有项目都需要 9 个 Gate。按风险等级配置——用下面的配置器点选低/中/高，看推荐启用哪些 pre-commit / pre-push 检查：
+
+::interactive{type="gateConfigurator"}
 
 | 风险等级 | 适用场景 | 门禁配置 |
 |---------|---------|---------|

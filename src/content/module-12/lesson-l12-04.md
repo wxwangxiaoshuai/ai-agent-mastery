@@ -230,7 +230,7 @@ def cut_clip(video_path: str, start: float, end: float) -> str:
 
 ### 视频理解的成本陷阱
 
-视频是最贵最慢的模态——清醒算账。下面的 Token 预算分配器可以直观感受：当你把 30 帧视频塞进上下文窗口时，留给 System Prompt、对话历史和输出的空间还剩多少：
+视频是最贵最慢的模态——清醒算账。下面的 Token 预算分配器按 L03-03 的六槽模型分配窗口：把「检索知识 / 用户输入」拖大，就相当于把多帧画面塞进上下文——你会立刻看到 System Prompt、对话历史和输出预留被挤掉多少：
 
 ::interactive{type="contextBudget"}
 

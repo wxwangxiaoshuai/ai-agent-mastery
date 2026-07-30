@@ -13,14 +13,6 @@ import {
  * 教学目标：让"按档位选型"成为默认思路，而不是记住某个具体型号。
  */
 
-const TONE: Record<ModelTier, string> = {
-  nano: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
-  small: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300',
-  mid: 'border-brand-500/30 bg-brand-500/10 text-brand-300',
-  large: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
-  embedding: 'border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-300',
-}
-
 export function ModelTierTable() {
   const [active, setActive] = useState<ModelTier>('mid')
   const spec = MODEL_TIERS.find((t) => t.tier === active) ?? MODEL_TIERS[0]
@@ -38,10 +30,10 @@ export function ModelTierTable() {
           <button
             key={t.tier}
             onClick={() => setActive(t.tier)}
-            className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               active === t.tier
-                ? TONE[t.tier]
-                : 'border-ink-700 bg-ink-800/50 text-ink-400 hover:text-ink-200'
+                ? 'interactive-selected interactive-focus'
+                : 'interactive-chip interactive-focus'
             }`}
           >
             {t.name}

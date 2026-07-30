@@ -110,7 +110,7 @@ const SPECS: Record<Topo, Spec> = {
   },
 }
 
-const ORDER: Topo[] = ['chain', 'star', 'mesh', 'hier']
+const ORDER: Topo[] = ['chain', 'star', 'hier', 'mesh']
 
 export function MultiAgentTopology() {
   const [t, setT] = useState<Topo>('star')
@@ -133,10 +133,10 @@ export function MultiAgentTopology() {
           <button
             key={k}
             onClick={() => setT(k)}
-            className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               t === k
-                ? 'border-brand-500/40 bg-brand-500/20 text-brand-300'
-                : 'border-ink-700 bg-ink-800/50 text-ink-400 hover:text-ink-200'
+                ? 'interactive-selected interactive-focus'
+                : 'interactive-chip interactive-focus'
             }`}
           >
             {SPECS[k].name}

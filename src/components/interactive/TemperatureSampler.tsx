@@ -154,8 +154,8 @@ export function TemperatureSampler() {
             onClick={() => { setPrompt(p); setOutputIndex(0) }}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               prompt === p
-                ? 'bg-brand-500/20 text-brand-300 border border-brand-500/30'
-                : 'bg-ink-800/50 text-ink-400 border border-ink-700 hover:text-ink-200'
+                ? 'interactive-selected interactive-focus'
+                : 'interactive-chip interactive-focus'
             }`}
           >
             {p.length > 25 ? p.slice(0, 25) + '...' : p}
@@ -196,7 +196,7 @@ export function TemperatureSampler() {
       <div className="mt-3 flex items-center justify-between">
         <button
           onClick={regenerate}
-          className="rounded-lg border border-ink-700 bg-ink-800/50 px-3 py-1.5 text-xs text-ink-300 transition-colors hover:bg-ink-800 hover:text-ink-100"
+          className="interactive-chip interactive-focus rounded-lg px-3 py-1.5 text-xs"
         >
           🔄 重新采样
         </button>

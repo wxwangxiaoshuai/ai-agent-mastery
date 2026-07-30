@@ -31,15 +31,15 @@ const stateLabel: Record<CircuitState, string> = {
 
 const stateStyle: Record<CircuitState, string> = {
   closed: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300',
-  open: 'border-rose-500/40 bg-rose-500/10 text-rose-300',
+  open: 'border-danger-500/40 bg-danger-500/10 text-danger-300',
   half_open: 'border-amber-500/40 bg-amber-500/10 text-amber-300',
 }
 
 const kindStyle: Record<EventKind, string> = {
   ok: 'text-emerald-400',
   retry: 'text-amber-400',
-  fail: 'text-rose-400',
-  open: 'text-rose-300',
+  fail: 'text-danger-400',
+  open: 'text-danger-300',
   half_open: 'text-amber-300',
   close: 'text-emerald-300',
   fallback: 'text-brand-300',
@@ -249,14 +249,18 @@ export function HarnessMonitor() {
           <button
             type="button"
             onClick={() => setRunning((r) => !r)}
-            className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-500"
+            className={`interactive-focus rounded-lg px-3 py-1.5 text-xs font-medium ${
+              running
+                ? 'interactive-chip'
+                : 'interactive-selected'
+            }`}
           >
             {running ? '暂停' : '开始模拟'}
           </button>
           <button
             type="button"
             onClick={reset}
-            className="rounded-lg border border-ink-600 px-3 py-1.5 text-xs text-ink-300 hover:border-ink-500 hover:text-ink-100"
+            className="interactive-chip interactive-focus rounded-lg px-3 py-1.5 text-xs"
           >
             重置
           </button>

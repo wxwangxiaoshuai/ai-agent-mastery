@@ -104,12 +104,12 @@ export function RAGPipelineDemo() {
           <button
             key={s.key}
             onClick={() => setStep(i)}
-            className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+            className={`rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
               i === step
-                ? 'border-brand-500/40 bg-brand-500/20 text-brand-300'
+                ? 'interactive-selected interactive-focus'
                 : i < step
-                  ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300/80'
-                  : 'border-ink-700 bg-ink-800/50 text-ink-500 hover:text-ink-300'
+                  ? 'border border-emerald-500/25 bg-emerald-500/10 text-emerald-300/80 interactive-focus'
+                  : 'interactive-chip interactive-focus'
             }`}
           >
             {s.name}
@@ -145,14 +145,14 @@ export function RAGPipelineDemo() {
         <button
           onClick={() => setStep((s) => Math.max(0, s - 1))}
           disabled={step === 0}
-          className="rounded-lg border border-ink-700 px-3 py-1.5 text-xs text-ink-300 disabled:opacity-40"
+          className="interactive-chip interactive-focus rounded-lg px-3 py-1.5 text-xs disabled:opacity-40"
         >
           上一步
         </button>
         <button
           onClick={() => setStep((s) => Math.min(STAGES.length - 1, s + 1))}
           disabled={step === STAGES.length - 1}
-          className="rounded-lg border border-brand-500/30 bg-brand-500/20 px-3 py-1.5 text-xs text-brand-300 disabled:opacity-40"
+          className="interactive-selected interactive-focus rounded-lg px-3 py-1.5 text-xs disabled:opacity-40"
         >
           下一步
         </button>

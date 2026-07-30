@@ -14,6 +14,8 @@ const SCENARIO: Step[] = [
   { id: 5, phase: 'action', content: '调用 get_weather(city="北京", days=3)' },
   { id: 6, phase: 'observation', content: '周五晴 22-30°C，周六多云 20-28°C，周日小雨 18-25°C。' },
   { id: 7, phase: 'thought', content: '信息完整，可以给出最终回答了。' },
+  { id: 8, phase: 'action', content: 'FINAL_ANSWER: 北京今天晴 22-30°C；周末周六多云、周日有小雨，记得带伞。' },
+  { id: 9, phase: 'observation', content: '已向用户输出最终回答，循环结束。' },
 ]
 
 const phaseConfig = {
@@ -21,7 +23,7 @@ const phaseConfig = {
     label: '思考',
     bg: 'bg-brand-500/10',
     border: 'border-brand-500/30',
-    text: 'text-brand-300',
+    text: 'text-ink-100',
     icon: '💭',
   },
   action: {
@@ -111,7 +113,7 @@ export function AgentLoopVisualizer() {
 
       {/* Loop diagram */}
       <div className="mt-4 flex items-center justify-center gap-2 text-xs">
-        <div className="rounded-lg border border-brand-500/30 bg-brand-500/10 px-3 py-1.5 text-brand-300">
+        <div className="rounded-lg border border-brand-500/30 bg-brand-500/10 px-3 py-1.5 text-ink-100">
           💭 思考
         </div>
         <span className="text-ink-600">→</span>
@@ -123,7 +125,7 @@ export function AgentLoopVisualizer() {
           👁️ 观察
         </div>
         <span className="text-ink-600">→</span>
-        <div className="rounded-lg border border-brand-500/30 bg-brand-500/10 px-3 py-1.5 text-brand-300">
+        <div className="rounded-lg border border-brand-500/30 bg-brand-500/10 px-3 py-1.5 text-ink-100">
           💭 ...
         </div>
       </div>
@@ -132,20 +134,20 @@ export function AgentLoopVisualizer() {
         <button
           onClick={() => setIsRunning(true)}
           disabled={isRunning || currentStep >= SCENARIO.length - 1}
-          className="rounded-lg border border-brand-500/30 bg-brand-500/15 px-4 py-2 text-xs font-medium text-brand-300 transition-colors hover:bg-brand-500/25 disabled:opacity-40"
+          className="interactive-selected interactive-focus rounded-lg px-4 py-2 text-xs disabled:opacity-40"
         >
           ▶ 自动播放
         </button>
         <button
           onClick={next}
           disabled={currentStep >= SCENARIO.length - 1}
-          className="rounded-lg border border-ink-700 bg-ink-800/50 px-4 py-2 text-xs text-ink-300 transition-colors hover:bg-ink-800 disabled:opacity-40"
+          className="interactive-chip interactive-focus rounded-lg px-4 py-2 text-xs disabled:opacity-40"
         >
           ⏭ 下一步
         </button>
         <button
           onClick={reset}
-          className="rounded-lg border border-ink-700 bg-ink-800/50 px-4 py-2 text-xs text-ink-300 transition-colors hover:bg-ink-800"
+          className="interactive-chip interactive-focus rounded-lg px-4 py-2 text-xs"
         >
           🔄 重置
         </button>

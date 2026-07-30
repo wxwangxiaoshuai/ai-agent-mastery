@@ -94,7 +94,7 @@ export function ToolSchemaDesigner() {
   const schema = useMemo(() => buildSchema(sel), [sel])
 
   const tone =
-    score >= 80 ? 'text-emerald-300' : score >= 50 ? 'text-amber-300' : 'text-rose-300'
+    score >= 80 ? 'text-emerald-300' : score >= 50 ? 'text-amber-300' : 'text-danger-300'
 
   return (
     <div className="card p-5">
@@ -108,19 +108,19 @@ export function ToolSchemaDesigner() {
           <button
             key={c.key}
             onClick={() => setSel((p) => ({ ...p, [c.key]: !p[c.key] }))}
-            className={`w-full rounded-lg border p-3 text-left transition-colors ${
+            className={`w-full rounded-lg border p-3 text-left transition-colors interactive-focus ${
               sel[c.key]
                 ? 'border-emerald-500/30 bg-emerald-500/10'
-                : 'border-rose-500/25 bg-rose-500/5'
+                : 'border-danger-500/25 bg-danger-500/5'
             }`}
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-ink-200">{c.label}</span>
-              <span className={`text-[11px] ${sel[c.key] ? 'text-emerald-300' : 'text-rose-300'}`}>
+              <span className={`text-[11px] ${sel[c.key] ? 'text-emerald-300' : 'text-danger-300'}`}>
                 {sel[c.key] ? `+${c.weight}` : '+0'}
               </span>
             </div>
-            <p className={`mt-1 text-xs ${sel[c.key] ? 'text-emerald-300' : 'text-rose-300'}`}>
+            <p className={`mt-1 text-xs ${sel[c.key] ? 'text-emerald-300' : 'text-danger-300'}`}>
               {sel[c.key] ? c.good : c.bad}
             </p>
             {sel[c.key] && <p className="mt-1 text-[11px] text-ink-500">{c.why}</p>}
@@ -132,7 +132,7 @@ export function ToolSchemaDesigner() {
         <div className="h-2 flex-1 overflow-hidden rounded-full bg-ink-800">
           <div
             className={`h-full transition-all ${
-              score >= 80 ? 'bg-emerald-500' : score >= 50 ? 'bg-amber-500' : 'bg-rose-500'
+              score >= 80 ? 'bg-emerald-500' : score >= 50 ? 'bg-amber-500' : 'bg-danger-500'
             }`}
             style={{ width: `${score}%` }}
           />

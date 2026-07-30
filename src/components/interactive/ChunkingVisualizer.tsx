@@ -8,8 +8,8 @@ import { useMemo, useState } from 'react'
 
 const SAMPLE = `RAG 的第一步是把长文档切成块。分块看似是工程细节，实则决定了检索质量的上限。
 固定长度分块实现最简单：按字符数硬切，配一个重叠窗口。它的问题在于不认识语义边界，
-经常把一个完整的句子甚至一个术语劈成两半。语义分块则先按句子或段落切分，再按相邻块的
-向量相似度决定是否合并，代价是需要额外的一次 embedding 计算。层级分块会同时保留粗粒度
+经常把一个完整的句子甚至一个术语劈成两半。语义分块则先按句子或段落切分，再合并到接近
+目标长度（本演示按句号切分后按长度合并，不跑 embedding）。父子双索引会同时保留粗粒度
 和细粒度两份索引：检索时先用小块精确命中，再用它所属的大块补全上下文。这三种策略没有
 绝对优劣，取舍点在于文档结构化程度、检索精度要求和你能接受的预处理成本。`
 
@@ -25,7 +25,7 @@ interface Chunk {
 const STRATEGIES: { id: Strategy; name: string; desc: string }[] = [
   { id: 'fixed', name: '固定长度', desc: '按字符数硬切 + 重叠窗口，最快但不认边界' },
   { id: 'semantic', name: '语义分块', desc: '先按句号切分，再合并到接近目标长度' },
-  { id: 'hierarchical', name: '层级分块', desc: '父块保上下文，子块保精度，两份索引' },
+  { id: 'hierarchical', name: '父子双索引', desc: '父块保上下文，子块保精度，两份索引' },
 ]
 
 /** 中文句子终止符 */
@@ -116,10 +116,10 @@ export function ChunkingVisualizer() {
           <button
             key={s.id}
             onClick={() => setStrategy(s.id)}
-            className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+            className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
               strategy === s.id
-                ? 'border-brand-500/50 bg-brand-500/15 text-brand-300'
-                : 'border-ink-700 text-ink-400 hover:text-ink-100'
+                ? 'interactive-selected interactive-focus'
+                : 'interactive-chip interactive-focus'
             }`}
           >
             {s.name}
@@ -184,7 +184,7 @@ export function ChunkingVisualizer() {
             key={i}
             className={`rounded-lg border p-3 text-sm leading-relaxed ${
               c.broken
-                ? 'border-rose-500/40 bg-rose-500/10 text-ink-200'
+                ? 'border-danger-500/40 bg-danger-500/10 text-ink-200'
                 : c.level === '父块'
                   ? 'border-amber-500/30 bg-amber-500/10 text-ink-200'
                   : 'border-ink-700 bg-ink-800/40 text-ink-300'
@@ -200,7 +200,7 @@ export function ChunkingVisualizer() {
                   <span>{c.level}</span>
                 </>
               )}
-              {c.broken && <span className="text-rose-400">· 句子被切断</span>}
+              {c.broken && <span className="text-danger-400">· 句子被切断</span>}
             </div>
             {c.text}
           </div>
@@ -226,7 +226,7 @@ function Stat({
   tone?: 'good' | 'bad'
 }) {
   const color =
-    tone === 'bad' ? 'text-rose-300' : tone === 'good' ? 'text-emerald-300' : 'text-ink-100'
+    tone === 'bad' ? 'text-danger-300' : tone === 'good' ? 'text-emerald-300' : 'text-ink-100'
   return (
     <div className="rounded-lg border border-ink-700 bg-ink-800/40 p-2.5">
       <div className="text-[11px] text-ink-500">{label}</div>

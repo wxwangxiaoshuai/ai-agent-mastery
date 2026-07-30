@@ -97,12 +97,12 @@ export function GraphStateMachine() {
           <button
             key={idx}
             onClick={() => setI(idx)}
-            className={`h-7 w-7 rounded-md border text-[11px] font-semibold transition-colors ${
+            className={`h-7 w-7 rounded-md text-[11px] font-semibold transition-colors interactive-focus ${
               idx === i
                 ? 'interactive-selected'
                 : t.kind === 'loop'
-                  ? 'border-amber-500/50 bg-amber-500/20 text-amber-300'
-                  : 'border-ink-700 bg-ink-800/40 text-ink-400'
+                  ? 'border border-amber-500/50 bg-amber-500/20 text-amber-300'
+                  : 'interactive-chip'
             }`}
             title={t.label}
           >
@@ -137,20 +137,20 @@ ${Object.entries(f.state)
         <button
           onClick={() => setI((x) => Math.max(0, x - 1))}
           disabled={i === 0}
-          className="rounded-lg border border-ink-700 px-3 py-1.5 text-xs font-medium text-ink-200 disabled:opacity-40"
+          className="interactive-chip interactive-focus rounded-lg px-3 py-1.5 text-xs disabled:opacity-40"
         >
           上一步
         </button>
         <button
           onClick={() => setI((x) => Math.min(TRACE.length - 1, x + 1))}
           disabled={i === TRACE.length - 1}
-          className="interactive-selected rounded-lg px-3 py-1.5 text-xs shadow-sm disabled:opacity-40"
+          className="interactive-selected interactive-focus rounded-lg px-3 py-1.5 text-xs shadow-sm disabled:opacity-40"
         >
           下一步
         </button>
         <button
           onClick={() => setI(0)}
-          className="rounded-lg border border-ink-700 px-3 py-1.5 text-xs font-medium text-ink-300"
+          className="interactive-chip interactive-focus rounded-lg px-3 py-1.5 text-xs"
         >
           重置
         </button>
