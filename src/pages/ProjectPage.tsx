@@ -1,12 +1,16 @@
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { curriculum } from '../data/curriculum'
 import { MarkdownRenderer } from '../components/MarkdownRenderer'
 import { DifficultyBadge, Tag } from '../components/Badges'
 import { useProgress } from '../components/ProgressProvider'
+import { AdjacentStepLinks } from '../components/AdjacentStepLinks'
+import { ContinueToNextModule, ModuleAdjacentNav } from '../components/ModuleAdjacentNav'
+import { getAdjacentModules, getProjectNeighbors, navPath } from '../lib/curriculumNav'
 
 export function ProjectPage() {
   const { moduleId, projectId } = useParams<{ moduleId: string; projectId: string }>()
+  const navigate = useNavigate()
   const modId = Number(moduleId)
 
   const mod = curriculum.modules.find((m) => m.id === modId)
@@ -22,7 +26,6 @@ export function ProjectPage() {
     setLastVisited,
   } = useProgress()
 
-  // Load project markdown content
   useEffect(() => {
     if (!projectId || !moduleId) return
     setLoading(true)
@@ -39,7 +42,6 @@ export function ProjectPage() {
       })
   }, [moduleId, projectId])
 
-  // Record last visited
   useEffect(() => {
     if (!mod || !project) return
     setLastVisited({ moduleId: mod.id, projectId: project.id })
@@ -57,10 +59,11 @@ export function ProjectPage() {
   }
 
   const done = isProjectComplete(project.id)
+  const { prev, next } = getProjectNeighbors(mod)
+  const { next: nextMod } = getAdjacentModules(mod.id)
 
   return (
     <div className="container-page py-12 sm:py-16">
-      {/* Breadcrumb */}
       <nav className="mb-8 flex items-center gap-2 text-sm text-ink-500">
         <Link to="/curriculum" className="hover:text-ink-200">
           课程大纲
@@ -74,9 +77,7 @@ export function ProjectPage() {
       </nav>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_280px]">
-        {/* Main content */}
         <div className="min-w-0">
-          {/* Project header */}
           <div className="card relative overflow-hidden border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent p-6 sm:p-8">
             <div className="grid-bg absolute inset-0 opacity-20" />
             <div className="relative">
@@ -99,9 +100,7 @@ export function ProjectPage() {
             </div>
           </div>
 
-          {/* Project meta */}
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            {/* Deliverables */}
             <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5">
               <div className="mb-3 text-sm font-semibold text-ink-100">交付物</div>
               <ul className="space-y-2">
@@ -114,7 +113,6 @@ export function ProjectPage() {
               </ul>
             </div>
 
-            {/* Tech stack */}
             <div className="rounded-xl border border-ink-700/50 bg-ink-900/40 p-5">
               <div className="mb-3 text-sm font-semibold text-ink-100">技术栈</div>
               <div className="flex flex-wrap gap-1.5">
@@ -128,7 +126,6 @@ export function ProjectPage() {
             </div>
           </div>
 
-          {/* Project content */}
           <div className="mt-8">
             {loading ? (
               <div className="card p-8 text-center">
@@ -147,7 +144,6 @@ export function ProjectPage() {
             )}
           </div>
 
-          {/* End-of-project: complete */}
           <div className="mt-10 border-t border-ink-800 pt-6">
             <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 sm:p-6">
               {done ? (
@@ -172,30 +168,57 @@ export function ProjectPage() {
                       标记完成后进度会保存在本机，刷新不丢失。
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => markProjectComplete(project.id)}
-                    className="btn-primary shrink-0"
-                  >
-                    完成项目
-                  </button>
+                  {next ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        markProjectComplete(project.id)
+                        navigate(navPath(next))
+                      }}
+                      className="btn-primary shrink-0"
+                    >
+                      完成并进入下一模块
+                      <span aria-hidden>→</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => markProjectComplete(project.id)}
+                      className="btn-primary shrink-0"
+                    >
+                      完成项目
+                    </button>
+                  )}
                 </div>
               )}
               {done && (
-                <div className="mt-4 border-t border-ink-800 pt-4">
-                  <Link to={`/curriculum/${mod.id}`} className="btn-primary inline-flex">
-                    返回模块概览
-                    <span aria-hidden>→</span>
+                <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-ink-800 pt-4">
+                  <ContinueToNextModule module={mod} />
+                  {nextMod && (
+                    <span className="text-sm text-ink-500">
+                      {nextMod.icon} {nextMod.title}
+                    </span>
+                  )}
+                  <Link
+                    to={`/curriculum/${mod.id}`}
+                    className="text-sm text-ink-500 underline-offset-2 hover:text-ink-300 hover:underline"
+                  >
+                    或返回本模块概览
                   </Link>
                 </div>
               )}
             </div>
+
+            <AdjacentStepLinks
+              currentModuleId={mod.id}
+              prev={prev}
+              next={next}
+              nextSkipHint={!done}
+            />
           </div>
         </div>
 
-        {/* Sidebar */}
-        <aside className="lg:sticky lg:top-24 lg:self-start">
-          {/* Module info */}
+        <aside className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-6.5rem)] lg:self-start lg:overflow-y-auto lg:pb-2">
           <div className="card p-5">
             <div className="flex items-center gap-2">
               <span className="text-xl">{mod.icon}</span>
@@ -212,7 +235,13 @@ export function ProjectPage() {
             </div>
           </div>
 
-          {/* All lessons in module */}
+          <div className="mt-4">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-500">
+              相邻模块
+            </div>
+            <ModuleAdjacentNav moduleId={mod.id} deepLink compact />
+          </div>
+
           <div className="mt-4">
             <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-500">
               课程列表 · {mod.lessons.length} 节
@@ -236,10 +265,13 @@ export function ProjectPage() {
                   </Link>
                 )
               })}
+              <div className="flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-sm text-amber-300">
+                <span className="font-mono text-xs">◆</span>
+                <span className="min-w-0 flex-1 truncate">{project.title}</span>
+              </div>
             </div>
           </div>
 
-          {/* Back to module */}
           <Link
             to={`/curriculum/${mod.id}`}
             className="mt-4 flex w-full items-center justify-center gap-1 rounded-xl border border-ink-700 bg-ink-900/40 p-3 text-sm text-ink-400 transition-colors hover:border-ink-600 hover:text-ink-200"
