@@ -169,13 +169,166 @@ Claude Code 架构特点：
 
 > 这就是 L14-01 决策框架的应用——先定产品在自主性谱系哪端，再决定架构重点。盲目上"最高自主"既贵又险，辅助型 Agent 用 Devin 的全套可靠性架构是过度工程；高自主 Agent 用 Copilot 的补全架构会失控。**匹配定位**。
 
+### 实战：实现一个带自我验证的自主编程 Agent 骨架
+
+理论讲完了，写一个最小可跑的自主编程 Agent。核心是**自我验证循环**——写完代码自己跑测试，失败就自己修：
+
+```python
+# autonomous_dev_agent.py —— 带自我验证的自主编程 Agent 骨架
+import subprocess, json
+from dataclasses import dataclass
+from pathlib import Path
+
+@dataclass
+class DevStep:
+    action: str
+    path: str = ""
+    content: str = ""
+    result: str = ""
+    success: bool = True
+
+class AutonomousDevAgent:
+    """自主编程 Agent——规划→执行→验证→修复循环。"""
+
+    def __init__(self, work_dir: str = "./workspace",
+                 max_steps: int = 20, max_retries: int = 3):
+        self.work_dir = Path(work_dir)
+        self.work_dir.mkdir(exist_ok=True)
+        self.max_steps = max_steps
+        self.max_retries = max_retries
+        self.steps: list[DevStep] = []
+        self.allowed_dir = self.work_dir.resolve()
+
+    def execute(self, task: str) -> str:
+        """执行编程任务，含自验证循环。"""
+        plan = self._plan(task)
+        print(f"规划：{len(plan)} 个步骤")
+
+        for idx, action in enumerate(plan):
+            if len(self.steps) >= self.max_steps:
+                return self._summary("达到最大步数限制")
+
+            step = self._execute(action)
+            self.steps.append(step)
+
+            if action.get("verify"):
+                verified = False
+                for retry in range(self.max_retries):
+                    test_result = self._run_tests()
+                    if test_result["passed"]:
+                        verified = True
+                        print(f"  步骤 {idx + 1} 验证通过")
+                        break
+                    print(f"  步骤 {idx + 1} 验证失败 ({retry + 1}/{self.max_retries})")
+                    if retry < self.max_retries - 1:
+                        fix = self._generate_fix(action, test_result)
+                        self._execute(fix)
+
+                if not verified:
+                    return self._summary(f"验证失败，{self.max_retries} 次自动修复后仍不通过")
+
+        return self._summary("任务完成")
+
+    def _plan(self, task: str) -> list[dict]:
+        """拆解任务（实际实现调用 LLM）。"""
+        name = "".join(c if c.isalnum() else "_" for c in task[:30])
+        return [
+            {"action": "write_file", "path": f"src/{name}.py",
+             "description": "核心实现", "verify": True},
+            {"action": "write_file", "path": f"tests/test_{name}.py",
+             "description": "测试文件", "verify": True},
+        ]
+
+    def _execute(self, action: dict) -> DevStep:
+        """执行动作，带路径安全校验。"""
+        path = action.get("path", "")
+        if path:
+            full = (self.work_dir / path).resolve()
+            if not str(full).startswith(str(self.allowed_dir)):
+                return DevStep(action=action.get("action", "unknown"),
+                               path=path, result=f"安全阻断: {path}",
+                               success=False)
+            if action["action"] == "write_file":
+                full.parent.mkdir(parents=True, exist_ok=True)
+                full.write_text(action.get("content", "# TODO\n"))
+                return DevStep(action="write_file", path=path,
+                               result=f"已写入 {path}")
+        return DevStep(action=action.get("action", "execute"),
+                       result=f"执行: {action.get('action', '')}")
+
+    def _run_tests(self) -> dict:
+        """跑测试，返回结果。"""
+        test_dir = self.work_dir / "tests"
+        if not test_dir.exists() or not list(test_dir.glob("test_*.py")):
+            return {"passed": True, "message": "无测试"}
+        result = subprocess.run(
+            ["python3", "-m", "pytest", str(test_dir), "-q"],
+            capture_output=True, text=True, timeout=30,
+            cwd=str(self.work_dir))
+        return {"passed": result.returncode == 0,
+                "message": result.stdout[-200:] if result.stdout else result.stderr[:200]}
+
+    def _generate_fix(self, action: dict, test_result: dict) -> dict:
+        """基于测试失败生成修复（实际由 LLM 生成）。"""
+        return {"action": "write_file", "path": action.get("path", ""),
+                "content": f"# 自动修复\n# 失败原因: {test_result['message'][:100]}\n"}
+
+    def _summary(self, conclusion: str) -> str:
+        lines = [f"\n{'='*50}", f"执行总结: {conclusion}",
+                 f"总步数: {len(self.steps)}"]
+        for i, s in enumerate(self.steps, 1):
+            tag = "✓" if s.success else "✗"
+            lines.append(f"  [{i}] {tag} {s.action}: {s.result[:60]}")
+        return "\n".join(lines)
+
+
+# ═══════════════════════════════════════════════════
+# 安全边界——对应的就是本节讲的安全红线
+# ═══════════════════════════════════════════════════
+
+DANGEROUS_COMMANDS = ["rm -rf", "git push --force", "DROP TABLE",
+                      "shutdown", "chmod 777"]
+
+def safety_check_command(cmd: str) -> tuple[bool, str]:
+    """检查命令是否危险。"""
+    for d in DANGEROUS_COMMANDS:
+        if d.lower() in cmd.lower():
+            return False, f"危险命令被拦截: {d}"
+    return True, ""
+
+def safety_check_path(path: str, allowed: Path) -> tuple[bool, str]:
+    """检查路径是否在允许范围内。"""
+    resolved = Path(path).resolve()
+    if not str(resolved).startswith(str(allowed.resolve())):
+        return False, f"路径越界: {path}"
+    return True, ""
+
+
+if __name__ == "__main__":
+    agent = AutonomousDevAgent(max_steps=10, max_retries=2)
+    print(agent.execute("实现一个简单的计算器函数，支持加减乘除"))
+```
+
+**关键设计点与本节概念的对应**：
+
+| 代码 | 对应概念 |
+|------|---------|
+| `_run_tests()` → `_generate_fix()` → 再跑测试 | **自我验证循环**——Devin 闭环的核心 |
+| `safety_check_path()` + `allowed_dir` | **路径限制**——不能碰工作目录外的文件 |
+| `DANGEROUS_COMMANDS` 黑名单 | **危险命令拦截**——`rm -rf` / `git push --force` 要授权 |
+| `max_steps` + `max_retries` | **步数上限 + 发散保护**——防止无限循环 |
+
+这个骨架加上 LLM 的 Function Calling，就是一个完整的自主编程 Agent 原型。
+
+
 ### 动手 5 分钟
 
 给你的 Agent 在自主性谱系上定位，并画出它的安全边界。
 
 1. 在"补全 → 按指令改 → 自主规划执行"这条谱系上标出你的 Agent 现在的位置和目标位置。
 2. 每往右移一格，列出必须补齐的保障（验证闭环、回滚能力、审批节点、资源上限）。
-3. 挑其中一项现在就实现。
+3. 把上面的 `AutonomousDevAgent` 复制到你的项目中，跑一次看 self-verification 循环怎么工作。改一行代码故意让测试失败，看修复循环是否触发。
+4. 挑其中一项保障现在就实现。
 
 **验收标准**：你能说出你的 Agent 目前缺哪一项保障，以及在缺它的情况下不该把自主性再往右推。
 

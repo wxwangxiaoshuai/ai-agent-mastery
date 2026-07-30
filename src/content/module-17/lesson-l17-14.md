@@ -264,14 +264,173 @@ jobs:
           curl -s http://localhost:5173 | grep "AI Agent" || exit 1
 ```
 
+### 实战：用 Python 写门禁自检脚本
+
+上面的门禁配置散落在 `.husky/pre-commit` 和 `.github/workflows/ci.yml` 里。写一个脚本自动检查这些门禁是否"真的配了"——不是看配置文件在不在，是看门禁能不能实际运行：
+
+```python
+# scripts/check_gates.py —— 门禁配置与有效性自检
+import subprocess, sys, os, json
+from pathlib import Path
+from dataclasses import dataclass
+
+@dataclass
+class GateCheck:
+    gate: str
+    name: str
+    passed: bool
+    detail: str
+
+def check_pre_commit_gates() -> list[GateCheck]:
+    """检查 pre-commit hook 是否存在且可执行。"""
+    results = []
+    hook = Path(".husky/pre-commit")
+
+    if not hook.exists():
+        return [GateCheck("Gate 0-3", "pre-commit hook", False,
+                ".husky/pre-commit 不存在——先运行 pnpm exec husky init")]
+
+    if not os.access(hook, os.X_OK):
+        return [GateCheck("Gate 0-3", "pre-commit hook", False,
+                ".husky/pre-commit 不可执行——chmod +x .husky/pre-commit")]
+
+    content = hook.read_text()
+
+    checks = {
+        "Gate 0: Type check": "tsc --noEmit" if "tsc" in content
+                               else "mypy" if "mypy" in content else None,
+        "Gate 1: Lint": "eslint" if "eslint" in content
+                         else "ruff" if "ruff" in content else None,
+        "Gate 3: Security scan": "API_KEY|SECRET"
+            if any(kw in content for kw in ["API_KEY", "SECRET"]) else None,
+    }
+
+    for gate_name, detection in checks.items():
+        results.append(GateCheck(
+            gate_name.split(":")[0], gate_name,
+            detection is not None,
+            f"检测到 {detection} 命令" if detection
+            else "未检测到对应检查——可能遗漏",
+        ))
+
+    return results
+
+def check_ci_gates() -> list[GateCheck]:
+    """检查 CI 配置是否存在。"""
+    results = []
+    ci_file = Path(".github/workflows/ci.yml")
+
+    if not ci_file.exists():
+        results.append(
+            GateCheck("Gate 4-6", "CI 工作流", False,
+                      ".github/workflows/ci.yml 不存在"))
+        return results
+
+    content = ci_file.read_text()
+    checks = {
+        "Gate 4: Tests": "test" in content or "pytest" in content,
+        "Gate 5: Build": "build" in content,
+    }
+
+    for name, found in checks.items():
+        results.append(GateCheck(
+            name.split(":")[0], name, found,
+            "CI 中检测到对应步骤" if found else "CI 中未检测到——建议补充",
+        ))
+
+    return results
+
+def check_gate_effectiveness() -> list[GateCheck]:
+    """用故意违规的代码验证门禁是否真的会阻断。"""
+    results = []
+    test_file = Path("_gate_test_temp.ts")
+
+    try:
+        test_file.write_text(
+            'const __gate_test: number = "this should fail type check";')
+        result = subprocess.run(
+            ["pnpm", "tsc", "--noEmit"],
+            capture_output=True, text=True, timeout=30,
+        )
+        passed = result.returncode != 0
+        results.append(GateCheck(
+            "Gate 0", "类型检查阻断验证", passed,
+            f"tsc 返回码={result.returncode}（{'非0=阻断' if passed else '未阻断！'}）",
+        ))
+    finally:
+        if test_file.exists():
+            test_file.unlink()
+
+    return results
+
+def check_archive_gates() -> list[GateCheck]:
+    """检查归档前门禁。"""
+    results = []
+    changes_dir = Path("openspec/changes")
+
+    if not changes_dir.exists():
+        results.append(GateCheck(
+            "Gate 7-8", "归档门禁", False,
+            "openspec/changes/ 不存在"))
+        return results
+
+    active = [d for d in changes_dir.iterdir()
+              if d.is_dir() and d.name != "archive"]
+    if not active:
+        results.append(GateCheck(
+            "Gate 7-8", "归档门禁", True,
+            "无活跃变更，归档检查跳过"))
+        return results
+
+    c = active[0]
+    required = [("proposal.md", c / "proposal.md"),
+                ("design.md", c / "design.md"),
+                ("tasks.md", c / "tasks.md"),
+                ("specs/", c / "specs")]
+    missing = [n for n, p in required if not p.exists()]
+    all_ok = len(missing) == 0
+
+    results.append(GateCheck(
+        "Gate 8", f"归档完整性 ({c.name})", all_ok,
+        "全部就绪，可归档" if all_ok
+        else f"缺少：{', '.join(missing)}",
+    ))
+
+    return results
+
+if __name__ == "__main__":
+    print("=" * 60)
+    print("Harness 门禁配置与有效性自检")
+    print("=" * 60)
+
+    all_gates = (
+        check_pre_commit_gates() +
+        check_ci_gates() +
+        check_gate_effectiveness() +
+        check_archive_gates()
+    )
+
+    for g in all_gates:
+        print(f"  [{'✓' if g.passed else '✗'}] {g.name}: {g.detail}")
+
+    passed = sum(1 for g in all_gates if g.passed)
+    print(f"\n结果：{passed}/{len(all_gates)} 项通过")
+
+    if passed < len(all_gates):
+        print("\n→ 部分门禁未就绪。在推代码前补齐，否则 CI 会红灯。")
+        sys.exit(1)
+```
+
+这个脚本的价值在于**验证门禁真的在工作**——不只是配置文件存在，而是"故意违规会被拦截"。在 P17 项目中把它加入 CI，作为门禁生效的"元测试"。
+
 ### 动手 5 分钟
 
 1. 为你的 P17 项目安装 husky 并配置 pre-commit hook（Gate 0-3）。
-2. 故意写一行类型错误（如 `const x: number = "hello"`），尝试提交，验证 Gate 0 是否阻断。
+2. 把上面的 `check_gates.py` 复制到项目中运行一次。故意写一行类型错误（如 `const x: number = "hello"`），验证 Gate 0 是否阻断。
 3. 写一个 `.github/workflows/ci.yml`，包含 Gate 4（测试）和 Gate 5（构建）。
 4. 按"低/中/高"风险等级，确定你的 P17 项目需要哪些 Gate，记录在 proposal.md 的"门禁策略"一节。
 
-**验收标准**：pre-commit hook 能阻断类型错误和安全漏洞（故意写一行 `API_KEY = "sk-test"` 然后提交，看 Gate 3 是否拦截）。CI 工作流文件存在且语法正确。
+**验收标准**：pre-commit hook 能阻断类型错误和安全漏洞（故意写一行 `API_KEY = "sk-test"` 然后提交，看 Gate 3 是否拦截）。CI 工作流文件存在且语法正确。`check_gates.py` 全部通过。
 
 ### 要点总结
 

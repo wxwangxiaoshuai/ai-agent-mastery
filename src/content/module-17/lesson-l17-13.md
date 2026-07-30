@@ -204,13 +204,146 @@ Superpowers 的核心原则是：**"有 1% 可能就该调 skill"**。禁止跳�
 - 用 verification-before-completion skill 做完成自检
 ```
 
+### 实战：用 Python 自动化工作流检查
+
+OpenSpec + Superpowers 的工作流产出大量文件——proposal、specs、design、tasks、brainstorming 记录。手工检查这些文件是否齐全、格式是否正确是体力活。写一个脚本自动化检查：
+
+```python
+# scripts/check_openspec.py —— 自动化 OpenSpec 工作流完整性检查
+import os, sys, json
+from pathlib import Path
+from dataclasses import dataclass
+from typing import Optional
+
+@dataclass
+class CheckResult:
+    path: str
+    passed: bool
+    message: str
+
+def check_openspec_dir(root: str = "openspec/changes") -> list[CheckResult]:
+    """检查 OpenSpec 目录结构完整性。"""
+    results = []
+    changes_dir = Path(root)
+
+    if not changes_dir.exists():
+        return [CheckResult(root, False, "openspec/changes/ 目录不存在——先运行 openspec init")]
+
+    for change_dir in sorted(changes_dir.iterdir()):
+        if not change_dir.is_dir() or change_dir.name == "archive":
+            continue
+
+        # 检查四份必需文件
+        required = {
+            "proposal.md": "提案文件",
+            "design.md": "技术方案",
+            "tasks.md": "任务清单",
+        }
+
+        for filename, desc in required.items():
+            f = change_dir / filename
+            if f.exists():
+                content = f.read_text()
+                issues = []
+
+                if filename == "proposal.md":
+                    # 检查 proposal 质量：不在范围至少 5 条、风险至少 3 条
+                    scope_count = content.count("- ") if "不在范围" in content else 0
+                    risk_count = content.count("- ") if "风险" in content else 0
+                    if "不在范围" not in content:
+                        issues.append("缺少「不在范围」section")
+                    if "风险" not in content:
+                        issues.append("缺少「风险」section")
+
+                if filename == "tasks.md":
+                    total = content.count("- [ ]") + content.count("- [x]")
+                    done = content.count("- [x]")
+                    if total > 0:
+                        issues.append(f"进度：{done}/{total} ({100*done//total}%)")
+
+                status = "✓" if not issues else "⚠"
+                results.append(CheckResult(
+                    str(f),
+                    len([i for i in issues if i.startswith("缺少")]) == 0,
+                    f"{status} {desc}" + (f" — {', '.join(issues)}" if issues else " — 就绪"),
+                ))
+            else:
+                results.append(CheckResult(str(f), False, f"✗ 缺少 {desc}（{filename}）"))
+
+        # 检查 specs/ 目录
+        specs_dir = change_dir / "specs"
+        if specs_dir.exists() and specs_dir.is_dir():
+            spec_files = list(specs_dir.glob("*.md"))
+            results.append(CheckResult(
+                str(specs_dir),
+                len(spec_files) > 0,
+                f"{'✓' if spec_files else '✗'} specs/ — {len(spec_files)} 个规格文件",
+            ))
+        else:
+            results.append(CheckResult(str(specs_dir), False, "✗ 缺少 specs/ 目录"))
+
+    # 检查是否有已归档的 change（有归档说明完整走过一遍流程）
+    archive_dir = changes_dir / "archive"
+    if archive_dir.exists():
+        archived = [d for d in archive_dir.iterdir() if d.is_dir()]
+        results.append(CheckResult(
+            str(archive_dir), True,
+            f"ℹ archive/ — {len(archived)} 个已归档变更（说明完整走过至少 {len(archived)} 遍流程）",
+        ))
+
+    return results
+
+def check_superpowers_artifacts(root: str = "docs") -> list[CheckResult]:
+    """检查 Superpowers ��程产物是否齐全。"""
+    results = []
+    docs = Path(root)
+
+    expected = {
+        "brainstorm-record.md": "brainstorming 发散→收敛记录",
+        "tdd-log.md": "TDD 红→绿→重构循环日志",
+    }
+
+    for filename, desc in expected.items():
+        f = docs / filename
+        if f.exists():
+            lines = len(f.read_text().splitlines())
+            results.append(CheckResult(str(f), lines >= 20, f"✓ {desc}（{lines} 行）"))
+        else:
+            results.append(CheckResult(str(f), False, f"✗ 缺少 {desc}"))
+
+    return results
+
+if __name__ == "__main__":
+    print("=" * 60)
+    print("OpenSpec + Superpowers ���作流完整性检查")
+    print("=" * 60)
+
+    all_results = check_openspec_dir() + check_superpowers_artifacts()
+
+    passed = 0
+    for r in all_results:
+        tag = "✓" if r.passed else "✗"
+        print(f"  [{tag}] {r.message}")
+        if r.passed:
+            passed += 1
+
+    print(f"\n结果：{passed}/{len(all_results)} 项通过")
+
+    # CI 集成：有任何不通过就 exit 1
+    if passed < len(all_results):
+        print("\n→ 工作流产物不完整，请补齐后再提交。")
+        sys.exit(1)
+```
+
+把这个脚本加入 pre-commit hook，每次提交前自动检查工作流产物是否齐全。
+
 ### 动手 5 分钟
 
 1. 安装 OpenSpec：`npm install -g @fission-ai/openspec && openspec init`。
 2. 用 `/opsx:explore` 探索 P17 项目的核心功能方案，记录 explore 发现的至少 2 个"如果不探索就没想到"的问题。
-3. 用 Superpowers 的 `brainstorming` skill 做一次完整的需求头脑风暴（发散 → 收敛），输出一份功能优先级排序。
+3. 把上面的 `check_openspec.py` 复制到你的 P17 项目中运行一次，看你的 OpenSpec 目录还缺什么。
 
-**验收标准**：explore 记录里至少有 2 个"没想到"的问题，brainstorming 输出有明确的发散阶段和收敛阶段（不是直接跳到结论）。
+**验收标准**：explore 记录里至少有 2 个"没想到"的问题，brainstorming 输出有明确的发散阶段和收敛阶段（不是直接跳到结论）。`check_openspec.py` 跑出来的"不通过"项都有对应文件补上。
 
 ### 要点总结
 

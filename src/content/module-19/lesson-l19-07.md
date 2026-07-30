@@ -201,13 +201,259 @@ L19-04 讲了用户反馈闭环。如果你有 100 条用户反馈，一条条�
   → 人做最终判断 → 更新下月计划
 ```
 
+### 实战：用 Python 自动化增长运营的三类体力活
+
+前面三个场景讲了怎么用 AI 做内容营销、增长实验、用户反馈分析。把这些流程固化为可复用脚本，让 AI 批量处理：
+
+```python
+# scripts/growth_ops.py —— 增长运营自动化工具箱
+import re, json, sys
+from collections import Counter
+from pathlib import Path
+from datetime import datetime, timedelta
+
+# ═══════════════════════════════════════════════════
+# 1. 关键词分析：按"离付费距离"排序
+# ═══════════════════════════════════════════════════
+
+def analyze_keywords(keywords_file: str) -> list[dict]:
+    """从关键词列表文件中分析搜索意图和离付费距离。"""
+    text = Path(keywords_file).read_text()
+    keywords = [line.strip() for line in text.splitlines()
+                if line.strip() and not line.startswith("#")]
+
+    # 按搜索意图分类（基于模式匹配）
+    intent_patterns = {
+        "购买型": [r"买", r"价格", r"多少钱", r"收费", r"付费", r"套餐", r"订阅"],
+        "对比型": [r"vs", r"对比", r"哪个好", r"推荐", r"评测", r"替代"],
+        "找工具型": [r"工具", r"软件", r"平台", r"系统", r"app", r"插件"],
+        "学习型": [r"教程", r"怎么", r"如何", r"入门", r"指南", r"是什么"],
+    }
+
+    results = []
+    for kw in keywords:
+        intent = "学习型"  # 默认
+        for intent_name, patterns in intent_patterns.items():
+            if any(re.search(p, kw) for p in patterns):
+                intent = intent_name
+                break
+
+        # 离付费距离：购买型最近，学习型最远
+        distance_map = {
+            "购买型": 1, "对比型": 2, "找工具型": 3, "学习型": 4,
+        }
+
+        results.append({
+            "keyword": kw,
+            "intent": intent,
+            "distance_to_pay": distance_map.get(intent, 4),
+            "defense_score": _estimate_defense(kw),  # 守备范围
+        })
+
+    # 按离付费距离排序
+    results.sort(key=lambda x: x["distance_to_pay"])
+    return results
+
+def _estimate_defense(keyword: str) -> str:
+    """基于关键词相似度估算守备范围（需人工复核）。"""
+    # 简化版：根据关键词长度和复杂度判断
+    if len(keyword) < 5:
+        return "低"  # 太短，意图不明确
+    if len(keyword) > 30:
+        return "高"  # 长尾词，竞争小
+    return "中"
+
+
+# ═══════════════════════════════════════════════════
+# 2. 用户反馈分析：分类 + 提取主题 + 优先级排序
+# ═══════════════════════════════════════════════════
+
+def analyze_feedback(feedback_file: str) -> dict:
+    """分析用户反馈：分类、提取高频词、排序优先级。"""
+    text = Path(feedback_file).read_text()
+    feedbacks = [line.strip() for line in text.splitlines()
+                 if line.strip() and not line.startswith("#")]
+
+    categories = Counter()
+    themes = Counter()
+    categorized: list[dict] = []
+
+    # 分类规则（基于关键词）
+    category_rules = {
+        "Bug 报告": [r"bug", r"报错", r"崩溃", r"打不开", r"闪退", r"不行",
+                     r"出错", r"失败", r"卡", r"慢", r"没反应"],
+        "功能请求": [r"希望", r"建议", r"能���能", r"加一个", r"支持",
+                     r"功能", r"要是", r"可以"],
+        "体验问题": [r"难用", r"不习惯", r"找不到", r"复杂", r"麻烦",
+                     r"丑", r"看不懂", r"不知道", r"在哪"],
+        "定价反馈": [r"贵", r"价格", r"付费", r"免费", r"不值", r"太贵"],
+        "不知如何用": [r"怎么用", r"教程", r"文档", r"说明", r"不会"],
+    }
+
+    for fb in feedbacks:
+        cat = "其他"
+        for cat_name, patterns in category_rules.items():
+            if any(re.search(p, fb) for p in patterns):
+                cat = cat_name
+                break
+
+        categories[cat] += 1
+        categorized.append({"text": fb, "category": cat})
+
+        # 提取关键词作为主题（简化：取长度 > 2 的词）
+        words = re.findall(r'[\u4e00-\u9fff\w]{2,}', fb)
+        for w in set(words):
+            if len(w) >= 2 and w not in {"一个", "这个", "那个", "什么", "怎么"}:
+                themes[w] += 1
+
+    # 优先级排序
+    top_themes = themes.most_common(10)
+    priority = []
+    for word, count in top_themes:
+        # P0: 高频 + Bug 相关
+        bug_related = any(fb["category"] == "Bug 报告" and word in fb["text"]
+                         for fb in categorized)
+        p = "P0" if bug_related and count >= 2 else \
+            "P1" if count >= 3 else \
+            "P2" if count >= 2 else "P3"
+        priority.append({"theme": word, "count": count, "priority": p})
+
+    return {
+        "total": len(feedbacks),
+        "categories": dict(categories),
+        "top_themes": top_themes,
+        "priority": priority,
+    }
+
+
+# ═══════════════════════════════════════════════════
+# 3. 内容日历生成
+# ═══════════════════════════════════════════════════
+
+def generate_content_calendar(
+    keywords: list[str],
+    start_date: str,
+    weeks: int = 8,
+) -> list[dict]:
+    """基于关键词列表生成内容日历。"""
+    start = datetime.strptime(start_date, "%Y-%m-%d")
+    calendar = []
+
+    # 按离付费距离排序
+    ranked = analyze_keywords("\n".join(keywords))
+
+    # 交替安排不同类型的内容
+    content_types = ["how-to", "comparison", "case-study", "opinion"]
+
+    for week in range(weeks):
+        for slot in range(2):  # 每周 2 篇
+            idx = (week * 2 + slot) % len(ranked)
+            kw = ranked[idx]
+            ctype = content_types[(week + slot) % len(content_types)]
+
+            pub_date = start + timedelta(weeks=week, days=slot * 3)
+            calendar.append({
+                "week": week + 1,
+                "date": pub_date.strftime("%Y-%m-%d"),
+                "keyword": kw["keyword"],
+                "intent": kw["intent"],
+                "type": ctype,
+                "estimated_words": 1200 if ctype == "how-to" else 2000,
+            })
+
+    return calendar
+
+
+# ═══════════════════════════════════════════════════
+# CLI 入口
+# ═══════════════════════════════════════════════════
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="增长运营自动化工具")
+    sub = parser.add_subparsers(dest="cmd")
+
+    kw_parser = sub.add_parser("keywords", help="分析关键词")
+    kw_parser.add_argument("file", help="关键词文件路径，每行一个词")
+
+    fb_parser = sub.add_parser("feedback", help="分析用户反馈")
+    fb_parser.add_argument("file", help="反馈文件路径，每行一条反馈")
+
+    cal_parser = sub.add_parser("calendar", help="生成内容日历")
+    cal_parser.add_argument("--keywords", required=True, help="关键词（逗号分隔）")
+    cal_parser.add_argument("--start", default=datetime.now().strftime("%Y-%m-%d"))
+    cal_parser.add_argument("--weeks", type=int, default=8)
+
+    args = parser.parse_args()
+
+    if args.cmd == "keywords":
+        results = analyze_keywords(args.file)
+        print(f"{'关键词':<30} {'意图':<10} {'离付费距离':<10} {'守备范围'}")
+        print("-" * 60)
+        for r in results:
+            print(f"{r['keyword']:<30} {r['intent']:<10} "
+                  f"{'★' * (5 - r['distance_to_pay']):<10} {r['defense_score']}")
+
+    elif args.cmd == "feedback":
+        results = analyze_feedback(args.file)
+        print(f"总反馈数：{results['total']}")
+        print(f"\n分类统计：")
+        for cat, count in results["categories"].items():
+            bar = "█" * min(count, 30)
+            print(f"  {cat:<12} {count:>3} {bar}")
+        print(f"\n高频主题（TOP 5）：")
+        for word, count in results["top_themes"][:5]:
+            p = next((x["priority"] for x in results["priority"]
+                      if x["theme"] == word), "—")
+            print(f"  [{p}] {word}: {count}次")
+
+    elif args.cmd == "calendar":
+        keywords = [k.strip() for k in args.keywords.split(",")]
+        calendar = generate_content_calendar(keywords, args.start, args.weeks)
+        print(f"{'周':<4} {'日期':<12} {'关键词':<30} {'类型':<12} {'预估字数'}")
+        print("-" * 75)
+        for item in calendar:
+            print(f"{item['week']:<4} {item['date']:<12} "
+                  f"{item['keyword']:<30} {item['type']:<12} "
+                  f"{item['estimated_words']}")
+
+    else:
+        parser.print_help()
+```
+
+**使用示例**：
+
+```bash
+# 1. 分析关键词
+echo "AI Agent 教程
+Agent 开发工具
+AI Agent 平台推荐
+Agent 框架对比" > keywords.txt
+python scripts/growth_ops.py keywords keywords.txt
+
+# 2. 分析用户反馈
+echo "注册后不知道怎么开始
+希望支持 Markdown 导出
+移动端经常崩溃" > feedback.txt
+python scripts/growth_ops.py feedback feedback.txt
+
+# 3. 生成内容日历
+python scripts/growth_ops.py calendar \
+  --keywords "AI Agent 教程,Agent 开发工具,Agent 框架对比,AI 独立开发" \
+  --weeks 4
+```
+
+**关键**：这些脚本做的是"第一轮粗筛"——关键词按意图分类、反馈按关键词归类。人拿到结果后做判断：哪些关键词值得优先写、哪些"少数大声"的反馈应该提到 P1。脚本不会替你做决策，但能省掉 80% 的体力活。
+
 ### 动手 5 分钟
 
-1. 用 brainstorming skill 为你的产品做一次关键词研究，列出 20+ 个搜索词，按"离付费距离"排序。标注至少 5 个"守备范围高且离付费近"的词。
-2. 用 AI 生成你产品下一篇博客文章的大纲。检查：AI 选定的大纲里，有没有一个角度是你自己写不出来的？如果有，替换成什么？
-3. 如果你有用户反馈，粘贴给 AI 做一次分类分析。如果你还没有，找 3 个同类产品的用户评价（App Store 评论、Product Hunt 评论等），让 AI 分析这些评价里的高频主题。
+1. 把上面的 `growth_ops.py` 复制到你的 P17/P19 项目中，用 `keywords` 子命令分析你产品的 20 个目标关键词。
+2. 用 brainstorming skill 为你的产品做一次关键词研究，列出 20+ 个搜索词，按"离付费距离"排序。标注至少 5 个"守备范围高且离付费近"的词。
+3. 用 AI 生成你产品下一篇博客文章的大纲。检查：AI 选定的大纲里，有没有一个角度是你自己写不出来的？如果有，替换成什么？
+4. 如果你有用户反馈，粘贴给 AI 做一次分类分析。如果你还没有，找 3 个同类产品的用户评价（App Store 评论、Product Hunt 评论等），让 AI 分析这些评价里的高频主题。
 
-**验收标准**：关键词列表至少 20 个且按离付费距离排序；博客大纲至少有一个"这是我自己的经历"的切入点；反馈分析至少识别出 3 个高频主题。
+**验收标准**：`growth_ops.py keywords` 输出中至少有 3 个"购买型"关键词排在前面。关键词列表至少 20 个且按离付费距离排序。反馈分析至少识别出 3 个高频主题。
 
 ### 要点总结
 

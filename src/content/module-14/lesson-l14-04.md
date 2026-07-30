@@ -164,6 +164,222 @@ RAG+Agent 通用架构：
 
 > P14 会让你选真实场景做架构文档，"对标至少一个业界参考架构"——用这个姿势对标，学权衡思路而非抄实现。
 
+### 实战：搜索型 vs 对话型——两套架构的代码对比
+
+本节讲的两个架构哲学截然相反。来写两套最小实现，对比控制流的差异：
+
+```python
+# agent_architectures.py —— 搜索型 vs 对话型 Agent 架构对比
+
+# ═══════════════════════════════════════════════════
+# 1. 搜索型 Agent（Perplexity 模式）——每次必搜，模型是综合器
+# ═══════════════════════════════════════════════════
+
+class SearchDrivenAgent:
+    """搜索驱动的 Agent——搜索是主线，LLM 是综合器。"""
+
+    def __init__(self):
+        self.queries_made = 0
+
+    def answer(self, question: str) -> dict:
+        """回答一个问题——必须先搜索，再综合。"""
+        # 1. 查询改写（L14-04 讲的关键环节）
+        rewritten = self._rewrite_query(question)
+        print(f"[搜索型] 原始问题: {question}")
+        print(f"[搜索型] 改写查询: {rewritten}")
+
+        # 2. 多源并行搜索（每次必搜）
+        sources = self._search_multi(rewritten)
+        self.queries_made += len(sources)
+        print(f"[搜索型] 搜索了 {len(sources)} 个来源")
+
+        # 3. Reranking（按相关性排序）
+        ranked = self._rerank(sources, question)
+        print(f"[搜索型] 保留了 {len(ranked)} 条最相关结果")
+
+        # 4. 综合生成 + 引用标注
+        answer = self._synthesize(question, ranked)
+
+        return {
+            "architecture": "搜索驱动",
+            "answer": answer["text"],
+            "citations": answer["citations"],
+            "searches_made": self.queries_made,
+            "model_role": "综合器——知识来自搜索，模型负责组织",
+        }
+
+    def _rewrite_query(self, question: str) -> str:
+        """将口语化问题改写为检索友好格式。"""
+        # 简化实现——实际由 LLM 生成
+        return f"{question} site:docs.python.org OR site:github.com"
+
+    def _search_multi(self, query: str) -> list[dict]:
+        """多源并行搜索（模拟）。"""
+        return [
+            {"title": f"搜索结果: {query[:30]}...", "snippet": "相关文档片段...",
+             "url": "https://docs.python.org/...", "relevance": 0.9},
+            {"title": f"相关讨论: {query[:30]}...", "snippet": "社区讨论...",
+             "url": "https://github.com/...", "relevance": 0.7},
+        ]
+
+    def _rerank(self, results: list[dict], question: str) -> list[dict]:
+        """按问题相关性重排序。"""
+        return sorted(results, key=lambda r: r["relevance"], reverse=True)
+
+    def _synthesize(self, question: str, sources: list[dict]) -> dict:
+        """综合搜索结果为回答（实际由 LLM 生成）。"""
+        citations = [s["url"] for s in sources[:3]]
+        text = f"基于 {len(sources)} 个来源的综合回答。\n"
+        for s in sources[:2]:
+            text += f"  · {s['snippet']} [来源]({s['url']})\n"
+        return {"text": text, "citations": citations}
+
+
+# ═══════════════════════════════════════════════════
+# 2. 对话型 Agent（ChatGPT 模式）——按需搜索，对话是核心
+# ═══════════════════════════════════════════════════
+
+from collections import deque
+
+class ConversationDrivenAgent:
+    """对话驱动的 Agent——对话历史是核心，工具按需调用。"""
+
+    def __init__(self):
+        self.history: deque[dict] = deque(maxlen=20)
+        self.tools_used = 0
+        self.questions_answered = 0
+
+    def answer(self, question: str) -> dict:
+        """回答一个问题——先判断需不需要搜，再决定怎么答。"""
+        self.questions_answered += 1
+
+        # 1. 上下文组装：对话历史 + 当前问题（M3 Context Assembly）
+        context = self._assemble_context(question)
+        print(f"[对话型] 上下文长度: {len(context['history'])} 轮对话")
+
+        # 2. 决策：需要调工具吗？（M6 Function Calling）
+        needs_search = self._should_search(question)
+        print(f"[对话型] 需要搜索: {needs_search}")
+
+        # 3. 按需调工具
+        search_results = []
+        if needs_search:
+            search_results = self._search(question)
+            self.tools_used += 1
+            print(f"[对话型] 调用了搜索工具")
+
+        # 4. 综合回答（模型知识 + 可选工具结果）
+        answer = self._respond(question, context, search_results)
+
+        # 5. 更新对话历史
+        self.history.append({"role": "user", "content": question})
+        self.history.append({"role": "assistant", "content": answer["text"][:200]})
+
+        return {
+            "architecture": "对话驱动",
+            "answer": answer["text"],
+            "used_search": needs_search,
+            "history_turns": len(self.history),
+            "model_role": "主体——模型是知识库 + 综合器，工具是补丁",
+        }
+
+    def _assemble_context(self, question: str) -> dict:
+        """组装上下文：对话历史 + 当前问题。"""
+        return {
+            "question": question,
+            "history": list(self.history),
+            "token_budget_used": sum(len(str(m)) for m in self.history) // 4,
+        }
+
+    def _should_search(self, question: str) -> bool:
+        """判断是否需要搜索（实际由 LLM 做 Function Calling 决策）。"""
+        # 简化规则：时效性、计算、外部数据相关的问题需要搜索
+        time_sensitive = any(w in question for w in
+            ["今天", "最近", "最新", "现在", "2026", "当前"])
+        computation = any(w in question for w in
+            ["计算", "等于", "多少", "分析数据"])
+        external_info = any(w in question for w in
+            ["新闻", "股价", "天气", "汇率"])
+
+        return time_sensitive or computation or external_info
+
+    def _search(self, query: str) -> list[dict]:
+        """按需搜索（不是每次必搜！这是和搜索型最大的区别）。"""
+        return [{"title": f"搜索结果: {query[:30]}", "snippet": "..."}]
+
+    def _respond(self, question: str, context: dict, search: list[dict]) -> dict:
+        """生成回答（实际由 LLM 生成）。"""
+        text = ""
+        if context["history"]:
+            text += f"[基于 {len(context['history'])} 轮对话上下文]\n"
+        if search:
+            text += f"[基于 {len(search)} 条实时搜索结果]\n"
+        text += f"回答: {question[:50]}..."
+        return {"text": text}
+
+
+# ═══════════════════════════════════════════════════
+# 3. 对比实验
+# ═══════════════════════════════════════════════════
+
+def compare_architectures(test_questions: list[str]):
+    """用同一组问题测试两种架构的差异。"""
+    print("=" * 65)
+    print("搜索型 vs 对话型 Agent 架构对比实验")
+    print("=" * 65)
+
+    search_agent = SearchDrivenAgent()
+    conv_agent = ConversationDrivenAgent()
+
+    results = []
+    for q in test_questions:
+        print(f"\n--- 测试问题: {q[:40]}... ---")
+
+        s_result = search_agent.answer(q)
+        c_result = conv_agent.answer(q)
+
+        results.append({
+            "question": q,
+            "search_driven": s_result,
+            "conversation_driven": c_result,
+        })
+
+    # 总结
+    print(f"\n{'=' * 65}")
+    print(f"{'指标':<25} {'搜索型 (Perplexity)':<25} {'对话型 (ChatGPT)'}")
+    print("-" * 65)
+    print(f"{'模型角色':<25} {'综合器（知识在外）':<25} {'知识库+综合器（工具补丁）'}")
+    print(f"{'搜索调用':<25} {'每次必搜':<25} {'按需（简单问题不搜）'}")
+    print(f"{'引用溯源':<25} {'强——每论断标注来源':<25} {'弱——可选'}")
+    print(f"{'多轮连贯':<25} {'弱——每次偏独立问答':<25} {'强——依赖对话历史'}")
+    print(f"{'适合场景':<25} {'事实查询、调研':<25} {'长对话、创作、综合任务'}")
+
+    return results
+
+
+if __name__ == "__main__":
+    questions = [
+        "Python 3.14 有哪些新特性？",
+        "帮我写一篇文章的大纲，主题是微服务架构",
+        "今天天气怎么样？",
+        "解释一下什么是装饰器",
+    ]
+    compare_architectures(questions)
+```
+
+**跑一下看差异**：
+
+```bash
+python3 agent_architectures.py
+```
+
+你会看到：
+- 问题"Python 3.14 新特性"——搜索型必搜（时效性），对话型判断是否需要搜（通常也要搜，因为需要最新信息）
+- 问题"帮我写一篇文章的大纲"——��索型仍会搜，但对话型判断不需要搜，直接用模型知识
+- 问题"解释什么是装饰器"——对话型判断不需要搜（基础知识），搜索型仍会搜一下（可能找到更多例子）
+
+关键在于**控制流的差异**——搜索型是 `搜索→综合→引用` 的固定流水线，对话型是 `判断→搜索(可选)→对话` 的动态分支。这个差异 ripple 到整个架构的每一层。
+
 ### 动手 5 分钟
 
 对比搜索驱动与对话驱动，在你的场景里选一个。
