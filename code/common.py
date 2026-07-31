@@ -15,3 +15,12 @@ if os.getenv("BASE_URL"):
     _kwargs["base_url"] = os.getenv("BASE_URL")
 
 client = OpenAI(**_kwargs)
+
+_embed_kwargs = {
+    "api_key": os.getenv("OPENAI_API_KEY") or os.getenv("EMBED_API_KEY"),
+    "timeout": 30.0,
+}
+if os.getenv("EMBED_BASE_URL"):
+    _embed_kwargs["base_url"] = os.getenv("EMBED_BASE_URL")
+
+embed_client = OpenAI(**_embed_kwargs)
