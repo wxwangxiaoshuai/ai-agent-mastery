@@ -117,17 +117,17 @@ export function PatternSelector() {
 
       {!result ? (
         <div className="rounded-lg border border-brand-500/30 bg-brand-500/10 p-4">
-          <p className="mb-3 text-sm text-ink-200">{currentNode.question}</p>
+          <p className="mb-3 text-sm text-ink-100">{currentNode.question}</p>
           <div className="flex gap-3">
             <button
               onClick={() => answer(true)}
-              className="rounded-control bg-brand-500 px-4 py-2 text-xs font-medium text-white hover:bg-brand-600 transition-colors"
+              className="interactive-selected interactive-focus rounded-control px-4 py-2 text-xs"
             >
               是
             </button>
             <button
               onClick={() => answer(false)}
-              className="rounded-control bg-ink-700 px-4 py-2 text-xs font-medium text-ink-300 hover:bg-ink-600 transition-colors"
+              className="interactive-chip interactive-focus rounded-control px-4 py-2 text-xs"
             >
               否
             </button>
@@ -139,24 +139,24 @@ export function PatternSelector() {
             <span className="text-lg">🎯</span>
             <span className="text-sm font-semibold text-emerald-300">{result.name}</span>
           </div>
-          <p className="mb-3 text-sm text-ink-200">{result.description}</p>
+          <p className="mb-3 text-sm text-ink-100">{result.description}</p>
           <div className="mb-2 space-y-1">
             <p className="text-xs text-ink-400">
-              <span className="font-medium text-ink-300">适用场景：</span>
+              <span className="font-medium text-ink-100">适用场景：</span>
               {result.when}
             </p>
             <p className="text-xs text-ink-400">
-              <span className="font-medium text-ink-300">示例：</span>
+              <span className="font-medium text-ink-100">示例：</span>
               {result.example}
             </p>
             <p className="text-xs text-ink-400">
-              <span className="font-medium text-ink-300">先修课程：</span>
+              <span className="font-medium text-ink-100">先修课程：</span>
               {result.module}
             </p>
           </div>
           <button
             onClick={reset}
-            className="rounded-control bg-ink-700 px-3 py-1.5 text-xs font-medium text-ink-300 hover:bg-ink-600 transition-colors"
+            className="interactive-chip interactive-focus rounded-control px-3 py-1.5 text-xs"
           >
             重新选择
           </button>

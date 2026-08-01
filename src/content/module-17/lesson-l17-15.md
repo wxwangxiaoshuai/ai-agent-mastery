@@ -406,14 +406,171 @@ step 4: verification-before-completion skill（Superpowers 通用）
   → 全部通过 → 标记 task 完成
 ```
 
+### 实战：用 Python 验证设计约束
+
+Skills 定义了约束，但怎么验证 AI 的产出是否真的遵守了？写脚本自动检查：
+
+```python
+# scripts/check_design_tokens.py —— 验证设计 token 完整性 + AI 产出合规性
+import sys, re, json
+from pathlib import Path
+from typing import Any
+
+def load_tokens(path: str = "design-tokens.json") -> dict[str, Any] | None:
+    """加载设计 token 文件，支持 JSON 和 YAML 格式。"""
+    p = Path(path)
+    if not p.exists():
+        print(f"✗ 设计 token 文件不存在：{path}")
+        return None
+
+    if p.suffix in (".yml", ".yaml"):
+        try:
+            import yaml  # type: ignore
+            return yaml.safe_load(p.read_text())
+        except ImportError:
+            print("⚠ 需要 pip install pyyaml 来读取 YAML 格式")
+            return None
+
+    return json.loads(p.read_text())
+
+def validate_tokens(tokens: dict) -> list[str]:
+    """验证 token 定义的完整性。"""
+    issues = []
+
+    # 基础结构检查
+    for key in ["colors", "spacing", "radius", "typography"]:
+        if key not in tokens:
+            issues.append(f"缺少 token 类别：{key}")
+
+    # 检查颜色至少 3 个品牌色 + 4 个墨色色阶
+    if "colors" in tokens:
+        colors = tokens["colors"]
+        brand = colors.get("brand", {}) or colors.get("primary", {})
+        ink = colors.get("ink", {})
+
+        brand_count = len(brand) if isinstance(brand, dict) else 1
+        ink_count = len(ink) if isinstance(ink, dict) else 1
+
+        if brand_count < 3:
+            issues.append(f"品牌色数量不足（{brand_count}<3）")
+        if ink_count < 4:
+            issues.append(f"墨色色阶不足（{ink_count}<4）")
+
+    # 检查间距至少 4 档
+    if "spacing" in tokens:
+        sp = tokens["spacing"]
+        if isinstance(sp, dict) and len(sp) < 4:
+            issues.append(f"间距档位不足（{len(sp)}<4）")
+
+    return issues
+
+def check_ui_code_compliance(filepath: str, tokens: dict | None) -> list[str]:
+    """检查 UI 代码是否使用 tokens 之外的硬编码颜色或间距。"""
+    issues = []
+    content = Path(filepath).read_text() if Path(filepath).exists() else ""
+
+    if not content:
+        return [f"文件不存在：{filepath}"]
+
+    # 提取 tokens 中定义的可接受值
+    allowed_tokens: set[str] = set()
+    if tokens:
+        for category in tokens.values():
+            if isinstance(category, dict):
+                for val in category.values():
+                    if isinstance(val, str) and (val.startswith("#") or val.endswith("px")):
+                        allowed_tokens.add(val)
+
+    # 检查硬编码的颜色（十六进制）
+    hex_colors = set(re.findall(r'#[0-9a-fA-F]{6}', content.lower()))
+    hardcoded = hex_colors - allowed_tokens
+    if hardcoded:
+        issues.append(f"硬编码颜色（tokens 外）：{', '.join(sorted(hardcoded)[:5])}")
+
+    # 检查硬编码的 px 值
+    px_values = set(re.findall(r'(\d+)px', content))
+    # 忽略 0px、常见的 token 值
+    suspicious = {v for v in px_values if v != "0" and v not in {"4", "8", "16", "24", "32", "48"}}
+    if suspicious:
+        issues.append(f"可疑的硬编码间距（px）：{', '.join(sorted(suspicious)[:5])}")
+
+    # 检查 div onClick（应使用 button）
+    if re.search(r'<div[^>]*\bonClick', content) and "<button" not in content.lower():
+        issues.append("检测到 <div onClick>，应使用 <button>")
+
+    # 检查图片 alt 属性
+    img_tags = re.findall(r'<img[^>]*>', content)
+    no_alt = [t for t in img_tags if 'alt=' not in t]
+    if no_alt:
+        issues.append(f"检测到 {len(no_alt)} 个 <img> 缺少 alt 属性")
+
+    return issues
+
+def calculate_contrast_ratio(fg: str, bg: str) -> float:
+    """计算 WCAG 颜色对比度。"""
+    def _lum(hex_color: str) -> float:
+        hex_color = hex_color.lstrip("#")
+        r, g, b = [int(hex_color[i:i+2], 16) / 255 for i in (0, 2, 4)]
+        # sRGB → 线性 RGB
+        r = r / 12.92 if r <= 0.04045 else ((r + 0.055) / 1.055) ** 2.4
+        g = g / 12.92 if g <= 0.04045 else ((g + 0.055) / 1.055) ** 2.4
+        b = b / 12.92 if b <= 0.04045 else ((b + 0.055) / 1.055) ** 2.4
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+    l1, l2 = _lum(fg), _lum(bg)
+    lighter, darker = max(l1, l2), min(l1, l2)
+    return (lighter + 0.05) / (darker + 0.05)
+
+if __name__ == "__main__":
+    print("=" * 60)
+    print("设计 Token 验证 + UI 代码合规检查")
+    print("=" * 60)
+
+    tokens = load_tokens()
+    if tokens:
+        token_issues = validate_tokens(tokens)
+        if token_issues:
+            for i in token_issues:
+                print(f"  ✗ {i}")
+        else:
+            print("  ✓ 设计 token 定义完整")
+
+        # 验证关键颜色组合的对比度
+        colors = tokens.get("colors", {})
+        ink = colors.get("ink", {})
+        surface = colors.get("surface", {})
+        if ink and surface:
+            text_on_bg = calculate_contrast_ratio(
+                ink.get("base", "#000000"),
+                surface.get("page", "#ffffff"),
+            )
+            aa_pass = text_on_bg >= 4.5
+            print(f"  {'✓' if aa_pass else '✗'} 正文/背景对比度 = {text_on_bg:.1f}:1"
+                  f" {'(WCAG AA 通过)' if aa_pass else '(不满足 WCAG AA 4.5:1)'}")
+
+    # 检查项目中最近的 UI 文件
+    import glob
+    ui_files = glob.glob("src/**/*.tsx", recursive=True)[:5]
+    for f in ui_files:
+        issues = check_ui_code_compliance(f, tokens)
+        if issues:
+            print(f"\n  {f}:")
+            for i in issues:
+                print(f"    ✗ {i}")
+        else:
+            print(f"\n  ✓ {f} — 合规")
+```
+
+这个脚本既验证 token 定义本身的完整性（颜色、间距、圆角、字体是否齐全），又验证 AI 生成的 UI 代码是否遵守 tokens（有没有硬编码颜色、有没有 `<div onClick>` 等禁止模式）。建议放进 pre-commit hook——AI 生成代码后自动跑一次，不合规就阻断提交。
+
 ### 动手 5 分钟
 
 1. 为你的 P17 项目创建 `design-tokens.yml`，定义颜色、间距、圆角、阴影、字体。至少包含 3 个品牌色、4 个墨色色阶、4 个间距档位。
-2. 写一个 `ui-generation` skill 的 SKILL.md，包含你的组件编写规范（至少 5 条规则 + 3 条禁止事项）。
-3. 选一个你在 P17 中已经实现的组件，用 `ui-review` 的审查清单逐条检查。记录发现了哪些问题（至少找到 2 个）。
+2. 把上面的 `check_design_tokens.py` 复制到项目中，跑一次验证 token 完整性。看看你的 token 文件还缺什么。
+3. 写一个 `ui-generation` skill 的 SKILL.md，包含你的组件编写规范（至少 5 条规则 + 3 条禁止事项）。
 4. （进阶）在 Superpowers 中注册 `ui-review` skill，让它自动审查你后续生成的每个 UI 组件。
 
-**验收标准**：`design-tokens.yml` 完整且能被 AI 读取（路径正确），`ui-review` 审查清单至少覆盖 5 个维度，对一个已有组件发现问题至少 2 个。
+**验收标准**：`design-tokens.yml` 完整且能被 AI 读取（路径正确），`check_design_tokens.py` 至少发现 2 处问题（token 缺失或 UI 合规问题），`ui-review` 审查清单至少覆盖 5 个维度。
 
 ### 要点总结
 

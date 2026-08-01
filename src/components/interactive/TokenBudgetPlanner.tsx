@@ -26,12 +26,12 @@ interface Slot {
 }
 
 const INITIAL: Slot[] = [
-  { key: 'system', name: 'System Prompt', desc: '角色、规则、输出格式约定', color: 'bg-brand-500', pct: 3, hard: true },
-  { key: 'tools', name: '工具定义', desc: 'Function schema，工具越多涨得越快', color: 'bg-cyan-500', pct: 6, hard: true },
-  { key: 'fewshot', name: 'Few-shot 示例', desc: '示例质量比数量重要', color: 'bg-emerald-500', pct: 8, hard: false },
-  { key: 'rag', name: 'RAG 检索片段', desc: '最容易失控的一块', color: 'bg-amber-500', pct: 35, hard: false },
+  { key: 'system', name: 'System Prompt', desc: '角色、规则、输出格式约定', color: 'bg-brand-500', pct: 8, hard: true },
   { key: 'history', name: '对话历史', desc: '随轮次单调增长，必须有压缩策略', color: 'bg-fuchsia-500', pct: 25, hard: false },
-  { key: 'output', name: '输出预留', desc: '留不够会导致回答被硬截断', color: 'bg-rose-500', pct: 10, hard: true },
+  { key: 'tools', name: '工具结果', desc: '工具返回可能很长，按预算截断', color: 'bg-cyan-500', pct: 18, hard: false },
+  { key: 'rag', name: '检索知识', desc: 'RAG 召回片段，最容易失控的一块', color: 'bg-amber-500', pct: 22, hard: false },
+  { key: 'user', name: '用户输入', desc: '通常较短，但多模态内容会暴涨', color: 'bg-emerald-500', pct: 12, hard: true },
+  { key: 'output', name: '输出预留', desc: '留不够会导致回答被硬截断', color: 'bg-danger-500', pct: 10, hard: true },
 ]
 
 export function TokenBudgetPlanner() {
@@ -59,10 +59,10 @@ export function TokenBudgetPlanner() {
           <button
             key={w.name}
             onClick={() => setWindowSize(w.size)}
-            className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               windowSize === w.size
-                ? 'border-brand-500/30 bg-brand-500/20 text-brand-300'
-                : 'border-ink-700 bg-ink-800/50 text-ink-400 hover:text-ink-200'
+                ? 'interactive-selected interactive-focus'
+                : 'interactive-chip interactive-focus'
             }`}
           >
             {w.name} 窗口
@@ -82,14 +82,14 @@ export function TokenBudgetPlanner() {
         {free > 0 && <div className="flex-1 bg-ink-800/40" />}
       </div>
       <div className="mb-4 flex justify-between text-xs">
-        <span className={overflow ? 'text-rose-400' : 'text-ink-500'}>
+        <span className={overflow ? 'text-danger-400' : 'text-ink-500'}>
           已分配 {used}%（约 {Math.round((windowSize * used) / 100).toLocaleString()} tokens）
         </span>
         <span className="text-ink-500">剩余 {free}%</span>
       </div>
 
       {overflow && (
-        <div className="mb-4 rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300">
+        <div className="mb-4 rounded-lg border border-danger-500/30 bg-danger-500/10 p-3 text-xs text-danger-300">
           预算超支 {used - 100}%。真实系统里这不会报错，而是静默截断 —— 通常先丢掉最前面的对话历史，
           于是 Agent 会"忘记"你三轮之前说过的话。务必在组装阶段就做硬性裁剪。
         </div>
@@ -126,7 +126,7 @@ export function TokenBudgetPlanner() {
       <div className="mt-4 rounded-lg bg-ink-950/60 p-3 text-xs text-ink-400">
         输出预留 <span className="font-mono text-ink-200">{outputTokens.toLocaleString()}</span> tokens
         {outputTokens < 1000 ? (
-          <span className="text-rose-400">
+          <span className="text-danger-400">
             {' '}
             —— 少于 1000，稍长的回答就会被截断在句子中间。
           </span>

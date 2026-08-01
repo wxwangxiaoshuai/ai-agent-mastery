@@ -104,10 +104,10 @@ export function CostLatencyOptimizer() {
           <button
             key={t.id}
             onClick={() => setTier(t.id)}
-            className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               tier === t.id
-                ? 'border-brand-500/40 bg-brand-500/20 text-brand-300'
-                : 'border-ink-700 bg-ink-800/50 text-ink-400 hover:text-ink-200'
+                ? 'interactive-selected interactive-focus'
+                : 'interactive-chip interactive-focus'
             }`}
             title={t.note}
           >
@@ -122,18 +122,25 @@ export function CostLatencyOptimizer() {
           <button
             key={l.key}
             onClick={() => setOn((p) => ({ ...p, [l.key]: !p[l.key] }))}
-            className={`w-full rounded-lg border p-3 text-left transition-colors ${
-              on[l.key] ? 'border-brand-500/30 bg-brand-500/10' : 'border-ink-700 bg-ink-800/40'
+            className={`w-full rounded-lg border p-3 text-left transition-colors interactive-focus ${
+              on[l.key]
+                ? 'border-emerald-500/30 bg-emerald-500/10'
+                : 'interactive-chip'
             }`}
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-ink-200">{l.name}</span>
-              <span className="font-mono text-[10px] text-ink-500">
-                成本 ×{l.costMul} · 延迟 ×{l.latMul} · 质量 {l.qualityDelta >= 0 ? '+' : ''}
-                {l.qualityDelta}
+              <span
+                className={`text-[10px] ${on[l.key] ? 'text-emerald-300' : 'text-ink-500'}`}
+              >
+                {on[l.key] ? 'ON' : 'OFF'}
               </span>
             </div>
             <p className="mt-1 text-[11px] text-ink-500">{l.desc}</p>
+            <p className="mt-0.5 font-mono text-[10px] text-ink-600">
+              成本 ×{l.costMul} · 延迟 ×{l.latMul} · 质量 {l.qualityDelta >= 0 ? '+' : ''}
+              {l.qualityDelta}
+            </p>
             {on[l.key] && (
               <p className="mt-1 text-[11px] text-amber-300">代价：{l.caveat}</p>
             )}
@@ -157,7 +164,7 @@ export function CostLatencyOptimizer() {
         <div className="rounded-lg bg-ink-950/60 p-3 text-center">
           <p
             className={`font-mono text-sm ${
-              result.quality >= 80 ? 'text-emerald-300' : result.quality >= 65 ? 'text-amber-300' : 'text-rose-300'
+              result.quality >= 80 ? 'text-emerald-300' : result.quality >= 65 ? 'text-amber-300' : 'text-danger-300'
             }`}
           >
             {result.quality.toFixed(0)}
@@ -167,7 +174,7 @@ export function CostLatencyOptimizer() {
       </div>
 
       {result.quality < 70 && (
-        <p className="mt-3 rounded-lg border border-rose-500/25 bg-rose-500/10 p-2 text-[11px] text-rose-300">
+        <p className="mt-3 rounded-lg border border-danger-500/25 bg-danger-500/10 p-2 text-[11px] text-danger-300">
           质量已跌破 70。省下来的钱通常抵不过一次线上事故 —— 优化必须以回归集分数为红线，
           而不是以账单为唯一目标。
         </p>

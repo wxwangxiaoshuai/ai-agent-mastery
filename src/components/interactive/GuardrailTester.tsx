@@ -91,7 +91,7 @@ export function GuardrailTester() {
       : { text: '放行（正确）', cls: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' }
     : blocked
       ? { text: `拦截（由 ${blockers.length} 层命中）`, cls: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' }
-      : { text: '漏过', cls: 'border-rose-500/30 bg-rose-500/10 text-rose-300' }
+      : { text: '漏过', cls: 'border-danger-500/30 bg-danger-500/10 text-danger-300' }
 
   const latency = RAILS.filter((r) => on[r.key]).reduce(
     (s, r) => s + (r.key === 'topicBoundary' ? 180 : r.key === 'outputRedact' ? 40 : r.key === 'inputFilter' ? 30 : 0),
@@ -110,10 +110,10 @@ export function GuardrailTester() {
           <button
             key={r.key}
             onClick={() => setOn((p) => ({ ...p, [r.key]: !p[r.key] }))}
-            className={`rounded-lg border p-3 text-left transition-colors ${
+            className={`rounded-lg border p-3 text-left transition-colors interactive-focus ${
               on[r.key]
                 ? 'border-emerald-500/30 bg-emerald-500/10'
-                : 'border-ink-700 bg-ink-800/40'
+                : 'interactive-chip'
             }`}
           >
             <div className="flex items-center justify-between">
@@ -135,10 +135,10 @@ export function GuardrailTester() {
           <button
             key={p.name}
             onClick={() => setI(idx)}
-            className={`rounded-lg border px-2.5 py-1.5 text-[11px] transition-colors ${
+            className={`rounded-lg px-2.5 py-1.5 text-[11px] transition-colors ${
               idx === i
-                ? 'border-brand-500/40 bg-brand-500/20 text-brand-300'
-                : 'border-ink-700 bg-ink-800/50 text-ink-400 hover:text-ink-200'
+                ? 'interactive-selected interactive-focus'
+                : 'interactive-chip interactive-focus'
             }`}
           >
             {p.name}

@@ -12,21 +12,18 @@ interface GateConfig {
   commands: string[]
 }
 
-const RISK_LABELS: Record<RiskLevel, { label: string; description: string; color: string }> = {
+const RISK_LABELS: Record<RiskLevel, { label: string; description: string }> = {
   low: {
     label: '低风险',
-    description: '个人玩具 / 练手项目',
-    color: 'emerald',
+    description: '个人项目 / 原型验证',
   },
   medium: {
     label: '中风险',
-    description: '有用户的产品 / SaaS',
-    color: 'amber',
+    description: '团队项目 / 有用户使用',
   },
   high: {
     label: '高风险',
-    description: '涉及钱、权限、数据删除',
-    color: 'danger',
+    description: '生产环境 / 支付与隐私',
   },
 }
 
@@ -98,10 +95,10 @@ export function GateConfigurator() {
           <button
             key={key}
             onClick={() => setRisk(key)}
-            className={`flex-1 rounded-control border px-3 py-2 text-xs font-medium transition-colors ${
+            className={`flex-1 rounded-control px-3 py-2 text-xs font-medium transition-colors ${
               risk === key
-                ? `border-${info.color}-500/50 bg-${info.color}-500/15 text-${info.color}-300`
-                : 'border-ink-700 bg-ink-800/40 text-ink-400 hover:border-ink-600'
+                ? 'interactive-selected interactive-focus'
+                : 'interactive-chip interactive-focus'
             }`}
           >
             <div>{info.label}</div>
@@ -134,7 +131,7 @@ export function GateConfigurator() {
 
       {/* Summary */}
       <div className="mt-4 rounded-lg border border-brand-500/30 bg-brand-500/10 p-3">
-        <p className="text-xs text-brand-300">
+        <p className="text-xs text-ink-100">
           <span className="font-semibold">门禁原则：</span>
           门禁失败的 commit 不允许创建。AI 必须修复问题后重新提交。pre-commit 检查耗时约 30 秒，但省掉的是"合并后发现问题返工 1 小时"。
         </p>

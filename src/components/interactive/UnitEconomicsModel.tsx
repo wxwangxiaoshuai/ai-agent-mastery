@@ -55,7 +55,7 @@ export function UnitEconomicsModel() {
 
   const healthy = m.blendedRate >= 60
   const warning = m.blendedRate >= 20 && m.blendedRate < 60
-  const tone = healthy ? 'text-emerald-300' : warning ? 'text-amber-300' : 'text-rose-300'
+  const tone = healthy ? 'text-emerald-300' : warning ? 'text-amber-300' : 'text-danger-300'
 
   return (
     <div className="card p-5">
@@ -100,10 +100,10 @@ export function UnitEconomicsModel() {
           <button
             key={t.key}
             onClick={() => setTierKey(t.key)}
-            className={`rounded border px-2 py-1 text-xs transition-colors ${
+            className={`rounded px-2 py-1 text-xs transition-colors ${
               tierKey === t.key
-                ? 'border-brand-500/60 bg-brand-500/20 text-brand-200'
-                : 'border-ink-700 text-ink-400 hover:bg-ink-800'
+                ? 'interactive-selected interactive-focus'
+                : 'interactive-chip interactive-focus'
             }`}
           >
             {t.name}
@@ -128,7 +128,7 @@ export function UnitEconomicsModel() {
           月毛利 ${m.blendedMargin.toFixed(0)} ｜ 月成本 ${m.cost.toFixed(0)}
         </div>
         {m.blendedRate < 0 && (
-          <div className="mt-2 rounded bg-rose-500/15 px-2 py-1 text-xs text-rose-300">
+          <div className="mt-2 rounded bg-danger-500/15 px-2 py-1 text-xs text-danger-300">
             这个组合下每多来 100 个用户，你每月多亏 ${Math.abs(m.blendedMargin).toFixed(0)}。
             增长在这里是加速破产，不是成功。
           </div>

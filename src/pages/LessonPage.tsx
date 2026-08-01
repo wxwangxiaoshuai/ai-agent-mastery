@@ -4,6 +4,9 @@ import type { Module, Lesson } from '../data/types'
 import { DifficultyBadge, LessonTypeBadge, Tag } from '../components/Badges'
 import { MarkdownRenderer } from '../components/MarkdownRenderer'
 import { useProgress } from '../components/ProgressProvider'
+import { AdjacentStepLinks } from '../components/AdjacentStepLinks'
+import { ModuleAdjacentNav } from '../components/ModuleAdjacentNav'
+import { getLessonNeighbors, navPath, navTitle } from '../lib/curriculumNav'
 import { useState, useEffect } from 'react'
 
 function findLesson(moduleId: number, lessonId: string): { module: Module; lesson: Lesson; index: number } | null {
@@ -12,12 +15,6 @@ function findLesson(moduleId: number, lessonId: string): { module: Module; lesso
   const idx = mod.lessons.findIndex((l) => l.id === lessonId)
   if (idx === -1) return null
   return { module: mod, lesson: mod.lessons[idx], index: idx }
-}
-
-function getAdjacentLessons(module: Module, index: number) {
-  const prev = index > 0 ? module.lessons[index - 1] : null
-  const next = index < module.lessons.length - 1 ? module.lessons[index + 1] : null
-  return { prev, next }
 }
 
 export function LessonPage() {
@@ -35,7 +32,6 @@ export function LessonPage() {
     setLastVisited,
   } = useProgress()
 
-  // Load markdown content
   useEffect(() => {
     if (!lessonId || !moduleId) return
     setLoading(true)
@@ -52,7 +48,6 @@ export function LessonPage() {
       })
   }, [moduleId, lessonId])
 
-  // Record last visited (do not auto-complete)
   useEffect(() => {
     if (!result) return
     setLastVisited({ moduleId: result.module.id, lessonId: result.lesson.id })
@@ -70,12 +65,12 @@ export function LessonPage() {
   }
 
   const { module, lesson, index } = result
-  const { prev, next } = getAdjacentLessons(module, index)
+  const { prev, next } = getLessonNeighbors(module, index)
   const done = isLessonComplete(lesson.id)
+  const isLastLesson = index === module.lessons.length - 1
 
   return (
     <div className="container-page py-12 sm:py-16">
-      {/* Breadcrumb */}
       <nav className="mb-8 flex items-center gap-2 text-sm text-ink-500">
         <Link to="/curriculum" className="hover:text-ink-200">
           课程大纲
@@ -89,9 +84,7 @@ export function LessonPage() {
       </nav>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_280px]">
-        {/* Main content */}
         <div className="min-w-0">
-          {/* Lesson header */}
           <div className="card relative overflow-hidden p-6 sm:p-8">
             <div className="grid-bg absolute inset-0 opacity-30" />
             <div className="relative">
@@ -100,7 +93,7 @@ export function LessonPage() {
                 <LessonTypeBadge type={lesson.type} />
                 <span className="text-xs text-ink-500">{lesson.duration} 分钟</span>
                 {done && (
-                  <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-400">
+                  <span className="shrink-0 whitespace-nowrap rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-400">
                     已完成
                   </span>
                 )}
@@ -112,7 +105,6 @@ export function LessonPage() {
             </div>
           </div>
 
-          {/* Objectives */}
           <div className="mt-6 rounded-xl border border-brand-500/20 bg-brand-500/5 p-5">
             <div className="mb-3 text-sm font-semibold text-ink-100">学习目标</div>
             <ul className="space-y-2">
@@ -130,7 +122,6 @@ export function LessonPage() {
             </div>
           </div>
 
-          {/* Lesson content */}
           <div className="mt-8">
             {loading ? (
               <div className="card p-8 text-center">
@@ -149,7 +140,6 @@ export function LessonPage() {
             )}
           </div>
 
-          {/* End-of-lesson: complete + navigate */}
           <div className="mt-10 border-t border-ink-800 pt-6">
             <div className="rounded-xl border border-ink-700/60 bg-ink-900/40 p-5 sm:p-6">
               {done ? (
@@ -179,7 +169,7 @@ export function LessonPage() {
                       type="button"
                       onClick={() => {
                         markLessonComplete(lesson.id)
-                        navigate(`/curriculum/${module.id}/${next.id}`)
+                        navigate(navPath(next))
                       }}
                       className="btn-primary shrink-0"
                     >
@@ -197,78 +187,47 @@ export function LessonPage() {
                   )}
                 </div>
               )}
+
               {done && next && (
                 <div className="mt-4 border-t border-ink-800 pt-4">
-                  <Link
-                    to={`/curriculum/${module.id}/${next.id}`}
-                    className="btn-primary inline-flex"
-                  >
-                    进入下一节
+                  <Link to={navPath(next)} className="btn-primary inline-flex">
+                    {next.kind === 'project'
+                      ? '去做实战项目'
+                      : next.module.id !== module.id
+                        ? '进入下一模块'
+                        : '进入下一节'}
                     <span aria-hidden>→</span>
                   </Link>
-                  <span className="ml-3 text-sm text-ink-500">{next.title}</span>
+                  <span className="ml-3 text-sm text-ink-500">{navTitle(next)}</span>
                 </div>
               )}
-              {done && !next && module.project && (
+
+              {done && !next && (
                 <div className="mt-4 border-t border-ink-800 pt-4">
-                  <Link
-                    to={`/curriculum/${module.id}/project/${module.project.id.toLowerCase()}`}
-                    className="btn-primary inline-flex"
-                  >
-                    去做本模块实战项目
+                  <Link to="/curriculum" className="btn-primary inline-flex">
+                    全部学完 · 查看大纲
                     <span aria-hidden>→</span>
                   </Link>
                 </div>
+              )}
+
+              {isLastLesson && module.project && next?.kind === 'project' && (
+                <p className="mt-3 text-xs text-ink-500">
+                  本模块课程已学完，建议先完成实战项目，再进入下一模块。
+                </p>
               )}
             </div>
 
-            <div className="mt-6 flex items-center justify-between">
-              {prev ? (
-                <Link
-                  to={`/curriculum/${module.id}/${prev.id}`}
-                  className="group flex items-center gap-2 text-sm text-ink-400 transition-colors hover:text-brand-400"
-                >
-                  <span className="text-lg">←</span>
-                  <div>
-                    <div className="text-[11px] text-ink-500">上一节</div>
-                    <div className="font-medium text-ink-200 group-hover:text-brand-300">
-                      {prev.title}
-                    </div>
-                  </div>
-                </Link>
-              ) : (
-                <div />
-              )}
-              {!done && next ? (
-                <Link
-                  to={`/curriculum/${module.id}/${next.id}`}
-                  className="group flex items-center gap-2 text-right text-sm text-ink-400 transition-colors hover:text-brand-400"
-                >
-                  <div>
-                    <div className="text-[11px] text-ink-500">跳过 · 下一节</div>
-                    <div className="font-medium text-ink-200 group-hover:text-brand-300">
-                      {next.title}
-                    </div>
-                  </div>
-                  <span className="text-lg">→</span>
-                </Link>
-              ) : !next ? (
-                <Link
-                  to={`/curriculum/${module.id}`}
-                  className="text-sm text-ink-400 transition-colors hover:text-brand-400"
-                >
-                  返回模块概览 →
-                </Link>
-              ) : (
-                <div />
-              )}
-            </div>
+            <AdjacentStepLinks
+              currentModuleId={module.id}
+              prev={prev}
+              next={next}
+              nextSkipHint={!done}
+            />
           </div>
         </div>
 
-        {/* Sidebar */}
-        <aside className="lg:sticky lg:top-24 lg:self-start">
-          {/* Module info */}
+        <aside className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-6.5rem)] lg:self-start lg:overflow-y-auto lg:pb-2">
           <div className="card p-5">
             <div className="flex items-center gap-2">
               <span className="text-xl">{module.icon}</span>
@@ -285,7 +244,13 @@ export function LessonPage() {
             </div>
           </div>
 
-          {/* Lesson navigation */}
+          <div className="mt-4">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-500">
+              相邻模块
+            </div>
+            <ModuleAdjacentNav moduleId={module.id} deepLink compact />
+          </div>
+
           <div className="mt-4">
             <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-500">
               课程列表 · {module.lessons.length} 节
@@ -322,10 +287,18 @@ export function LessonPage() {
                   </Link>
                 )
               })}
+              {module.project && (
+                <Link
+                  to={`/curriculum/${module.id}/project/${module.project.id.toLowerCase()}`}
+                  className="flex items-center gap-3 rounded-lg p-2.5 text-sm text-amber-400/80 transition-colors hover:bg-amber-500/10 hover:text-amber-300"
+                >
+                  <span className="font-mono text-xs">◆</span>
+                  <span className="min-w-0 flex-1 truncate">{module.project.title}</span>
+                </Link>
+              )}
             </div>
           </div>
 
-          {/* Back to module */}
           <Link
             to={`/curriculum/${module.id}`}
             className="mt-4 flex w-full items-center justify-center gap-1 rounded-xl border border-ink-700 bg-ink-900/40 p-3 text-sm text-ink-400 transition-colors hover:border-ink-600 hover:text-ink-200"

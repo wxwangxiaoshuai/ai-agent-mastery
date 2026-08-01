@@ -2,10 +2,6 @@
 
 前几节拆的是"单个 Agent 产品"。但当你给企业做 Agent——不是给一个用户做一个 Agent，而是给**多个客户、每个客户多个 Agent**——架构问题完全不同了：怎么让不同客户的数据隔离？怎么水平扩容？怎么把"做 Agent"变成"卖 Agent 服务"？这一节讲 Agent 平台架构。
 
-先用下面的架构决策树梳理一下：你的场景适合哪种模式？输入你的需求，看看推荐的架构方向：
-
-::interactive{type="patternSelector"}
-
 Agent 平台分层架构全景——从多租户接入到基础设施，五层十三节点：
 
 ::interactive{type="agentPlatform"}

@@ -94,11 +94,11 @@ const layerLabel: Record<Layer, string> = {
 }
 
 const layerStyle: Record<Layer, string> = {
-  ast: 'border-rose-500/40 bg-rose-500/10 text-rose-300',
+  ast: 'border-danger-500/40 bg-danger-500/10 text-danger-300',
   cgroup: 'border-amber-500/40 bg-amber-500/10 text-amber-300',
   network: 'border-amber-500/40 bg-amber-500/10 text-amber-300',
   fs: 'border-amber-500/40 bg-amber-500/10 text-amber-300',
-  output: 'border-brand-500/40 bg-brand-500/10 text-brand-300',
+  output: 'border-brand-500/40 bg-brand-500/10 text-ink-100',
   pass: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300',
 }
 
@@ -134,10 +134,10 @@ export function SandboxDemo() {
               setActiveId(s.id)
               setRan(false)
             }}
-            className={`rounded-lg border px-2.5 py-1 text-xs transition-colors ${
+            className={`rounded-lg px-2.5 py-1 text-xs transition-colors ${
               activeId === s.id
-                ? 'border-brand-500/50 bg-brand-500/15 text-brand-200'
-                : 'border-ink-700 text-ink-400 hover:border-ink-500 hover:text-ink-200'
+                ? 'interactive-selected interactive-focus'
+                : 'interactive-chip interactive-focus'
             }`}
           >
             {s.title}
@@ -153,14 +153,14 @@ export function SandboxDemo() {
         <button
           type="button"
           onClick={run}
-          className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-500"
+          className="interactive-selected interactive-focus rounded-lg px-3 py-1.5 text-xs"
         >
           模拟执行
         </button>
         <button
           type="button"
           onClick={() => setRan(false)}
-          className="rounded-lg border border-ink-600 px-3 py-1.5 text-xs text-ink-300 hover:border-ink-500"
+          className="interactive-chip interactive-focus rounded-lg px-3 py-1.5 text-xs"
         >
           清空结果
         </button>
@@ -188,7 +188,7 @@ export function SandboxDemo() {
               </div>
             )}
             {scenario.simulated.stderr && (
-              <div className="text-rose-400">
+              <div className="text-danger-400">
                 <span className="text-ink-500">stderr: </span>
                 {scenario.simulated.stderr}
               </div>

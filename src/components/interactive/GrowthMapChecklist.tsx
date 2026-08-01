@@ -132,10 +132,10 @@ export function GrowthMapChecklist() {
                   <button
                     key={id}
                     onClick={() => toggle(id)}
-                    className={`flex w-full items-start gap-2 rounded-lg border px-3 py-2 text-left text-[11px] transition-colors ${
+                    className={`flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left text-[11px] transition-colors ${
                       done[id]
-                        ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-200'
-                        : 'border-ink-700 bg-ink-800/40 text-ink-400 hover:text-ink-200'
+                        ? 'interactive-selected interactive-focus'
+                        : 'interactive-chip interactive-focus'
                     }`}
                   >
                     <span className="mt-px shrink-0">{done[id] ? '☑' : '☐'}</span>
@@ -149,13 +149,13 @@ export function GrowthMapChecklist() {
       </div>
 
       {total > 0 && total < TOTAL && weakest && (
-        <p className="mt-4 rounded-lg border border-brand-500/25 bg-brand-500/10 p-3 text-[11px] text-brand-200">
+        <p className="mt-4 rounded-lg border border-brand-500/25 bg-brand-500/10 p-3 text-[11px] text-ink-100">
           当前最薄弱的一维是「{weakest.name}」（{weakest.n}/{weakest.items.length}）。
           与其把已经会的再练一遍，不如挑这一维里最难的一条，做一个能跑起来的最小实现。
         </p>
       )}
       {total === TOTAL && (
-        <p className="mt-4 rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-3 text-[11px] text-emerald-200">
+        <p className="mt-4 rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-3 text-[11px] text-emerald-300">
           全部勾满了。下一步不是再学一个框架，而是找一个真实用户、真实预算、真实故障的项目 ——
           架构判断力只在有代价的决策里长出来。
         </p>

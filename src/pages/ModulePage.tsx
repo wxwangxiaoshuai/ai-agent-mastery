@@ -2,6 +2,8 @@ import { Link, useParams } from 'react-router-dom'
 import { curriculum, getModuleHours } from '../data/curriculum'
 import { DifficultyBadge, LessonTypeBadge, Tag } from '../components/Badges'
 import { useProgress } from '../components/ProgressProvider'
+import { ModuleAdjacentNav } from '../components/ModuleAdjacentNav'
+import { getAdjacentModules, moduleHead, navPath } from '../lib/curriculumNav'
 import { moduleProgress } from '../lib/progress'
 
 export function ModulePage() {
@@ -20,9 +22,7 @@ export function ModulePage() {
     )
   }
 
-  const idx = curriculum.modules.findIndex((m) => m.id === module.id)
-  const prev = idx > 0 ? curriculum.modules[idx - 1] : null
-  const next = idx < curriculum.modules.length - 1 ? curriculum.modules[idx + 1] : null
+  const { next: nextMod } = getAdjacentModules(module.id)
 
   const hours = getModuleHours(module)
   const mp = moduleProgress(module, progress)
@@ -147,24 +147,47 @@ export function ModulePage() {
               </Link>
             )})}
           </div>
+
+          {/* Bottom module-to-module jump — visible without scrolling sidebar */}
+          {nextMod && (
+            <div className="mt-10 rounded-xl border border-brand-500/20 bg-brand-500/5 p-5 sm:p-6">
+              <div className="text-sm font-semibold text-ink-100">学完本模块了？</div>
+              <p className="mt-1 text-sm text-ink-400">
+                下一模块：{nextMod.icon} {nextMod.title}
+                <span className="text-ink-500"> · {nextMod.subtitle}</span>
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link to={navPath(moduleHead(nextMod))} className="btn-primary inline-flex">
+                  直接开始下一模块
+                  <span aria-hidden>→</span>
+                </Link>
+                <Link
+                  to={`/curriculum/${nextMod.id}`}
+                  className="btn-ghost inline-flex"
+                >
+                  先看模块概览
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Sidebar: Project */}
-        <aside className="lg:sticky lg:top-24 lg:self-start">
+        <aside className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-6.5rem)] lg:self-start lg:overflow-y-auto lg:pb-2">
           {module.project ? (
             <Link
               to={`/curriculum/${module.id}/project/${module.project.id.toLowerCase()}`}
               className="card card-hover block border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent p-6"
             >
               <div className="mb-3 flex items-center gap-2">
-                <span className="text-2xl">🎯</span>
-                <h3 className="text-base font-bold text-ink-50">本模块实战项目</h3>
+                <span className="shrink-0 text-2xl">🎯</span>
+                <h3 className="min-w-0 truncate text-base font-bold text-ink-50">本模块实战项目</h3>
                 {isProjectComplete(module.project.id) && (
-                  <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-400">
+                  <span className="shrink-0 whitespace-nowrap rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-400">
                     ✓ 已完成
                   </span>
                 )}
-                <span className="ml-auto text-xs text-amber-400">查看详情 →</span>
+                <span className="ml-auto shrink-0 whitespace-nowrap text-xs text-amber-400">查看详情 →</span>
               </div>
               <h4 className="text-lg font-bold text-amber-300">
                 {module.project.title}
@@ -207,30 +230,11 @@ export function ModulePage() {
             <div className="card p-6 text-sm text-ink-500">本模块无独立项目。</div>
           )}
 
-          {/* Prev / Next */}
-          <div className="mt-4 grid gap-3">
-            {prev && (
-              <Link
-                to={`/curriculum/${prev.id}`}
-                className="card card-hover p-4"
-              >
-                <div className="text-[11px] text-ink-500">← 上一模块</div>
-                <div className="mt-1 text-sm font-medium text-ink-200">
-                  {prev.icon} {prev.title}
-                </div>
-              </Link>
-            )}
-            {next && (
-              <Link
-                to={`/curriculum/${next.id}`}
-                className="card card-hover p-4 text-right"
-              >
-                <div className="text-[11px] text-ink-500">下一模块 →</div>
-                <div className="mt-1 text-sm font-medium text-ink-200">
-                  {next.icon} {next.title}
-                </div>
-              </Link>
-            )}
+          <div className="mt-4">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-500">
+              相邻模块
+            </div>
+            <ModuleAdjacentNav moduleId={module.id} />
           </div>
         </aside>
       </div>
