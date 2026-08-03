@@ -1,173 +1,355 @@
-## 定价与商业模式：订阅、用量、买断
+## AI Coding 工作流框架（上）：OpenSpec 规格驱动 + Superpowers 流程控制
 
-传统软件的边际成本接近于零：多一个用户，多的只是一点存储和带宽。所以 SaaS 的定价可以完全按价值来定，不用管成本。
+L17-03 讲了"规格驱动开发"的理念——把想法写成 AI 能执行的规格。这一节把理念变成可操作的工作流，引入两个具体的框架：**OpenSpec**（定义"做什么"）和 **Superpowers**（指导"怎么做"）。
 
-AI 产品不是这样。**每一次调用都在真实地花钱**，而且花多少取决于用户怎么用。这一条改变了定价的全部逻辑 —— 定价模型选错，你会遇到一种非常荒谬的处境：**用户越活跃，你亏得越多**。
+### 为什么需要工作流框架
 
-### 三种模型和它们在 AI 产品上的适配性
+没有框架的 AI Coding 是**对话式开发**：你说一句，AI 写一段，你再改改，AI 再补补。问题是：
 
-| 模型 | 收入可预测性 | 成本风险 | 用户接受度 | 适合的场景 |
-|------|------------|---------|-----------|-----------|
-| 订阅制（固定月费） | 高 | **高** | 高 | 用量分布均匀、单次成本低 |
-| 用量计费 | 低 | 低 | 低（不敢用） | 用量差异极大、单次价值明确 |
-| 买断制 | 一次性 | 中 | 中 | 一次性交付、无持续调用 |
-| 订阅 + 额度 | 高 | 低 | 高 | **AI 产品的默认选择** |
+- **不可回溯**：AI 为什么选择这个方案？当时有哪些替代方案被否决了？没人知道
+- **补丁摞补丁**：每次对话都是独立的上下文，后面的修改没有前面的设计约束
+- **质量无保障**：AI 写了代码，谁来保证它没有破坏已有功能？谁来保证它符合项目约定？
 
-最后一行是结论：绝大多数 AI 产品应该用**订阅制加用量额度**的混合模型。它保住了订阅制的收入可预测性和用户心理接受度，同时用额度给成本上了一个盖子。
+工作流框架解决三个问题。
 
-纯订阅制在 AI 产品上的风险值得展开讲，因为它是最直觉的选择，也是最容易出事的。
+先看 OpenSpec + Superpowers 协作的全貌——从用户需求到代码合入，每个阶段谁在主导、产出什么：
 
-### 纯订阅制的风险：5% 的人吃掉全部毛利
+::interactive{type="openSpecWorkflow"}
 
-假设你收 $20/月不限量，成本是每次调用 $0.05。
-
-用户用量的分布通常是极度长尾的（不是正态分布）：
-
-```
-60% 的用户：每月 20 次   → 成本 $1    → 毛利 $19
-30% 的用户：每月 100 次  → 成本 $5    → 毛利 $15
- 8% 的用户：每月 400 次  → 成本 $20   → 毛利 $0
- 2% 的用户：每月 2000 次 → 成本 $100  → 毛利 -$80
-```
-
-每 100 个用户算一次总账：`60×19 + 30×15 + 8×0 + 2×(-80) = 1140 + 450 + 0 - 160 = $1430`。
-
-看起来还行。但注意两件事：
-
-第一，**那 2% 是最活跃、最愿意推荐你产品的人**。他们会带来更多同类用户，于是这个比例会上升而不是下降。
-
-第二，如果你的产品被某个自动化脚本盯上（有人写个循环调你的接口），单个账号一个月能消耗掉几百上千美元。不限量意味着**你的成本上限是无穷大**。
-
-这不是理论风险。「不限量」的 AI 产品被薅到关站，是过去几年反复发生的事。
-
-### 额度设计：给成本装一个盖子
-
-正确做法是保留订阅的形式，但在里面放一个用量上限。
+| 问题 | 框架 | 职责 |
+|------|------|------|
+| **做什么** | OpenSpec | 规格驱动：explore → propose → apply → archive |
+| **怎么做** | Superpowers | 流程控制：brainstorming、TDD、subagent、review、verification |
+| **谁检查** | Harness 门禁 | 质量强制：Gate 0-8 自动阻断（下节讲） |
 
 ```
-基础版 $9/月：   每月 100 次调用，超出后停止（可升级）
-专业版 $29/月：  每月 500 次调用，超出后 $0.08/次
-团队版 $99/月：  每月 2000 次调用，超出后 $0.06/次
+User: "我想做暗色模式"
+  ↓
+OpenSpec /opsx:explore   → 探索方案、对比权衡
+OpenSpec /opsx:propose   → 生成 proposal.md + specs/ + design.md + tasks.md
+  ↓
+Superpowers brainstorming → 发散方案、风险评估
+Superpowers writing-plans  → 实现计划（TDD 任务拆分）
+  ↓
+Superpowers subagent-driven-development → 并行派发任务
+Superpowers test-driven-development     → 红→绿→重构循环
+Superpowers requesting-code-review     → 自动 review 产出
+Superpowers verification-before-completion → 最终验证
+  ↓
+OpenSpec /opsx:archive → 归档 specs，更新项目知识库
 ```
 
-三个设计要点：
+### OpenSpec 规格驱动开发
 
-**一、额度要覆盖 90% 用户的真实用量。** 定得太低，正常用户会频繁撞墙，体验很差；定得太高，等于没有额度。这个数字必须从真实数据来 —— 如果你还没有数据，先用人工替身阶段（L18-01）观察到的用量，或者第一个月先设宽松再收紧（反过来会挨骂）。
+OpenSpec（63k GitHub stars）是规格驱动开发的 CLI 工具。四步工作流：
 
-**二、超额行为要明确。** 两种选择：硬停（到额度就不能用了，引导升级）或软超（按次计费继续用）。
+#### 1. `/opsx:explore` —— 不写代码，先探索
 
-低价档用硬停，高价档用软超。原因是：低价档用户对意外账单最敏感，硬停虽然打断体验但不会引发投诉；高价档用户通常在用它挣钱，中断的损失大于超额费用，他们更愿意接受软超。
+```bash
+npm install -g @fission-ai/openspec
+openspec init
+```
 
-**三、超额单价必须高于你的成本。** 这一条看起来是废话，但很多人定超额价时是照着「显得便宜」定的，忘了自己的成本随模型和上下文长度浮动。留 2-3 倍余量。
+然后对 AI 说：
 
-### 计价单位怎么选
+```text
+/opsx:explore 我想给 P17 项目加一个"暗色模式切换"功能。
+请探索以下方向：
+1. 用 CSS 变量 vs Tailwind dark: 前缀，各自的优劣？
+2. 需要改多少文件？哪些文件必须改？
+3. 有没有现成的方案可以复用？
+4. 这个功能的风险点在哪？
+```
 
-用户能理解的单位和你的成本单位往往不一致，这中间需要一次翻译。
+**explore 的价值**：在写一行代码之前，AI 先读代码库、分析方案、对比权衡。**很多时候，explore 的结果是"这个功能没那么简单，建议拆成两个阶段"——这比写到一半才发现省了太多时间。**
 
-| 你的成本单位 | 用户能理解的单位 | 翻译方式 |
-|------------|----------------|---------|
-| token | 「次」「篇」「份」 | 按典型任务的平均 token 折算，取整 |
-| token | 「小时音频」「页文档」 | 按素材量折算 |
-| token + 存储 | 「个项目」「个知识库」 | 打包成资源配额 |
+#### 2. `/opsx:propose` —— 生成四份规格文件
 
-**不要直接向用户暴露 token。** 除非你的用户全是开发者，否则「10 万 token」对他们没有任何意义，他们无法判断这够不够用，于是不敢买。
+```text
+/opsx:propose 基于刚才的 explore 结果，生成完整的暗色模式 propose。
+```
 
-翻译时要按**保守值**折算，不是平均值。如果一份文档处理下来平均 8k token、最坏 25k token，你按 10k 折算，那些复杂文档就会让你亏。按 20k 折算，你的额度表看起来数字小一点，但不会翻车。
+OpenSpec 会在 `openspec/changes/dark-mode/` 下生成：
 
-还有一个实操细节：**额度的计量点要放在调用成功之后**。失败的调用（模型报错、超时）不该扣用户额度，但你的成本已经产生了 —— 这部分算你自己的损耗，别为了几分钱去扣一个已经体验很差的用户的额度。
+```
+dark-mode/
+  proposal.md       # 动机：为什么要做、做了有什么好处
+  specs/            # 需求 + 场景：用户故事、验收标准
+    dark-mode.md
+  design.md         # 技术方案：CSS 变量方案、组件改造策略
+  tasks.md          # 实现清单：按优先级排序、可逐条执行
+```
 
-### 免费额度：最容易失控的地方
+**proposal.md 示例**：
 
-免费层是获客工具，也是成本黑洞。设计原则只有一条：**免费额度的总成本上限必须是你能算出来的一个确定数字**。
+```markdown
+# Proposal: 暗色模式切换
 
-具体做法：
+## 动机
+当前站点只有暗色模式，部分用户在白天使用反馈刺眼。
+11 条用户反馈中 4 条提到"希望能切换亮色"。
+
+## 范围
+- 全局主题切换（暗色 ↔ 亮色）
+- 切换状态持久化（localStorage）
+- 10 个页面组件的颜色适配
+
+## 不在范围
+- 不引入第三方主题库
+- 不做"跟随系统主题"（后续版本）
+- 不修改 ECharts 图表颜色（图表组件单独处理）
+
+## 风险
+- 部分组件使用了硬编码颜色 → 需要先做颜色 token 化
+- 亮色模式下代码高亮色需要单独调整
+```
+
+**关键**：proposal 里写了"不在范围"（不做什么）和"风险"（什么可能出问题），这比只写"做什么"重要得多。**AI 倾向于"能做就做"，proposal 的不在范围是给它画边界。**
+
+#### 3. `/opsx:apply` —— 按 tasks.md 逐条实现
+
+```text
+/opsx:apply 按 tasks.md 逐条实现暗色模式。每完成一个 task 就标记完成。
+```
+
+OpenSpec 会追踪 tasks.md 的状态：
+
+```markdown
+## tasks.md
+- [x] Task 1: 定义亮色主题 CSS 变量
+- [x] Task 2: 实现 ThemeProvider + ThemeToggle 组件
+- [ ] Task 3: 改造 10 个页面组件适配主题
+- [ ] Task 4: 调整亮色模式代码高亮色
+- [ ] Task 5: 测试所有页面亮暗切换
+```
+
+**apply 的关键原则**：一次只做一个 task，做完再下一个。不要一次让 AI 实现所有 tasks——上下文会爆炸，质量会下降。
+
+#### 4. `/opsx:archive` —— 归档，更新知识库
+
+```text
+/opsx:archive dark-mode
+```
+
+归档后，`dark-mode/` 变更记录移到 `openspec/changes/archive/`，specs 更新到 `openspec/specs/`。**下次 AI 读 specs 就能理解"暗色模式已经实现了，用的是 CSS 变量方案"——避免重复造轮子。**
+
+### Superpowers 技能体系
+
+Superpowers（263k GitHub stars）是 Claude Code 的插件，提供 14 个可组合 skills。每个 skill 是一个**AI 行为指令集**——告诉 AI 在这个场景下该怎么思考、怎么执行。
+
+安装：
+
+```text
+/plugin install superpowers@claude-plugins-official
+```
+
+#### 核心 Skills 详解
+
+**`brainstorming`**：结构化头脑风暴，先发散再收敛。AI 会先尽可能多地列出方案，然后按可行性、成本、风险逐条评估，最后收敛到 2-3 个推荐方案。
+
+```text
+请用 brainstorming skill 帮我发散 P17 项目的功能优先级排序。
+```
+
+**`writing-plans`**：写出"给热情但缺乏判断力的初级工程师"能执行的计划。每个任务必须包含：输入、输出、验收标准、前置条件、预估时间。**计划不规范（如"实现用户系统"这种大颗粒任务），AI 会拒绝执行并要求细化。**
+
+**`test-driven-development`**：严格的 red/green TDD 循环。先写失败测试 → 写最小实现 → 测试通过 → 重构。**禁止跳过测试直接写实现。**
+
+**`subagent-driven-development`**：主 Agent 拆任务 → 并行派发 subagent → 自动 review 产出。每个 subagent 独立上下文、独立工具权限，避免上下文污染。
+
+**`systematic-debugging`**：六步调试法：复现 → 隔离 → 定位 → 修复 → 验证 → 预防。不只是修 bug，还要写回归测试防止重现。
+
+**`requesting-code-review` / `receiving-code-review`**：双向 code review 闭环。一个 subagent 实现代码，另一个 subagent 用独立视角审视，发现问题自动反馈给实现者修改。
+
+**`verification-before-completion`**：完成前强制自检。逐条检查：测试全绿？代码风格一致？没有引入新依赖？没有吞异常？没有重复实现？全部通过才能标记 task 完成。
+
+#### Skills 触发规则
+
+Superpowers 的核心原则是：**"有 1% 可能就该调 skill"**。禁止跳过 skill 直接行动。
+
+这背后的逻辑是：**AI 容易高估自己的判断力**。一个任务看起来简单，AI 可能直接跳过 brainstorming 开始写代码。但"看起来简单"常常是"没想清楚"的伪装。强制调 skill 就是把"想清楚"变成硬约束。
+
+### 实战：为 P17 项目跑一遍完整工作流
+
+```text
+# Step 1: OpenSpec explore
+/opsx:explore P17 项目要做一个"Markdown 笔记管理器"。
+核心功能：创建笔记、Markdown 编辑、标签分类、全文搜索。
+技术栈：Python FastAPI + React + SQLite。
+请探索技术方案，重点对比以下方向：
+1. 编辑器选型：CodeMirror vs Monaco vs 简易 textarea
+2. 全文搜索：SQLite FTS5 vs 外部搜索引擎
+3. 数据模型：单表 vs 笔记+标签关联表
+
+# Step 2: Superpowers brainstorming
+用 brainstorming skill 发散"笔记管理器的功能优先级"。
+先发散（至少列出 15 个功能点子），再按"用户价值/实现成本"矩阵收敛到 5 个 MVP 功能。
+
+# Step 3: OpenSpec propose
+/opsx:propose 基于 explore 和 brainstorming 的结果，
+生成完整的 proposal.md + specs/ + design.md + tasks.md。
+重点：proposal 里要写清楚"不在范围"和"风险"。
+
+# Step 4: Superpowers writing-plans
+用 writing-plans skill 把 tasks.md 里的每个 task 拆成
+"给初级工程师也能执行"的粒度。每个 task 包含：
+输入 / 输出 / 验收标准 / 前置条件 / 预估时间。
+
+# Step 5: OpenSpec apply（配合 Superpowers subagent + TDD + review）
+/opsx:apply 按 tasks.md 逐条实现。
+每实现一个 task：
+- 用 TDD skill 先写测试
+- 用 subagent-driven-development skill 并行派发独立任务
+- 用 code-review skill 自动 review 每个 subagent 的产出
+- 用 verification-before-completion skill 做完成自检
+```
+
+### 实战：用 Python 自动化工作流检查
+
+OpenSpec + Superpowers 的工作流产出大量文件——proposal、specs、design、tasks、brainstorming 记录。手工检查这些文件是否齐全、格式是否正确是体力活。写一个脚本自动化检查：
 
 ```python
-FREE_MONTHLY_QUOTA = 10          # 免费用户每月 10 次
-COST_PER_CALL = 0.05             # 单次成本上限（按最坏情况估）
-MAX_FREE_USERS_BUDGET = 200      # 每月最多为免费用户花 $200
+# scripts/check_openspec.py —— 自动化 OpenSpec 工作流完整性检查
+import os, sys, json
+from pathlib import Path
+from dataclasses import dataclass
+from typing import Optional
 
-# 推导出的免费用户容量上限
-MAX_FREE_USERS = MAX_FREE_USERS_BUDGET / (FREE_MONTHLY_QUOTA * COST_PER_CALL)
-# = 200 / 0.5 = 400 人
+@dataclass
+class CheckResult:
+    path: str
+    passed: bool
+    message: str
+
+def check_openspec_dir(root: str = "openspec/changes") -> list[CheckResult]:
+    """检查 OpenSpec 目录结构完整性。"""
+    results = []
+    changes_dir = Path(root)
+
+    if not changes_dir.exists():
+        return [CheckResult(root, False, "openspec/changes/ 目录不存在——先运行 openspec init")]
+
+    for change_dir in sorted(changes_dir.iterdir()):
+        if not change_dir.is_dir() or change_dir.name == "archive":
+            continue
+
+        # 检查四份必需文件
+        required = {
+            "proposal.md": "提案文件",
+            "design.md": "技术方案",
+            "tasks.md": "任务清单",
+        }
+
+        for filename, desc in required.items():
+            f = change_dir / filename
+            if f.exists():
+                content = f.read_text()
+                issues = []
+
+                if filename == "proposal.md":
+                    # 检查 proposal 质量：不在范围至少 5 条、风险至少 3 条
+                    scope_count = content.count("- ") if "不在范围" in content else 0
+                    risk_count = content.count("- ") if "风险" in content else 0
+                    if "不在范围" not in content:
+                        issues.append("缺少「不在范围」section")
+                    if "风险" not in content:
+                        issues.append("缺少「风险」section")
+
+                if filename == "tasks.md":
+                    total = content.count("- [ ]") + content.count("- [x]")
+                    done = content.count("- [x]")
+                    if total > 0:
+                        issues.append(f"进度：{done}/{total} ({100*done//total}%)")
+
+                status = "✓" if not issues else "⚠"
+                results.append(CheckResult(
+                    str(f),
+                    len([i for i in issues if i.startswith("缺少")]) == 0,
+                    f"{status} {desc}" + (f" — {', '.join(issues)}" if issues else " — 就绪"),
+                ))
+            else:
+                results.append(CheckResult(str(f), False, f"✗ 缺少 {desc}（{filename}）"))
+
+        # 检查 specs/ 目录
+        specs_dir = change_dir / "specs"
+        if specs_dir.exists() and specs_dir.is_dir():
+            spec_files = list(specs_dir.glob("*.md"))
+            results.append(CheckResult(
+                str(specs_dir),
+                len(spec_files) > 0,
+                f"{'✓' if spec_files else '✗'} specs/ — {len(spec_files)} 个规格文件",
+            ))
+        else:
+            results.append(CheckResult(str(specs_dir), False, "✗ 缺少 specs/ 目录"))
+
+    # 检查是否有已归档的 change（有归档说明完整走过一遍流程）
+    archive_dir = changes_dir / "archive"
+    if archive_dir.exists():
+        archived = [d for d in archive_dir.iterdir() if d.is_dir()]
+        results.append(CheckResult(
+            str(archive_dir), True,
+            f"ℹ archive/ — {len(archived)} 个已归档变更（说明完整走过至少 {len(archived)} 遍流程）",
+        ))
+
+    return results
+
+def check_superpowers_artifacts(root: str = "docs") -> list[CheckResult]:
+    """检查 Superpowers ��程产物是否齐全。"""
+    results = []
+    docs = Path(root)
+
+    expected = {
+        "brainstorm-record.md": "brainstorming 发散→收敛记录",
+        "tdd-log.md": "TDD 红→绿→重构循环日志",
+    }
+
+    for filename, desc in expected.items():
+        f = docs / filename
+        if f.exists():
+            lines = len(f.read_text().splitlines())
+            results.append(CheckResult(str(f), lines >= 20, f"✓ {desc}（{lines} 行）"))
+        else:
+            results.append(CheckResult(str(f), False, f"✗ 缺少 {desc}"))
+
+    return results
+
+if __name__ == "__main__":
+    print("=" * 60)
+    print("OpenSpec + Superpowers ���作流完整性检查")
+    print("=" * 60)
+
+    all_results = check_openspec_dir() + check_superpowers_artifacts()
+
+    passed = 0
+    for r in all_results:
+        tag = "✓" if r.passed else "✗"
+        print(f"  [{tag}] {r.message}")
+        if r.passed:
+            passed += 1
+
+    print(f"\n结果：{passed}/{len(all_results)} 项通过")
+
+    # CI 集成：有任何不通过就 exit 1
+    if passed < len(all_results):
+        print("\n→ 工作流产物不完整，请补齐后再提交。")
+        sys.exit(1)
 ```
 
-超过 400 个免费用户之后怎么办？三种处理：转成邀请制、降低免费额度、或者接受成本上升（前提是转化率证明这笔获客成本划算）。
-
-关键是**这个决定要提前想好并写下来**，而不是等账单来了才慌。
-
-滥用防护至少要有三层：
-
-```python
-# 1. 注册层：一次性邮箱域名拦截
-BLOCKED_DOMAINS = {'mailinator.com', '10minutemail.com', ...}
-
-# 2. 账号层：免费额度按 (邮箱 + IP 段) 双维度计
-#    只按邮箱算，一个人注册 50 个账号；只按 IP 算，误伤共用出口的公司用户
-
-# 3. 行为层：调用频率异常告警
-def check_abuse(user_id: str) -> bool:
-    calls = recent_calls(user_id, minutes=10)
-    if len(calls) > 30:                       # 人不可能这个频率
-        return True
-    if len(set(c.input_hash for c in calls)) == 1:  # 反复提交同一内容
-        return True
-    return False
-```
-
-第三层的第二个判断（反复提交同一内容）很有用 —— 这是脚本刷额度最典型的特征，正常用户不会这么做。
-
-### 定多少钱
-
-先说一个反直觉的经验：**独立开发者的第一版定价，几乎总是定低了**。
-
-原因是心理性的 —— 你太清楚自己产品的粗糙之处，于是不好意思要价。但用户看到的是结果，不是你的代码。
-
-几个可用的锚点：
-
-**锚定用户现在的成本。** 如果你的工具帮一个自由职业者每月省 5 小时，而他的时薪是 ¥200，那你创造的价值是 ¥1000/月。定价在价值的 10%-30% 是常见区间，也就是 ¥100-300/月。
-
-**锚定替代方案。** 他现在用什么？如果是一个 $50/月的工具，你可以定 $30 打差异化，也可以定 $80 如果你明显更好。如果替代方案是免费的 ChatGPT 手工操作，你要卖的是流程和确定性，定价空间在 $10-30。
-
-**别用成本加成法。** 「我的成本 $2，加 50% 毛利定 $3」是制造业思路，软件不适用。你的定价上限由用户获得的价值决定，不由你的成本决定 —— 成本只决定下限。
-
-**试探方法：涨价。** 定一个价，卖出 10 单，然后涨 50% 再卖 10 单。如果转化率没有明显下降，说明还有空间，继续涨。这个方法比任何调研都准。早期用户少的时候涨价的代价很小，等你有 500 个用户再想涨价，要处理的老用户价格保护问题会麻烦得多。
-
-### 改价的纪律
-
-一旦有付费用户，改价就有成本。两条纪律：
-
-**老用户价格保留（grandfathering）。** 涨价只对新用户生效，老用户维持原价至少 6-12 个月。这条能避免绝大部分负面情绪，代价只是一点收入。
-
-**降价要谨慎。** 降价会让刚以原价买入的用户不满，而且降价换来的增量收入通常低于预期（价格很少是转化的主要瓶颈，价值表述才是）。转化率低时，先怀疑「用户没看懂这东西对他有什么用」，而不是先怀疑价格。
+把这个脚本加入 pre-commit hook，每次提交前自动检查工作流产物是否齐全。
 
 ### 动手 5 分钟
 
-给你的产品设计一个不会亏的价格结构。
+1. 安装 OpenSpec：`npm install -g @fission-ai/openspec && openspec init`。
+2. 用 `/opsx:explore` 探索 P17 项目的核心功能方案，记录 explore 发现的至少 2 个"如果不探索就没想到"的问题。
+3. 把上面的 `check_openspec.py` 复制到你的 P17 项目中运行一次，看你的 OpenSpec 目录还缺什么。
 
-1. 估算单次调用的**最坏情况**成本（最长上下文 + 最贵模型路径），不要用平均值。
-2. 设计两档订阅：写出月费、包含额度、超额行为（硬停还是软超）、超额单价，并验证超额单价 ≥ 3 倍成本。
-3. 算出免费额度的月度成本上限，以及对应的免费用户容量上限，写下超过之后你打算怎么办。
-
-**验收标准**：你能说出「如果明天来了 1000 个免费用户，我这个月会多花多少钱」这个具体数字。如果答案是「不知道」或「理论上没有上限」，说明免费层还没有盖子 —— 这是最优先要修的。
-
-### 定价的心理学：三个你不需要自己摸索的结论
-
-独立开发者做定价，最容易在这三件事上反复纠结。以下是经过大量产品验证的结论，你可以直接拿去用，不用再试一遍。
-
-**一、价格尾数：$19 和 $20 的转化率差异微乎其微。** 这个结论来自大量 A/B 测试数据。整数价格的"透明感"对 B2B 产品可能是加分项——$20 看起来像"这个价格是认真算出来的"，而 $19 看起来像"想在心理上骗我"。对于卖给个人用户的工具，$19 和 $20 确实没区别。**结论：定整数，省掉纠结的时间。**
-
-**二、年付折扣：15%-20% 是甜区。** 低于 15%，用户没有动力切换；高于 20%，你会损失太多收入。年付的真正价值不是"锁定用户"，是**提前拿到现金流**——$200 年付今天到账，比 $20×12 个月分批到账在财务上更健康。但年付也意味着你提前承诺了一年的服务，如果下个月成本暴涨，你没法涨价。
-
-**三、公开定价 vs 隐藏定价。** 对一人公司，永远公开定价。隐藏定价需要你有销售团队去跟进询价，你没有。而且隐藏定价会让很多潜在用户直接关掉页面——他们不想"被销售"。
+**验收标准**：explore 记录里至少有 2 个"没想到"的问题，brainstorming 输出有明确的发散阶段和收敛阶段（不是直接跳到结论）。`check_openspec.py` 跑出来的"不通过"项都有对应文件补上。
 
 ### 要点总结
 
-- AI 产品的边际成本不为零，**定价模型选错会导致「用户越活跃你亏得越多」**。
-- **纯订阅不限量是高危设计**：用量呈长尾分布，2% 的重度用户能吃掉全部毛利，而且成本上限是无穷大。
-- 默认选择是**订阅制 + 用量额度**：保住收入可预测性和用户接受度，同时给成本装盖子。
-- 额度要覆盖 **90% 用户的真实用量**；低价档用硬停，高价档用软超；**超额单价留 2-3 倍成本余量**。
-- **不要向用户暴露 token**，翻译成「次/篇/份」，且按**最坏情况**折算而非平均值。
-- 免费层的原则是**总成本上限必须是个能算出来的确定数字**，并提前想好超出后怎么办。
-- 滥用防护三层：一次性邮箱拦截、邮箱+IP 双维度计额、行为异常检测（**反复提交同一内容**是脚本最典型特征）。
-- **独立开发者的第一版定价几乎总是定低了**；用「卖 10 单就涨 50%」试探比任何调研都准，且早期涨价代价最小。
+- **没有框架的 AI Coding = 对话式开发，不可回溯、补丁摞补丁、质量无保障**。OpenSpec 定义"做什么"，Superpowers 指导"怎么做"，Harness 门禁负责"谁检查"。
+- **OpenSpec 四步工作流**：`/opsx:explore`（不写代码先探索）→ `/opsx:propose`（生成 proposal + specs + design + tasks）→ `/opsx:apply`（逐条实现）→ `/opsx:archive`（归档，更新知识库）。
+- **proposal 里最重要的不是"做什么"，而是"不做什么"和"风险"**。AI 倾向于"能做就做"，proposal 的不在范围是给它画边界。
+- **Superpowers 的 14 个 skills 是可组合的 AI 行为指令集**。核心 skills：brainstorming、writing-plans、TDD、subagent-driven-development、systematic-debugging、code-review、verification-before-completion。
+- **"有 1% 可能就该调 skill"**——AI 容易高估自己的判断力，强制调 skill 是把"想清楚"变成硬约束。
+- **apply 的关键原则**：一次只做一个 task，做完再下一个。不要一次让 AI 实现所有 tasks——上下文会爆炸，质量会下降。

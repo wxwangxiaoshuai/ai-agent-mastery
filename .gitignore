@@ -39,3 +39,15 @@ Thumbs.db
 
 # cli assistant memory
 code/memory/*.json
+
+# build check artifacts
+.check-tmp/
+
+# python cache
+__pycache__/
+
+# pnpm store
+.pnpm-store/
+
+# outputs
+outputs/

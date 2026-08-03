@@ -1,245 +1,585 @@
-## 单位经济模型：把 token 成本变成毛利率
 
-有一个问题，你必须能在三秒内回答：**再多来 100 个用户，我这个月是多赚还是多亏？**
+## 生产级 UI 约束：用 Skills 让 AI 产出美观可用的前端
 
-答不上来，你就不知道该不该做增长。很多 AI 产品在增长期突然死掉，原因不是没人用，恰恰是用的人太多 —— 每个用户都在亏，规模只是放大了亏损。
+L18-03 讲了用 Superpowers skills 控制 AI 的行为流程。这一节讲一个更具体的场景：**用 Skills 让 AI 产出的 UI 代码不是"能跑就行"，而是美观、可访问、��应式、符合设计规范。**
 
-这一节把这个问题变成一个能算的模型。
+::interactive{type="a11yCheck"}
 
-### 单位经济模型算的是什么
+这是 AI Coding 最大的痛点之一：AI 生成的后端逻辑通常能用，但生成的 UI 往往"功能对但丑"——间距不对、颜色不一致、没有 loading 状态、没有 error 状态、键盘不可用、屏幕缩小就崩。
 
-单位经济（unit economics）就是**把一个用户看成一门独立的小生意**：他每月给你带来多少收入，让你花掉多少成本，差额是多少。
+### 为什么 AI 生成的前端不好看
 
-一个用户的月度成本由四块组成：
+四个根本原因：
+
+1. **AI 没见过你的设计系统**。它知道 Tailwind 的 class 名字，但不知道你的品牌色是什么、间距档位是几档、圆角用多大。所以它"猜"——猜出来的结果就是每个组件风格都不一样。
+2. **AI 只生成"阳光明媚"的状态**。你问"做一个登录表单"，AI 给你一个能填用户名密码的表单。但 loading 态呢？error 态呢？空态呢？表单验证呢？键盘操作呢？AI 不会主动想这些。
+3. **AI 不考虑可访问性**。`<div onClick>` 而不是 `<button>`，没有 `aria-label`，没有 focus 样式，颜色对比度不够。AI 默认写的代码是"看得见的人用鼠标操作"的代码。
+4. **AI 不知道"这个项目里已经有这个组件了"**。你说"加一个弹窗"，AI 从头写一个 Modal，而不是用项目里已有的 `<Dialog>` 组件。
+
+**解决方案**：把设计约束固化为 AI 可消费的 Skills，让 AI 在生成 UI 代码时自动遵守。
+
+### 三个 UI Skills 的架构
 
 ```
-推理成本   = 月调用次数 × 每次平均 token 数 × 单价
-存储成本   = 用户数据量 × 存储单价（通常很小，但别忘）
-带宽成本   = 请求量 × 平均响应大小 × 带宽单价
-第三方成本 = 支付抽成 + 邮件 + 短信 + 其他按用户计费的服务
+┌─────────────────────────────────────────────┐
+│ design-tokens Skill                         │
+│ 告诉 AI：颜色 / 间距 / 圆角 / 阴影 / 字体   │
+│ 职责：风格一致性                             │
+└─────────────────────────────────────────────┘
+  ↓ 约束
+┌─────────────────────────────────────────────┐
+│ ui-generation Skill                         │
+│ 告诉 AI：怎么写组件、状态矩阵怎么覆盖         │
+│ 职责：组件质量                               │
+└─────────────────────────────────────────────┘
+  ↓ 产出
+┌─────────────────────────────────────────────┐
+│ ui-review Skill                             │
+│ 检查：可访问性 / 响应式 / 状态覆盖 / 组件复用  │
+│ 职责：质量把关                               │
+└─────────────────────────────────────────────┘
 ```
 
-再摊上固定成本（服务器、域名、订阅工具 …… 除以总用户数），得到每用户总成本。
+### Skill 1：design-tokens —— 把设计系统固化为约束
 
-关键是**推理成本这一项会随用户行为剧烈变化，其余三项相对稳定**。所以模型的重点在第一项。
+不要让 AI "猜"你的设计系统。给它一份精确的定义文件：
 
-下面这个模型可以直接调参数看结果 —— 拖动订阅价、月调用量、免费用户占比和免费额度，看每 100 个用户的混合毛利率怎么变：
+```yaml
+# design-tokens.yml
+# 这是 AI 生成 UI 时唯一可用的颜色、间距、圆角、阴影值。
+# 禁止使用此文件之外的值。
 
-::interactive{type="costModel"}
+colors:
+  brand:
+    primary: "#6366f1"     # Indigo-500
+    primary-hover: "#4f46e5"
+    primary-light: "#e0e7ff"
+    primary-dark: "#4338ca"
+  ink:
+    base: "#0f172a"        # Slate-900
+    muted: "#64748b"       # Slate-500
+    subtle: "#94a3b8"      # Slate-400
+    inverse: "#ffffff"
+  surface:
+    page: "#f8fafc"        # Slate-50
+    card: "#ffffff"
+    elevated: "#ffffff"
+    overlay: "rgba(0,0,0,0.5)"
 
-多试几组你会发现一个规律：**免费用户占比和免费额度这两个参数的杀伤力，往往超过订阅价本身**。一个 $29 的产品，如果免费用户占 80% 且免费额度给得慷慨，整体可以是负毛利；而把免费额度砍一半，毛利率能从负数直接翻正。
+spacing:
+  xs: "4px"
+  sm: "8px"
+  md: "16px"
+  lg: "24px"
+  xl: "32px"
+  2xl: "48px"
 
-这是很多人的盲区 —— 他们在纠结定价该 $19 还是 $29，而真正的漏洞在免费层。
+radius:
+  sm: "4px"
+  md: "8px"
+  lg: "12px"
+  full: "9999px"
 
-### 三个必须分开算的数字
+shadow:
+  sm: "0 1px 2px rgba(0,0,0,0.05)"
+  md: "0 4px 6px rgba(0,0,0,0.07)"
+  lg: "0 10px 15px rgba(0,0,0,0.1)"
 
-新手最常见的错误是只算一个「平均成本」。平均值会掩盖掉最危险的部分。
+typography:
+  font-family: "'Inter', system-ui, sans-serif"
+  font-mono: "'JetBrains Mono', monospace"
+  sizes:
+    xs: "12px"
+    sm: "14px"
+    base: "16px"
+    lg: "18px"
+    xl: "20px"
+    2xl: "24px"
+    3xl: "30px"
+```
 
-至少要分开算这三个：
+把这个文件注册为一个 skill：
 
-**一、中位数用户成本。** 一半的用户比他花得少。这个数字决定你的常规毛利。
+```markdown
+# .claude/skills/design-tokens/SKILL.md
 
-**二、P95 用户成本。** 前 5% 重度用户的成本。这个数字决定你的风险敞口 —— L18-03 讲过，如果 P95 用户的成本超过订阅价，你的增长就是在加速亏损。
+## 设计约束
 
-**三、最坏单次成本。** 单次调用可能产生的最高成本（最长上下文 + 最贵模型 + 最长输出）。这个数字决定你的额度换算和防滥用阈值。
+在生成任何 UI 代码前，先读取 `design-tokens.yml`。
+所有颜色、间距、圆角、阴影、字体必须使用 tokens 中定义的值。
+**禁止使用 tokens 之外的值。** 如果需要新值，先更新 tokens 文件。
+
+## Tailwind 映射
+
+本项目使用 Tailwind CSS。tokens 已映射到 `tailwind.config.ts` 的 `theme.extend`。
+使用 Tailwind class 而非内联样式。
+
+## 暗色模式
+
+本项目默认暗色模式。所有组件必须同时适配暗色和亮色。
+使用 CSS 变量（定义在 `:root` 和 `html.light` 中），不要用 Tailwind 的 `dark:` 前缀。
+```
+
+**关键**：`design-tokens` skill 不只是一个"参考文档"——它是 Superpowers 体系下的一个**硬约束 skill**。AI 在生成 UI 代码时，Superpowers 的 `verification-before-completion` 会检查"是否使用了 tokens 之外的值"。如果用了，打回重写。
+
+### Skill 2：ui-generation —— 状态矩阵驱动生成
+
+一个组件不是只有一个"正常"状态。每个组件有**状态矩阵**：
+
+```
+              │ 正常        │ Loading    │ Empty      │ Error      │
+──────────────┼─────────────┼────────────┼────────────┼────────────┤
+Button        │ 可点击       │ 禁用+spinner│ -          │ -          │
+Form          │ 可填写       │ 提交中      │ -          │ 验证错误    │
+List          │ 有数据       │ 加载骨架屏  │ 空态提示    │ 错误+重试   │
+Dialog        │ 打开         │ 确认中      │ -          │ 操作失败    │
+Data Display  │ 有数据       │ 骨架屏      │ 空态插图    │ 错误+重试   │
+```
+
+`ui-generation` skill 要求 AI 在生成每个组件时，**必须覆盖所有适用的状态**：
+
+```markdown
+# .claude/skills/ui-generation/SKILL.md
+
+## 组件生成规则
+
+每生成一个 UI 组件，必须覆盖以下状态（按适用情况）：
+
+1. **正常态**：默认渲染。数据从 props 来，不写死假数据。
+2. **Loading 态**：数据加载中。用骨架屏（Skeleton）而非 spinner，除非操作 < 1 秒。
+3. **Empty 态**：数据为空。给出友好提示 + 引导操作（如"创建第一条"）。
+4. **Error 态**：请求失败。显示错误信息 + 重试按钮。
+5. **Edge 态**：极端情况。超长文本截断、大量数据分页、屏幕宽度 < 320px 不崩溃。
+
+## 组件编写规范
+
+- 交互元素必须用 `<button>` 而非 `<div onClick>`。如果是链接，必须用 `<a href>`。
+- 表单必须有 `<label>` 关联到 `<input>`（`htmlFor` + `id`）。
+- 图片必须有 `alt` 属性。装饰性图片用 `alt=""`。
+- 颜色对比度必须满足 WCAG AA（4.5:1 正常文本，3:1 大文本）。
+- 所有交互元素必须有 focus 可见样式（`focus:ring-2 focus:ring-brand-primary`）。
+- 响应式：移动优先。先写 mobile 布局，再用 `md:` `lg:` 断点增强。
+
+## 禁止事项
+
+- 禁止用 `<div onClick>` 做按钮——用 `<button>`。
+- 禁止硬编码颜色——用 design tokens。
+- 禁止写死假数据——从 props 取。
+- 禁止忽略 loading/empty/error 状态——每个组件至少覆盖两种状态。
+- 禁止在组件里写 `useEffect` 发请求——数据获取逻辑抽到 hooks 或 loader 里。
+```
+
+### Skill 3：ui-review —— 自动审查 UI 产出
+
+`ui-review` skill 在 AI 生成 UI 代码后自动执行审查。它检查六件事：
+
+```markdown
+# .claude/skills/ui-review/SKILL.md
+
+## 审查清单
+
+每生成一个 UI 组件后，逐条检查：
+
+### 1. 可访问性（A11y）
+- [ ] 交互元素是否使用了正确的语义标签（button / a / input / select）？
+- [ ] 表单输入是否有 label 关联？
+- [ ] 图片是否有 alt 属性？
+- [ ] 颜色对比度是否满足 WCAG AA？
+- [ ] 是否可以通过键盘完整操作（Tab / Enter / Escape）？
+- [ ] focus 样式是否可见？
+
+### 2. 响应式
+- [ ] 移动端（320px）布局是否不崩溃？
+- [ ] 平板端（768px）布局是否合理？
+- [ ] 桌面端（1024px+）是否利用了大屏空间？
+- [ ] 是否有横向滚动条（不应该有）？
+
+### 3. 状态覆盖
+- [ ] 是否覆盖了 Loading 态？
+- [ ] 是否覆盖了 Empty 态？
+- [ ] 是否覆盖了 Error 态？
+- [ ] 是否处理了极端情况（超长文本、大量数据）？
+
+### 4. 设计一致性
+- [ ] 所有颜色、间距、圆角是否来自 design tokens？
+- [ ] 字体大小是否在 typography 档位中？
+- [ ] 是否使用了项目已有的组件而非重复实现？
+
+### 5. 代码质量
+- [ ] 组件是否有明确的 TypeScript props 类型？
+- [ ] 数据获取逻辑是否在组件外（hooks / loader）？
+- [ ] 是否避免了不必要的 re-render（useMemo / useCallback）？
+
+### 6. 禁止模式
+- [ ] 没有 `<div onClick>` 做按钮
+- [ ] 没有硬编码颜色
+- [ ] 没有写死假数据
+- [ ] 没有在组件里直接发请求
+```
+
+### 实战：用 UI Skills 生成一个搜索组件
+
+假设你要 AI 生成一个"搜索+结果列表"组件。传统 prompt：
+
+```text
+# 传统方式（不推荐）
+做一个搜索框，输入关键词后显示搜索结果列表。
+```
+
+AI 产出：一个 `<input>` + `<ul>` 列表。没有 loading 态，没有 error 态，没有空态，搜索框没有 label，列表项是 `<div onClick>`。
+
+**用 UI Skills 后的 prompt**：
+
+```text
+# 用 UI Skills（推荐）
+请用 design-tokens 和 ui-generation skill 生成一个搜索组件：
+- 搜索框 + 结果列表
+- 数据源：POST /api/search { query: string } → { items: SearchResult[] }
+- 组件名：SearchPanel
+```
+
+AI 产出（经过 skills 约束）：
+
+```typescript
+// SearchPanel.tsx —— AI 在 UI Skills 约束下生成的代码
+import { useState, useCallback } from 'react'
+import { useSearch } from '@/hooks/useSearch'
+import { SearchResult } from '@/types'
+import { Skeleton } from '@/components/Skeleton'
+import { ErrorBlock } from '@/components/ErrorBlock'
+import { EmptyState } from '@/components/EmptyState'
+
+interface SearchPanelProps {
+  onSelect: (item: SearchResult) => void
+}
+
+export function SearchPanel({ onSelect }: SearchPanelProps) {
+  const [query, setQuery] = useState('')
+  const { results, isLoading, error, retry } = useSearch(query)
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value)
+  }, [])
+
+  return (
+    <div className="flex flex-col gap-md" role="search">
+      {/* 搜索框：有 label、有 aria、有 focus 样式 */}
+      <div className="flex flex-col gap-xs">
+        <label htmlFor="search-input" className="text-sm text-ink-muted">
+          搜索
+        </label>
+        <input
+          id="search-input"
+          type="search"
+          value={query}
+          onChange={handleChange}
+          placeholder="输入关键词搜索..."
+          className="w-full px-md py-sm rounded-md border border-ink-subtle
+                     bg-surface-card text-ink-base
+                     focus:ring-2 focus:ring-brand-primary focus:border-transparent
+                     placeholder:text-ink-subtle"
+          autoComplete="off"
+        />
+      </div>
+
+      {/* 结果区域：三种状态各自覆盖 */}
+      {isLoading && (
+        <div className="flex flex-col gap-sm" aria-label="加载中">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      )}
+
+      {error && (
+        <ErrorBlock
+          message={`搜索失败：${error.message}`}
+          onRetry={retry}
+        />
+      )}
+
+      {!isLoading && !error && results.length === 0 && query.length > 0 && (
+        <EmptyState
+          icon="search"
+          title="没有找到结果"
+          description={`未找到与"${query}"相关的内容，试试其他关键词`}
+          action={{ label: '清空搜索', onClick: () => setQuery('') }}
+        />
+      )}
+
+      {!isLoading && !error && results.length > 0 && (
+        <ul className="flex flex-col gap-sm" role="listbox" aria-label="搜索结果">
+          {results.map((item) => (
+            <li key={item.id} role="option" aria-selected={false}>
+              <button
+                type="button"
+                onClick={() => onSelect(item)}
+                className="w-full text-left p-md rounded-md bg-surface-card
+                           hover:bg-brand-primary-light
+                           focus:ring-2 focus:ring-brand-primary
+                           transition-colors"
+              >
+                <h3 className="text-base font-medium text-ink-base truncate">
+                  {item.title}
+                </h3>
+                <p className="text-sm text-ink-muted mt-xs line-clamp-2">
+                  {item.description}
+                </p>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+```
+
+**对比传统方式，Skills 约束下的产出多出了**：
+- `<label htmlFor="search-input">` 关联到 `<input id="search-input">`——可访问性
+- `role="search"` `role="listbox"` `role="option"`——语义化
+- `aria-label="加载中"` `aria-selected={false}`——屏幕阅读器
+- `focus:ring-2 focus:ring-brand-primary`——键盘可操作
+- `isLoading` → `<Skeleton>` 骨架屏——Loading 态
+- `error` → `<ErrorBlock>` + 重试按钮——Error 态
+- `results.length === 0` → `<EmptyState>` + 清空操作——Empty 态
+- `truncate` + `line-clamp-2`——边界情况（超长文本）
+- 颜色来自 design tokens（`bg-surface-card` `text-ink-muted` `brand-primary`）——设计一致性
+- 数据获取在 `useSearch` hook 里，组件只负责渲染——关注点分离
+
+### 用 ui-review skill 自动审查
+
+AI 生成完 `SearchPanel.tsx` 后，`ui-review` skill 自动运行：
+
+```text
+🔍 UI Review: SearchPanel.tsx
+
+✅ 可访问性：
+  - 语义标签：input、button、ul/li ✓
+  - label 关联：htmlFor="search-input" ✓
+  - focus 样式：focus:ring-2 ✓
+  - 颜色对比度：bg-surface-card + text-ink-base 满足 WCAG AA ✓
+
+✅ 响应式：
+  - 移动端：flex-col 布局，w-full 输入框 ✓
+  - 无横向滚动条 ✓
+
+✅ 状态覆盖：
+  - Loading：Skeleton 骨架屏 ✓
+  - Empty：EmptyState + 清空操作 ✓
+  - Error：ErrorBlock + 重试 ✓
+  - Edge：truncate + line-clamp-2 ✓
+
+✅ 设计一致性：
+  - 所有颜色来自 design tokens ✓
+  - 间距：gap-md、p-md、px-md、py-sm ✓
+  - 圆角：rounded-md ✓
+
+✅ 代码质量：
+  - TypeScript props 类型：SearchPanelProps ✓
+  - 数据获取在 useSearch hook ✓
+  - useCallback 避免不必要的 re-render ✓
+
+❌ 禁止模式：未发现
+
+总评：PASS（6/6 类别通过）
+```
+
+如果审查不通过——比如 AI 用了 `<div onClick>` 而不是 `<button>`——`ui-review` 会标出问题并打回。AI 收到反馈后修复，再次审查通过后才算完成。
+
+### 四个 Skills 的协作关系
+
+在完整工作流中，四个 Skills 的协作：
+
+```text
+step 1: design-tokens skill
+  → 读取 tokens 文件，激活设计约束
+  → AI 知道"只能用什么颜色/间距/圆角"
+
+step 2: ui-generation skill
+  → 激活状态矩阵规则
+  → AI 生成组件，覆盖所有状态
+
+step 3: ui-review skill
+  → 自动审查 6 个维度
+  → 不通过 → 打回修复 → 重新审查
+
+step 4: verification-before-completion skill（Superpowers 通用）
+  → 最终检查：ui-review 是否通过？所有状态是否覆盖？
+  → 全部通过 → 标记 task 完成
+```
+
+### 实战：用 Python 验证设计约束
+
+Skills 定义了约束，但怎么验证 AI 的产出是否真的遵守了？写脚本自动检查：
 
 ```python
-def cost_percentiles(users: list[UserUsage]) -> dict[str, float]:
-    costs = sorted(u.monthly_cost for u in users)
-    n = len(costs)
-    return {
-        'median': costs[n // 2],
-        'p95':    costs[int(n * 0.95)],
-        'max':    costs[-1],
-        'mean':   sum(costs) / n,     # 放最后，因为它最没用
-    }
+# scripts/check_design_tokens.py —— 验证设计 token 完整性 + AI 产出合规性
+import sys, re, json
+from pathlib import Path
+from typing import Any
+
+def load_tokens(path: str = "design-tokens.json") -> dict[str, Any] | None:
+    """加载设计 token 文件，支持 JSON 和 YAML 格式。"""
+    p = Path(path)
+    if not p.exists():
+        print(f"✗ 设计 token 文件不存在：{path}")
+        return None
+
+    if p.suffix in (".yml", ".yaml"):
+        try:
+            import yaml  # type: ignore
+            return yaml.safe_load(p.read_text())
+        except ImportError:
+            print("⚠ 需要 pip install pyyaml 来读取 YAML 格式")
+            return None
+
+    return json.loads(p.read_text())
+
+def validate_tokens(tokens: dict) -> list[str]:
+    """验证 token 定义的完整性。"""
+    issues = []
+
+    # 基础结构检查
+    for key in ["colors", "spacing", "radius", "typography"]:
+        if key not in tokens:
+            issues.append(f"缺少 token 类别：{key}")
+
+    # 检查颜色至少 3 个品牌色 + 4 个墨色色阶
+    if "colors" in tokens:
+        colors = tokens["colors"]
+        brand = colors.get("brand", {}) or colors.get("primary", {})
+        ink = colors.get("ink", {})
+
+        brand_count = len(brand) if isinstance(brand, dict) else 1
+        ink_count = len(ink) if isinstance(ink, dict) else 1
+
+        if brand_count < 3:
+            issues.append(f"品牌色数量不足（{brand_count}<3）")
+        if ink_count < 4:
+            issues.append(f"墨色色阶不足（{ink_count}<4）")
+
+    # 检查间距至少 4 档
+    if "spacing" in tokens:
+        sp = tokens["spacing"]
+        if isinstance(sp, dict) and len(sp) < 4:
+            issues.append(f"间距档位不足（{len(sp)}<4）")
+
+    return issues
+
+def check_ui_code_compliance(filepath: str, tokens: dict | None) -> list[str]:
+    """检查 UI 代码是否使用 tokens 之外的硬编码颜色或间距。"""
+    issues = []
+    content = Path(filepath).read_text() if Path(filepath).exists() else ""
+
+    if not content:
+        return [f"文件不存在：{filepath}"]
+
+    # 提取 tokens 中定义的可接受值
+    allowed_tokens: set[str] = set()
+    if tokens:
+        for category in tokens.values():
+            if isinstance(category, dict):
+                for val in category.values():
+                    if isinstance(val, str) and (val.startswith("#") or val.endswith("px")):
+                        allowed_tokens.add(val)
+
+    # 检查硬编码的颜色（十六进制）
+    hex_colors = set(re.findall(r'#[0-9a-fA-F]{6}', content.lower()))
+    hardcoded = hex_colors - allowed_tokens
+    if hardcoded:
+        issues.append(f"硬编码颜色（tokens 外）：{', '.join(sorted(hardcoded)[:5])}")
+
+    # 检查硬编码的 px 值
+    px_values = set(re.findall(r'(\d+)px', content))
+    # 忽略 0px、常见的 token 值
+    suspicious = {v for v in px_values if v != "0" and v not in {"4", "8", "16", "24", "32", "48"}}
+    if suspicious:
+        issues.append(f"可疑的硬编码间距（px）：{', '.join(sorted(suspicious)[:5])}")
+
+    # 检查 div onClick（应使用 button）
+    if re.search(r'<div[^>]*\bonClick', content) and "<button" not in content.lower():
+        issues.append("检测到 <div onClick>，应使用 <button>")
+
+    # 检查图片 alt 属性
+    img_tags = re.findall(r'<img[^>]*>', content)
+    no_alt = [t for t in img_tags if 'alt=' not in t]
+    if no_alt:
+        issues.append(f"检测到 {len(no_alt)} 个 <img> 缺少 alt 属性")
+
+    return issues
+
+def calculate_contrast_ratio(fg: str, bg: str) -> float:
+    """计算 WCAG 颜色对比度。"""
+    def _lum(hex_color: str) -> float:
+        hex_color = hex_color.lstrip("#")
+        r, g, b = [int(hex_color[i:i+2], 16) / 255 for i in (0, 2, 4)]
+        # sRGB → 线性 RGB
+        r = r / 12.92 if r <= 0.04045 else ((r + 0.055) / 1.055) ** 2.4
+        g = g / 12.92 if g <= 0.04045 else ((g + 0.055) / 1.055) ** 2.4
+        b = b / 12.92 if b <= 0.04045 else ((b + 0.055) / 1.055) ** 2.4
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+    l1, l2 = _lum(fg), _lum(bg)
+    lighter, darker = max(l1, l2), min(l1, l2)
+    return (lighter + 0.05) / (darker + 0.05)
+
+if __name__ == "__main__":
+    print("=" * 60)
+    print("设计 Token 验证 + UI 代码合规检查")
+    print("=" * 60)
+
+    tokens = load_tokens()
+    if tokens:
+        token_issues = validate_tokens(tokens)
+        if token_issues:
+            for i in token_issues:
+                print(f"  ✗ {i}")
+        else:
+            print("  ✓ 设计 token 定义完整")
+
+        # 验证关键颜色组合的对比度
+        colors = tokens.get("colors", {})
+        ink = colors.get("ink", {})
+        surface = colors.get("surface", {})
+        if ink and surface:
+            text_on_bg = calculate_contrast_ratio(
+                ink.get("base", "#000000"),
+                surface.get("page", "#ffffff"),
+            )
+            aa_pass = text_on_bg >= 4.5
+            print(f"  {'✓' if aa_pass else '✗'} 正文/背景对比度 = {text_on_bg:.1f}:1"
+                  f" {'(WCAG AA 通过)' if aa_pass else '(不满足 WCAG AA 4.5:1)'}")
+
+    # 检查项目中最近的 UI 文件
+    import glob
+    ui_files = glob.glob("src/**/*.tsx", recursive=True)[:5]
+    for f in ui_files:
+        issues = check_ui_code_compliance(f, tokens)
+        if issues:
+            print(f"\n  {f}:")
+            for i in issues:
+                print(f"    ✗ {i}")
+        else:
+            print(f"\n  ✓ {f} — 合规")
 ```
 
-把 `mean` 放最后是有意的。平均成本在长尾分布下几乎不提供决策信息 —— 它被少数极端用户拉高，既不代表典型用户，也不代表风险。
-
-### 毛利率的健康区间
-
-算出来之后怎么判断好坏？
-
-| 毛利率 | 含义 | 该做什么 |
-|--------|------|---------|
-| < 0% | 每个用户都在亏 | 停止获客，先修模型 |
-| 0-30% | 勉强不亏，但没有空间 | 优化成本或涨价，暂缓投放 |
-| 30-60% | 可以运转，但对波动敏感 | 可以谨慎增长 |
-| 60-80% | 健康的 AI 产品区间 | 放心增长 |
-| > 80% | 很好，或者你漏算了成本 | 再检查一遍成本项 |
-
-最后一行不是玩笑。漏算是常态，最常被漏掉的三项是：**支付抽成**（通常 2%-4% 加固定费）、**失败重试的成本**（模型报错重试一次，成本翻倍但用户只算一次）、**你自己开发调试消耗的 token**。
-
-传统 SaaS 的毛利率能到 80%-90%，AI 产品因为推理成本，健康区间在 60%-80%。如果你的模型算出来接近 90%，多半是漏了什么。
-
-### 降成本的顺序
-
-发现毛利率不健康时，按这个顺序处理 —— 从见效快代价小的开始：
-
-**第一，砍上下文长度。** 这是投入产出比最高的一项。很多产品每次调用都塞进大量其实用不上的上下文（完整历史、整个知识库、冗长的系统提示）。精简上下文通常能砍掉 30%-50% 的 token，而且往往还能提升效果（L17-04 讲的上下文污染）。
-
-**第二，做模型分级路由。** 简单任务走便宜档，复杂任务才上贵的。M1 讲过模型选型原则、M15 讲过生产环境的路由落地。典型收益的量级在 40%-60%（量级示意，实际因流量分布而异）。
-
-**第三，加缓存。** 相同或高度相似的请求直接返回缓存结果。对于有明显重复模式的产品（比如处理同类文档），命中率能到 20%-40%。注意缓存要考虑用户隔离，别把 A 的结果返给 B。
-
-**第四，改额度设计。** 前三项是技术优化，这一项是产品决策：收紧免费额度、把重度用户推到高价档。见效最快，但会影响用户体验和转化，所以放在技术手段之后。
-
-**第五，涨价。** 前面四项都做完还是不健康，说明定价本身有问题。
-
-顺序反过来做（一上来就涨价或砍额度）会伤到用户，而且你会永远不知道自己的成本其实有一半是浪费掉的。
-
-### 会让单位经济崩掉的三种用户行为
-
-有些用户行为在模型里看不出来，但会在真实世界里把你的账算崩。
-
-**一、把你的产品接进他自己的自动化流程。** 一个用户写了个脚本，每天定时调你的接口 500 次。他付一份订阅费，消耗的是 50 个正常用户的量。
-
-对策：额度 + 频率限制。同时这也是个信号 —— 如果有人这么用，说明存在 API 需求，可以单独设计一个按量计费的 API 档位，把它变成收入而不是成本。
-
-**二、超长输入。** 你按「一篇文档」计价，有人上传 300 页的 PDF。单次成本可能是你预期的 50 倍。
-
-对策：输入长度硬上限 + 超长内容按倍数扣额度。这条一定要在产品初期就加上，后加会引发老用户不满。
-
-**三、重试成瘾。** 用户对结果不满意，连续重新生成十几次。每次都是完整成本。
-
-对策：同一输入的免费重试次数设上限（比如 3 次），或者引导用户修改输入而不是无脑重试。后者体验更好，因为无脑重试本来也解决不了问题。
-
-这三种行为的共同点是：**它们都由少数用户产生，但都能吃掉大量成本**。所以监控不能只看总量，要看**单用户成本的分布**，并对超出阈值的账号自动告警。
-
-```python
-async def daily_cost_alert(threshold: float = 5.0):
-    """每日跑一次：找出单日成本超阈值的账号。"""
-    rows = await db.fetch('''
-        SELECT user_id, SUM(cost_usd) AS c, COUNT(*) AS n
-        FROM api_calls WHERE created_at > now() - interval '1 day'
-        GROUP BY user_id HAVING SUM(cost_usd) > $1
-        ORDER BY c DESC
-    ''', threshold)
-    for r in rows:
-        notify(f"用户 {r['user_id']} 昨日成本 ${r['c']:.2f}（{r['n']} 次调用）")
-```
-
-### 回本周期：获客成本什么时候赚回来
-
-如果你开始花钱获客（广告、赞助、付费渠道），还需要一个数字：**获客成本要多少个月才能赚回来**。
-
-```
-回本周期（月） = 单个获客成本 / 每用户月毛利
-```
-
-比如获客成本 $30，每用户月毛利 $12，回本周期是 2.5 个月。
-
-这个数字要和**用户平均留存时长**比。如果用户平均只留 2 个月，而回本周期是 2.5 个月，那你每获取一个用户都在亏钱 —— 花钱做增长会加速你的死亡。
-
-一人公司的安全线建议是**回本周期 ≤ 3 个月且 ≤ 平均留存时长的一半**。原因是你没有融资，现金流断了就直接结束，不能靠「未来会回本」硬撑。
-
-留存时长怎么算、怎么提升，是 L19-03 的内容。这里只强调一点：**在留存数据出来之前，不要花钱买量**。
-
-### 把模型变成可操作的仪表盘
-
-算出单位经济模型之后，下一步是把它变成一个你每周能看的数字。不需要复杂的 BI 工具，一个 SQL 查询加一个定时脚本就够了。
-
-```python
-# weekly_unit_economics.py —— 每周跑一次，输出到终端或 Slack
-import asyncio
-from datetime import datetime, timedelta
-
-async def weekly_report(db, week_start: str):
-    """生成一周的单位经济报表。"""
-
-    # 1. 收入
-    revenue = await db.fetchval('''
-        SELECT COALESCE(SUM(amount_usd), 0)
-        FROM payments
-        WHERE created_at >= $1 AND created_at < $1::date + 7
-          AND status = 'succeeded'
-    ''', week_start)
-
-    # 2. 推理成本（按模型拆分）
-    cost_by_model = await db.fetch('''
-        SELECT model, SUM(cost_usd) AS total, COUNT(*) AS calls,
-               AVG(input_tokens) AS avg_in, AVG(output_tokens) AS avg_out
-        FROM api_calls
-        WHERE created_at >= $1 AND created_at < $1::date + 7
-        GROUP BY model ORDER BY total DESC
-    ''', week_start)
-
-    # 3. 用户分层
-    tiers = await db.fetch('''
-        SELECT
-          CASE
-            WHEN monthly_cost < 0.5 THEN 'light'
-            WHEN monthly_cost < 5.0 THEN 'normal'
-            WHEN monthly_cost < 20.0 THEN 'heavy'
-            ELSE 'extreme'
-          END AS tier,
-          COUNT(*) AS users,
-          AVG(monthly_cost) AS avg_cost,
-          SUM(monthly_cost) AS total_cost
-        FROM user_monthly_costs
-        WHERE month = $1
-        GROUP BY tier ORDER BY avg_cost DESC
-    ''', week_start[:7])
-
-    # 4. 异常用户告警
-    outliers = await db.fetch('''
-        SELECT user_id, SUM(cost_usd) AS c, COUNT(*) AS n
-        FROM api_calls
-        WHERE created_at >= $1 AND created_at < $1::date + 7
-        GROUP BY user_id
-        HAVING SUM(cost_usd) > 10.0
-        ORDER BY c DESC LIMIT 10
-    ''', week_start)
-
-    # 打印报告
-    total_inference_cost = sum(r['total'] for r in cost_by_model)
-    # 支付抽成（Stripe 约 2.9% + $0.30，此处简化取 3%）
-    payment_fee = revenue * 0.03
-    # 重试损耗（失败调用也有成本，按推理成本的 5% 估算）
-    retry_cost = total_inference_cost * 0.05
-    total_cost = total_inference_cost + payment_fee + retry_cost
-    active_users = sum(r['users'] for r in tiers)
-    gross_margin = (revenue - total_cost) / revenue * 100 if revenue > 0 else 0
-
-    print(f"=== 周报 {week_start} ===")
-    print(f"收入: ${revenue:.2f} | 总成本: ${total_cost:.2f}")
-    print(f"  推理: ${total_inference_cost:.2f} | 支付: ${payment_fee:.2f} | 重试: ${retry_cost:.2f}")
-    print(f"毛利率: {gross_margin:.0f}%")
-    print(f"活跃付费用户: {active_users}")
-    print(f"\n按模型成本:")
-    for r in cost_by_model:
-        print(f"  {r['model']}: ${r['total']:.2f} ({r['calls']} calls, "
-              f"avg in={r['avg_in']:.0f} out={r['avg_out']:.0f})")
-    print(f"\n用户分层:")
-    for r in tiers:
-        print(f"  {r['tier']}: {r['users']} users, avg ${r['avg_cost']:.2f}, "
-              f"total ${r['total_cost']:.2f}")
-    if outliers:
-        print(f"\n⚠️ 异常用户（周成本 > $10）:")
-        for r in outliers:
-            print(f"  user {r['user_id']}: ${r['c']:.2f} ({r['n']} calls)")
-```
-
-这个脚本每周跑一次，花 30 秒看完，你就能回答三个最关键的问题：**钱从哪来、钱花到哪去了、有没有异常**。比任何仪表盘都实用。
+这个脚本既验证 token 定义本身的完整性（颜色、间距、圆角、字体是否齐全），又验证 AI 生成的 UI 代码是否遵守 tokens（有没有硬编码颜色、有没有 `<div onClick>` 等禁止模式）。建议放进 pre-commit hook——AI 生成代码后自动跑一次，不合规就阻断提交。
 
 ### 动手 5 分钟
 
-建立你的单位经济模型，重点是找出风险敞口。
+1. 为你的 P17 项目创建 `design-tokens.yml`，定义颜色、间距、圆角、阴影、字体。至少包含 3 个品牌色、4 个墨色色阶、4 个间距档位。
+2. 把上面的 `check_design_tokens.py` 复制到项目中，跑一次验证 token 完整性。看看你的 token 文件还缺什么。
+3. 写一个 `ui-generation` skill 的 SKILL.md，包含你的组件编写规范（至少 5 条规则 + 3 条禁止事项）。
+4. （进阶）在 Superpowers 中注册 `ui-review` skill，让它自动审查你后续生成的每个 UI 组件。
 
-1. 列出你的四类成本项，特别检查有没有漏掉支付抽成和失败重试。
-2. 用上面的交互模型试参数，找到让毛利率翻负的那个临界点（免费用户占比多少？免费额度多大？）。
-3. 写一个每日成本告警脚本，设一个阈值（建议先设成订阅价的 1/10）。
-
-**验收标准**：你能说出「再来 100 个用户，我这个月多赚/多亏多少钱」这个具体数字，并且知道让它翻负的临界条件是什么。如果算出来毛利率超过 85%，回去再查一遍成本项 —— 大概率漏了。
+**验收标准**：`design-tokens.yml` 完整且能被 AI 读取（路径正确），`check_design_tokens.py` 至少发现 2 处问题（token 缺失或 UI 合规问题），`ui-review` 审查清单至少覆盖 5 个维度。
 
 ### 要点总结
 
-- 必须能三秒回答：**再多 100 个用户是多赚还是多亏**。答不上来就不知道该不该做增长。
-- 单位经济 = 把一个用户当成独立小生意；四类成本里**只有推理成本随行为剧烈变化**，是模型的重点。
-- **免费用户占比和免费额度的杀伤力常常超过订阅价** —— 很多人在纠结 $19 还是 $29，漏洞其实在免费层。
-- 分开算**中位数 / P95 / 最坏单次**三个成本；**平均值在长尾分布下几乎没有决策价值**。
-- AI 产品的健康毛利率是 **60%-80%**；算出来超过 85% 通常是漏算了（最常漏：支付抽成、失败重试、自己调试的消耗）。
-- 降成本按顺序来：**砍上下文 → 模型分级 → 缓存 → 改额度 → 涨价**。倒着做会先伤用户，还发现不了浪费。
-- 三种崩账行为：**接进自动化脚本、超长输入、重试成瘾**。都由少数用户产生，所以要监控**单用户成本分布**而非总量。
-- 花钱获客前先算**回本周期**，安全线是 ≤3 个月且 ≤ 平均留存的一半；**留存数据出来之前不要买量**。
+- **AI 生成的前端不好看，四个根本原因**：没见过你的设计系统、只生成"阳光明媚"状态、不考虑可访问性、不知道项目已有组件。
+- **三个 UI Skills 架构**：`design-tokens`（风格一致性）→ `ui-generation`（组件质量）→ `ui-review`（质量把关）。三者形成闭环。
+- **`design-tokens` skill**：把颜色、间距、圆角、阴影、字体固化为精确值，AI 禁止使用 tokens 之外的值。这是风格一致性的基础。
+- **`ui-generation` skill**：强制 AI 在生成每个组件时覆盖状态矩阵——正常态、Loading 态、Empty 态、Error 态、Edge 态。禁止 `<div onClick>`、硬编码颜色、写死假数据。
+- **`ui-review` skill**：自动审查 6 个维度——可访问性、响应式、状态覆盖、设计一致性、代码质量、禁止模式。不通过就打回修复。
+- **Skills 约束下的产出 vs 传统方式**：多出 label 关联、ARIA 属性、focus 样式、骨架屏、Error 态+重试、Empty 态+引导、边界处理、design tokens 一致性。这些都是 AI 默认不会主动做的事。

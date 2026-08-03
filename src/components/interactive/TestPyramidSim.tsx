@@ -54,7 +54,7 @@ export function TestPyramidSim() {
   const getPct = (id: string) =>
     total > 0 ? Math.round((counts[id] || 0) / total * 100) : 0
 
-  const colors = { unit: 'bg-green-500', integration: 'bg-yellow-500', e2e: 'bg-red-500' }
+  const colors: Record<string, string> = { unit: 'bg-green-500', integration: 'bg-yellow-500', e2e: 'bg-red-500' }
 
   return (
     <div className="my-6 p-4 border border-gray-200 rounded-lg bg-gray-50">

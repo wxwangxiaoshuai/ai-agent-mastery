@@ -96,7 +96,7 @@ export function RoadmapPage() {
             <div className="text-4xl">🏆</div>
             <h3 className="mt-3 text-xl font-bold text-ink-50">毕业 · Agent 开发专家</h3>
             <p className="mt-2 max-w-md text-sm text-ink-400">
-              完成全部 19 个模块与毕业设计后，你将具备独立设计、开发、部署生产级 Agent 系统的全栈能力。
+              完成全部 20 个模块与毕业设计后，你将具备独立设计、开发、部署生产级 Agent 系统的全栈能力。
             </p>
             <Link to="/projects" className="btn-primary mt-5">
               查看毕业设计要求
@@ -142,7 +142,7 @@ export function RoadmapPage() {
               label: '在做独立产品，需要变现',
               icon: '🚀',
               start: 'M17',
-              desc: '技术不是你的瓶颈，选品、定价、增长才是。从 M17 AI Coding 提效开始，直达 M18/M19 商业化。',
+              desc: '技术不是你的瓶颈，选品、定价、增长才是。从 M17/M18 AI Coding 提效开始，直达 M19/M20 商业化。',
               path: '/curriculum/17',
             },
           ].map((p) => (

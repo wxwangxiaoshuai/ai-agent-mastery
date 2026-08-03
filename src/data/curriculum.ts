@@ -10,7 +10,7 @@ import type { Curriculum, Module } from './types'
  *  - 贯穿工程素养：上下文工程、RAG、Harness、评估、护栏、安全、部署
  *  - 架构师视角：新增架构设计、案例拆解、运维 SRE、平台架构
  *
- * 共 7 大阶段 / 19 个模块 / 119 节课 / 19 个实战项目
+ * 共 7 大阶段 / 20 个模块 / 126 节课 / 20 个实战项目
  */
 export const curriculum: Curriculum = {
   title: 'AI Agent 大师之路',
@@ -1975,16 +1975,17 @@ export const curriculum: Curriculum = {
     },
     {
       id: 17,
-      title: 'AI Coding 工程实践',
-      subtitle: '一个人怎么用 AI 造出生产级软件',
+      title: 'AI Coding 工程实践（上）',
+      subtitle: '一个人怎么用 AI 造出生产级软件——核心能力篇',
       description:
         'M1-M16 教你造 Agent，这一章教你用 AI 造软件——两件事的技能栈只有一半重叠。' +
         '独立开发者最稀缺的资源是时间，AI Coding 的价值不在"写得快"，而在"让一个人能维护住' +
-        '本来需要三个人才维护得住的代码量"。本章从能力边界讲起，覆盖规格驱动开发、代码库上下文工程、' +
-        'AI 生成生产级前端 UI（两节专项）、测试与重构、CI/CD、技术债与成本控制，' +
-        '最后深入 OpenSpec+Superpowers+Harness 工作流框架、桌面端 Agent 应用与 UI 约束 Skills。',
+        '本来需要三个人才维护得住的代码量"。上篇聚焦核心能力：能力边界、上下文工程、规格驱动开发、' +
+        'AI 生成生产级前端 UI（两节专项）、测试与重构、CI/CD、技术债与成本控制。' +
+        '下篇（M18）深入 OpenSpec+Superpowers+Harness 工作流框架、桌面端 Agent 应用，' +
+        '并引入 GitHub 社区开源 Skills 生态——不重复造轮子，用社区力量加速 AI Coding。',
       difficulty: '高级',
-      hours: 20,
+      hours: 13,
       icon: '⌨️',
       accent: 'brand',
       lessons: [
@@ -2138,8 +2139,44 @@ export const curriculum: Curriculum = {
           prerequisites: ['L15-02'],
           competency: '成本意识',
         },
+      ],
+      project: {
+        id: 'P17',
+        title: '用 AI Coding 从零交付一个可上线的 Web 应用',
+        summary:
+          '选一个你自己真正想用的小工具，用 AI Coding 核心能力从规格写起，' +
+          '交付一个含前后端、有测试、有 CI/CD、能被陌生人打开使用的 Web 应用。' +
+          '要求全程记录 AI 参与度与返工点，并沉淀至少 3 个可复用 skills。',
+        module: 17,
+        difficulty: '高级',
+        hours: 6,
+        deliverables: [
+          '可访问的线上应用（含域名或托管地址）',
+          '至少 3 个可复用自建 skills（含 SKILL.md）',
+          '测试套件与 CI/CD 流水线',
+          'AI 参与度与返工点记录',
+        ],
+        stack: ['Python', 'React', 'Skills', 'GitHub Actions', 'AI Coding'],
+      },
+    },
+    {
+      id: 18,
+      title: 'AI Coding 工程实践（下）',
+      subtitle: '一个人怎么用 AI 造出生产级软件——工作流与开源 Skills 生态篇',
+      description:
+        '上篇掌握了 AI Coding 的核心能力，下篇聚焦两件事：用工作流框架让 AI 产出可控、' +
+        '用社区开源 Skills 不重复造轮子。' +
+        'OpenSpec 定义"做什么"，Superpowers 指导"怎么做"，Harness 负责"谁检查"——' +
+        '三级防线让 AI 从"能写代码"变成"能交付生产级软件"。' +
+        '更重要的是，GitHub 社区已有数百个生产级开源 Skills：设计、审查、测试、安全、部署、SEO——' +
+        '本章教你发现它们、安装它们、组合它们，把一个人的战斗力再放大 3 倍。',
+      difficulty: '高级',
+      hours: 18,
+      icon: '🔧',
+      accent: 'brand',
+      lessons: [
         {
-          id: 'L17-11',
+          id: 'L18-01',
           title: 'Agent 桌面端应用架构',
           summary: '桌面端 Agent 技术选型：Electron vs Tauri，本地模型推理，离线优先架构。',
           duration: 45,
@@ -2154,7 +2191,7 @@ export const curriculum: Curriculum = {
           competency: '前端工程',
         },
         {
-          id: 'L17-12',
+          id: 'L18-02',
           title: '用 AI Coding 交付一个桌面端 Agent 原型',
           summary: '用规格驱动开发，从零交付一个系统托盘 Agent：常驻后台、快捷键唤醒、剪贴板输出。',
           duration: 55,
@@ -2165,11 +2202,11 @@ export const curriculum: Curriculum = {
             '掌握 pyinstaller / electron-builder 打包与分发',
           ],
           tags: ['桌面端', 'Electron', 'Python', '打包分发'],
-          prerequisites: ['L17-11'],
+          prerequisites: ['L18-01'],
           competency: '前端工程',
         },
         {
-          id: 'L17-13',
+          id: 'L18-03',
           title: 'AI Coding 工作流框架（上）：OpenSpec 规格驱动 + Superpowers 流程控制',
           summary: 'OpenSpec 定义"做什么"，Superpowers 指导"怎么做"，Harness 负责"谁检查"。',
           duration: 50,
@@ -2184,7 +2221,7 @@ export const curriculum: Curriculum = {
           competency: '工程方法',
         },
         {
-          id: 'L17-14',
+          id: 'L18-04',
           title: 'AI Coding 工作流框架（下）：Harness 质量门禁——三级防线让 AI 产出可控',
           summary: '在 AI 产出代码的每一个关键节点自动触发检查，不通过就阻断。Gate 0-8 全流程。',
           duration: 75,
@@ -2195,12 +2232,12 @@ export const curriculum: Curriculum = {
             '按项目风险等级选择合适的门禁策略',
           ],
           tags: ['Harness', 'Quality Gate', 'Pre-commit', 'CI/CD'],
-          prerequisites: ['L17-13'],
+          prerequisites: ['L18-03'],
           competency: '工程化',
         },
         {
-          id: 'L17-15',
-          title: '生产级 UI 约束：用 Skills 让 AI 产出美观可用的前端',
+          id: 'L18-05',
+          title: '自建 UI 约束 Skills：让 AI 产出美观可用的前端',
           summary: '把设计 token 固化为 AI 可消费的约束，用 UI 质量检查 skill 自动审查产出。',
           duration: 70,
           type: '实战',
@@ -2210,49 +2247,136 @@ export const curriculum: Curriculum = {
             '形成"spec 定义约束 → skill 指导生成 → skill 自动审查 → 人最终确认"的闭环',
           ],
           tags: ['UI', 'Design System', 'Skills', 'A11y', '响应式'],
-          prerequisites: ['L17-06', 'L17-13'],
+          prerequisites: ['L17-06', 'L18-03'],
           competency: '前端工程',
+        },
+        {
+          id: 'L18-06',
+          title: '开源 Skills 生态全景：不重复造轮子的 AI Coding 加速器',
+          summary: 'GitHub 上有数百个生产级 Skills——怎么找到、怎么选、怎么装、怎么组合。',
+          duration: 45,
+          type: '理论',
+          objectives: [
+            '掌握 GitHub 上开源 Skills 生态的全景分类（官方 / 社区 / 垂直领域）',
+            '学会用 awesome-agent-skills 等索引快速发现需要的 Skills',
+            '建立选型三原则：Stars 数、维护活跃度、是否官方出品',
+            '理解 npx skills add 和 /plugin marketplace add 的安装差异',
+          ],
+          tags: ['Skills', '开源生态', 'GitHub', 'Claude Code'],
+          prerequisites: ['L18-03'],
+          competency: '工程方法',
+        },
+        {
+          id: 'L18-07',
+          title: 'UI 增强实战：用社区 Skills 一键生成专业级设计',
+          summary: 'ui-ux-pro-max + web-design-guidelines 组合拳，让 AI 产出摆脱"AI 味"。',
+          duration: 60,
+          type: '实战',
+          objectives: [
+            '安装并使用 ui-ux-pro-max-skill（69万⭐）的 67 种设计风格与 161 套配色方案',
+            '用 vercel-labs/web-design-guidelines（45 条规则）自动审计 UI 产出',
+            '对比纯 AI 生成 vs 社区 Skills 辅助的 UI 产出质量差异',
+            '形成"设计风格搜索 → 配色推理 → 代码生成 → 审计反馈"的闭环',
+          ],
+          tags: ['UI', 'Design System', '开源 Skills', 'ui-ux-pro-max', 'Vercel'],
+          prerequisites: ['L18-05'],
+          competency: '前端工程',
+        },
+        {
+          id: 'L18-08',
+          title: '质量与安全：社区 Skills 的 Review、Testing 与 Security 实践',
+          summary: 'mattpocock/skills + addyosmani/agent-skills + trailofbits 三件套，',
+          duration: 60,
+          type: '实战',
+          objectives: [
+            '用 mattpocock/grill-me 反向拷问需求假设，避免方向性错误',
+            '用 addyosmani/code-review-and-quality 执行五维代码评审',
+            '用 trailofbits 安全审计 skill 扫描注入、越权、密钥泄漏等风险',
+            '搭建"grill-me → TDD → code-review → security-audit"四步质量链',
+          ],
+          tags: ['代码审查', '安全审计', 'TDD', '开源 Skills', 'mattpocock'],
+          prerequisites: ['L18-03'],
+          competency: '质量保障',
+        },
+        {
+          id: 'L18-09',
+          title: '部署、SEO 与性能：社区 Skills 让产品一键上线',
+          summary: 'vercel-deploy + claude-seo + web-quality-skills，从代码到可搜索的上线产品。',
+          duration: 50,
+          type: '实战',
+          objectives: [
+            '用 vercel-labs/vercel-deploy 一条命令完成部署与预览链接生成',
+            '用 walidboulanouar/claude-seo 执行全栈 SEO 审计与修复',
+            '用 addyosmani/web-quality-skills 检查 Lighthouse + Core Web Vitals',
+            '理解"部署 → SEO → 性能 → 可访问性"的上线检查链',
+          ],
+          tags: ['部署', 'SEO', '性能优化', 'Vercel', 'Lighthouse'],
+          prerequisites: ['L17-08'],
+          competency: '工程化',
+        },
+        {
+          id: 'L18-10',
+          title: '全链路协同：OpenSpec + Superpowers + 社区 Skills 联动实战',
+          summary: '把前九节课串成一条完整的 AI Coding 武器链——从需求到上线，一个真实案例走通。',
+          duration: 75,
+          type: '实战',
+          objectives: [
+            '用 OpenSpec /opsx:explore 探索需求 → /opsx:propose 生成规格',
+            '用 Superpowers brainstorming → writing-plans → subagent-driven-development 拆分并行执行',
+            '按场景切换社区 Skills：UI 阶段用 ui-ux-pro-max，Review 阶段用 grill-me + code-review',
+            '用 Harness Gate 0-8 确保每一步产出达标',
+            '总结：哪些环节用社区 Skills 比手写快 3 倍，哪些环节手写更有价值',
+          ],
+          tags: ['OpenSpec', 'Superpowers', '开源 Skills', '工作流', '全链路'],
+          prerequisites: ['L18-03', 'L18-07', 'L18-08', 'L18-09'],
+          competency: '工程方法',
         },
       ],
       project: {
-        id: 'P17',
-        title: '用 AI Coding 从零交付一个可上线的 Web 应用（或桌面端 Agent）',
+        id: 'P18',
+        title: '用 AI Coding 从零交付一个可上线的 Web 应用（全链路版）',
         summary:
-          '选一个你自己真正想用的小工具，用 OpenSpec + Superpowers + Harness 工作流从规格写起，' +
-          '交付一个含前后端、有测试、有 CI/CD、能被陌生人打开使用的 Web 应用（或桌面端 Agent 原型）。' +
-          '要求全程记录 AI 参与度与返工点，并沉淀至少 3 个可复用 skills。',
-        module: 17,
+          '选一个你自己真正想用的小工具，用 OpenSpec + Superpowers + 社区 Skills + Harness 全链路工作流' +
+          '从规格写起，交付一个含前后端、有测试、有 CI/CD、能被陌生人打开使用的 Web 应用。' +
+          '要求全程记录 AI 参与度与返工点，至少使用 3 个社区开源 Skills，沉淀至少 3 个自建 skills。',
+        module: 18,
         difficulty: '高级',
         hours: 8,
         deliverables: [
-          '可访问的线上应用（含域名或托管地址）或桌面端 Agent 原型',
+          '可访问的线上应用（含域名或托管地址）',
           'OpenSpec 工作流产物（proposal.md + specs/ + design.md + tasks.md + archive/）',
           'Superpowers 流程产物（brainstorming / plans / subagent 执行 / code-review 记录）',
           'UI 设计 token 定义文件与质量检查报告',
+          '至少 3 个社区开源 Skills 使用记录（选型理由 + 效果对比）',
           '至少 3 个可复用自建 skills（含 SKILL.md）',
           '测试套件与 CI/CD 流水线',
-          'AI 参与度与返工点记录（含 OpenSpec 和 Superpowers 介入点分析）',
+          'AI 参与度与返工点记录（含 OpenSpec / Superpowers / 社区 Skills 介入点分析）',
         ],
-        stack: ['Python', 'React', 'OpenSpec', 'Superpowers', 'UI Skills', 'GitHub Actions', 'AI Coding'],
+        stack: [
+          'Python', 'React', 'OpenSpec', 'Superpowers', '开源 Skills',
+          'UI Skills', 'GitHub Actions', 'AI Coding',
+        ],
       },
     },
     {
-      id: 18,
+      id: 19,
       title: '产品化与商业模式',
       subtitle: '从"能跑的项目"到"有人付钱的产品"',
       description:
         '技术能力到收入之间隔着一整套非技术工作：找到愿意付钱的问题、把范围砍到能交付、' +
         '定一个不亏本的价格、把支付和账号跑通、算清每个用户的毛利、并且不踩合规的坑。' +
-        '本章讲的是这套工作里工程师最容易低估的部分。' +
+        '本章讲的是这套工作里工程师最容易低估的部分。同时引入社区 Skills 在产品化各环节的实战应用：' +
+        '用 grill-me 拷问需求假设，用 stripe-best-practices 规范支付落地，' +
+        '用 vercel-deploy 快速验证落地页。' +
         '注意：本章内容为工程与经营的通用参考，不构成法律、税务或投资建议，' +
         '涉及合同、隐私合规与税务的决定请咨询相应资质的专业人士。',
       difficulty: '高级',
-      hours: 10,
+      hours: 11,
       icon: '💳',
       accent: 'brand',
       lessons: [
         {
-          id: 'L18-01',
+          id: 'L19-01',
           title: '选品与需求验证：找到愿意付钱的问题',
           summary: '"我觉得有人需要"是最贵的假设。先用最小成本验证付费意愿，再动手。',
           duration: 40,
@@ -2267,7 +2391,7 @@ export const curriculum: Curriculum = {
           competency: '产品思维',
         },
         {
-          id: 'L18-02',
+          id: 'L19-02',
           title: 'MVP 范围裁剪：最小可收费产品',
           summary: '不是最小可用，是最小可收费——能收到第一笔钱的那个最小切面。',
           duration: 35,
@@ -2278,11 +2402,11 @@ export const curriculum: Curriculum = {
             '设计可以先手工、后自动的运营型功能',
           ],
           tags: ['MVP', '范围管理', '独立开发'],
-          prerequisites: ['L18-01'],
+          prerequisites: ['L19-01'],
           competency: '产品思维',
         },
         {
-          id: 'L18-03',
+          id: 'L19-03',
           title: '定价与商业模式：订阅、用量、买断',
           summary: 'AI 产品的成本是变动的，定价模型选错，用得越多亏得越多。',
           duration: 40,
@@ -2297,7 +2421,7 @@ export const curriculum: Curriculum = {
           competency: '商业设计',
         },
         {
-          id: 'L18-04',
+          id: 'L19-04',
           title: '支付、账号与订阅系统落地',
           summary: '收钱这件事的技术复杂度，远超大多数工程师的预期。',
           duration: 45,
@@ -2312,7 +2436,7 @@ export const curriculum: Curriculum = {
           competency: '系统实现',
         },
         {
-          id: 'L18-05',
+          id: 'L19-05',
           title: '单位经济模型：把 token 成本变成毛利率',
           summary: '每个用户每月赚多少、亏多少，必须算得出来。算不出来的生意做不长。',
           duration: 40,
@@ -2323,11 +2447,11 @@ export const curriculum: Curriculum = {
             '识别会让单位经济崩掉的用户行为模式',
           ],
           tags: ['单位经济', '毛利率', '成本模型'],
-          prerequisites: ['L17-10', 'L18-03'],
+          prerequisites: ['L17-10', 'L19-03'],
           competency: '成本意识',
         },
         {
-          id: 'L18-06',
+          id: 'L19-06',
           title: '合规与风险：条款、隐私与内容责任',
           summary: '一个人也躲不掉的三件事：用户数据、内容责任、和你写在页面上的承诺。',
           duration: 35,
@@ -2342,7 +2466,7 @@ export const curriculum: Curriculum = {
           competency: '风险意识',
         },
         {
-          id: 'L18-07',
+          id: 'L19-07',
           title: '用 AI Skills 辅助产品化决策',
           summary: 'OpenSpec + Superpowers 工作流不只适用于写代码，同样适用于竞品分析、定价建模与合规检查。',
           duration: 45,
@@ -2353,18 +2477,35 @@ export const curriculum: Curriculum = {
             '用 AI 生成合规检查清单与隐私政策草稿（标注"需律师审核"）',
           ],
           tags: ['AI 辅助', '竞品分析', '定价', '合规'],
-          prerequisites: ['L17-13', 'L18-03'],
+          prerequisites: ['L18-03', 'L19-03'],
+          competency: '产品思维',
+        },
+        {
+          id: 'L19-08',
+          title: '产品化中的社区 Skills 实战：从验证到上线的加速链路',
+          summary: 'grill-me 拷问需求假设 + stripe-best-practices 规范支付 + vercel-deploy 快速验证落地页。',
+          duration: 55,
+          type: '实战',
+          objectives: [
+            '用 mattpocock/grill-me 反向拷问需求假设——"这个功能真的有人付钱吗？"',
+            '用 stripe/stripe-best-practices 规范支付接入的安全与幂等处理',
+            '用 vercel-labs/vercel-deploy 一小时把产品落地页推到线上做 A/B 测试',
+            '建立"选品验证 → 支付落地 → 灰度上线"的产品化 Skills 工具链',
+          ],
+          tags: ['开源 Skills', '产品化', 'grill-me', 'Stripe', 'Vercel'],
+          prerequisites: ['L19-01', 'L19-04'],
           competency: '产品思维',
         },
       ],
       project: {
-        id: 'P18',
+        id: 'P19',
         title: '给你的产品装上收款闭环与单位经济仪表盘',
         summary:
-          '在 P17 的应用上接入完整的账号、订阅与支付闭环，并建立一张能实时回答' +
-          '"这个用户这个月让我赚了还是亏了"的单位经济仪表盘。' +
-          '要求包含免费额度的成本上限与滥用防护，可选：用 AI Skills 辅助产品化决策记录。',
-        module: 18,
+          '在 P17 或 P18 的应用上接入完整的账号、订阅与支付闭环，并建立一张能实时回答' +
+          '"这个用户这个月让我赚了��是亏了"的单位经济仪表盘。' +
+          '要求包含免费额度的成本上限与滥用防护，' +
+          '并使用至少 2 个社区 Skills 辅助产品化决策（如 grill-me 验证、stripe-best-practices 落地）。',
+        module: 19,
         difficulty: '高级',
         hours: 5,
         deliverables: [
@@ -2373,13 +2514,14 @@ export const curriculum: Curriculum = {
           '单位经济模型与仪表盘',
           '定价方案与依据文档',
           '合规检查清单与隐私声明草稿',
-          'AI 辅助产品化决策记录（可选：竞品分析、定价建模、合规检查清单）',
+          '社区 Skills 使用记录（至少 2 个，含选型理由与效果）',
+          'AI 辅助产品化决策记录（竞品分析、定价建模、合规检查清单）',
         ],
-        stack: ['支付网关', 'Webhook', '数据库', '仪表盘', 'AI Skills'],
+        stack: ['支付网关', 'Webhook', '数据库', '仪表盘', 'AI Skills', '开源 Skills'],
       },
     },
     {
-      id: 19,
+      id: 20,
       title: '上线之后：运营、增长与长期经营',
       subtitle: '一个人怎么把产品推出去并撑住',
       description:
@@ -2387,12 +2529,12 @@ export const curriculum: Curriculum = {
         '怎么用 Agent 自动化运营自己的产品，以及独立开发者最少被讨论但最常发生的问题——' +
         '倦怠与退出。全课程的最后一节，回到那个最初的问题：你要做多久。',
       difficulty: '高级',
-      hours: 10,
+      hours: 11,
       icon: '📈',
       accent: 'brand',
       lessons: [
         {
-          id: 'L19-01',
+          id: 'L20-01',
           title: '冷启动：第一批 100 个用户从哪来',
           summary: '没有预算、没有团队、没有影响力时，怎么拿到第一批真实用户。',
           duration: 40,
@@ -2403,11 +2545,11 @@ export const curriculum: Curriculum = {
             '识别虚荣指标：什么样的流量对你毫无价值',
           ],
           tags: ['冷启动', '获客', '发布'],
-          prerequisites: ['L18-02'],
+          prerequisites: ['L19-02'],
           competency: '增长运营',
         },
         {
-          id: 'L19-02',
+          id: 'L20-02',
           title: '内容与 SEO：让产品持续被搜索到',
           summary: '广告停了流量就停，内容是唯一会复利的获客渠道。',
           duration: 35,
@@ -2418,11 +2560,11 @@ export const curriculum: Curriculum = {
             '建立内容→产品的转化路径',
           ],
           tags: ['SEO', '内容营销', '获客'],
-          prerequisites: ['L19-01'],
+          prerequisites: ['L20-01'],
           competency: '增长运营',
         },
         {
-          id: 'L19-03',
+          id: 'L20-03',
           title: '数据驱动增长：留存、转化与漏斗',
           summary: '留存是唯一骗不了人的指标。没有留存，所有增长都是漏水的桶。',
           duration: 40,
@@ -2437,7 +2579,7 @@ export const curriculum: Curriculum = {
           competency: '增长运营',
         },
         {
-          id: 'L19-04',
+          id: 'L20-04',
           title: '用户支持与反馈闭环：一个人怎么撑',
           summary: '用户支持是独立开发者最先被压垮的地方，也是最好的产品洞察来源。',
           duration: 35,
@@ -2452,7 +2594,7 @@ export const curriculum: Curriculum = {
           competency: '产品运营',
         },
         {
-          id: 'L19-05',
+          id: 'L20-05',
           title: '自动化运营：用 Agent 经营你的 Agent 产品',
           summary: '全课程的回环——把前 18 章学的 Agent 能力，用在自己的生意上。',
           duration: 45,
@@ -2463,11 +2605,11 @@ export const curriculum: Curriculum = {
             '给运营 Agent 设置权限边界与人工审批点',
           ],
           tags: ['运营自动化', 'Agent 应用', 'HITL'],
-          prerequisites: ['L10-03', 'L19-04'],
+          prerequisites: ['L10-03', 'L20-04'],
           competency: 'Agent 应用',
         },
         {
-          id: 'L19-06',
+          id: 'L20-06',
           title: '用 AI Skills 驱动增长运营',
           summary: '把 OpenSpec + Superpowers 工作流用在内容营销、增长实验与用户反馈分析上。',
           duration: 45,
@@ -2478,11 +2620,11 @@ export const curriculum: Curriculum = {
             '用 AI 批量分析用户反馈，提取主题、情感与优先级',
           ],
           tags: ['AI 辅助', 'SEO', '增长实验', '反馈分析'],
-          prerequisites: ['L17-13', 'L19-02'],
+          prerequisites: ['L18-03', 'L20-02'],
           competency: '增长运营',
         },
         {
-          id: 'L19-07',
+          id: 'L20-07',
           title: '长期经营：护城河、倦怠与退出',
           summary: '独立开发最常见的结局不是失败，是做腻了。这一节谈怎么走得久一点。',
           duration: 35,
@@ -2496,15 +2638,32 @@ export const curriculum: Curriculum = {
           prerequisites: ['L16-04'],
           competency: '职业规划',
         },
+        {
+          id: 'L20-08',
+          title: '运营增长的社区 Skills 实战：SEO、内容与数据驱动',
+          summary: 'claude-seo + web-quality-skills + blog-post，用社区 Skills 把增长运营自动化。',
+          duration: 55,
+          type: '实战',
+          objectives: [
+            '用 walidboulanouar/claude-seo 执行全栈 SEO 审计：技术 SEO + AI 搜索优化 + 元数据修复',
+            '用 addyosmani/web-quality-skills 一键诊断 Lighthouse + Core Web Vitals',
+            '用 mblode/blog-post + optimise-seo 驱动内容营销：从写作到结构化数据到发布',
+            '构建"内容生产 → SEO 审计 → 性能优化 → 数据分析"的增长运营 Skills 链',
+          ],
+          tags: ['开源 Skills', 'SEO', '内容营销', '增长运营', 'Lighthouse'],
+          prerequisites: ['L20-02', 'L20-06'],
+          competency: '增长运营',
+        },
       ],
       project: {
-        id: 'P19',
+        id: 'P20',
         title: '上线你的产品并跑完第一个增长循环',
         summary:
-          '把 P17/P18 的产品真正推向公众，完成一次完整的发布→获客→留存分析→迭代循环，' +
+          '把 P17/P18/P19 的产品真正推向公众，完成一次完整的发布→获客→留存分析→迭代循环，' +
           '并交付一个由 Agent 驱动的运营看板。' +
+          '要求使用至少 2 个社区 Skills 辅助增长实验（如 claude-seo 审计、web-quality 诊断），' +
           '验收的核心不是用户数，而是你能用数据说清"下一步该改什么"。',
-        module: 19,
+        module: 20,
         difficulty: '高级',
         hours: 5,
         deliverables: [
@@ -2512,9 +2671,10 @@ export const curriculum: Curriculum = {
           '埋点方案与留存/漏斗分析报告',
           '用户反馈到产品待办的转化记录',
           'Agent 驱动的运营看板',
+          '社区 Skills 使用记录（至少 2 个，含选型理由与效果）',
           '下一阶段迭代计划与个人节奏规划',
         ],
-        stack: ['数据埋点', 'SEO', 'Agent', '看板'],
+        stack: ['数据埋点', 'SEO', 'Agent', '看板', '开源 Skills'],
       },
     },
   ],
@@ -2616,11 +2776,11 @@ export const stages = [
   {
     id: 7,
     name: '独立开发与商业化篇',
-    range: [17, 19],
+    range: [17, 20],
     color: 'from-rose-500 to-red-500',
     icon: '\u{1F4B0}',
     accentText: 'text-rose-300',
-    detail: 'AI Coding 工程实践，产品化与商业模式，运营与长期经营',
+    detail: 'AI Coding 工程实践（上/下），产品化与商业模式，运营与长期经营',
   },
 ] as const
 

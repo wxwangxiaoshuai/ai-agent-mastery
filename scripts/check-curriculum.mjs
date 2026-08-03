@@ -1041,7 +1041,7 @@ function srcTsxFiles() {
 
     // 数字/中文数字转换
     const cnDigits = { 一:1, 二:2, 三:3, 四:4, 五:5, 六:6, 七:7, 八:8, 九:9, 十:10,
-                       十一:11, 十二:12, 十三:13, 十四:14, 十五:15, 十六:16, 十七:17, 十八:18, 十九:19 }
+                       十一:11, 十二:12, 十三:13, 十四:14, 十五:15, 十六:16, 十七:17, 十八:18, 十九:19, 二十:20 }
     const numRE = String.raw`(\d+|[一二三四五六七八九十]+(?:[一二三四五六七八九])?)`
 
     // 匹配"前面 N 节" / "前面 N 节课"（阿拉伯数字或中文数字）
@@ -1118,9 +1118,11 @@ function srcTsxFiles() {
     // M17 开发实战（多节课有前端/工程化代码）
     'src/content/module-17/lesson-l17-05.md',
     'src/content/module-17/lesson-l17-06.md',
-    'src/content/module-17/lesson-l17-11.md',
-    'src/content/module-17/lesson-l17-12.md',
-    'src/content/module-17/lesson-l17-15.md',
+    // M18 下 开发实战（桌面端 + UI + 社区 Skills 示例）
+    'src/content/module-18/lesson-l18-01.md',
+    'src/content/module-18/lesson-l18-02.md',
+    'src/content/module-18/lesson-l18-05.md',
+    'src/content/module-18/lesson-l18-07.md',
   ]
 
   let bad = 0
@@ -1206,7 +1208,7 @@ function srcTsxFiles() {
     const projRefRE = /\bP([1-9]\d?)(?!\d|%)/g
     for (const m of f.text.matchAll(projRefRE)) {
       const num = Number(m[1])
-      if (num > 19) continue // 项目编号不超过 19
+      if (num > 20) continue // 项目编号不超过 20
       const refProj = `P${m[1]}`
       if (refProj === `P${f.module}`) continue // 引用自己的项目
       if (!allProjectIds.has(refProj)) {

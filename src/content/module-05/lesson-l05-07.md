@@ -125,7 +125,7 @@ Anthropic 在 2024 年 12 月的 _Building effective agents_ 一文中将 Agent 
 **适用场景**：有明确的质量标准，且一次生成难以达到理想效果。
 
 **典型示例**：
-- 代码生成 → review → 修改 → 再 review（L17-14 的 Gate 4 就是这个模式）
+- 代码生成 → review → 修改 → 再 review（L18-04 的 Gate 4 就是这个模式）
 - 文章草稿 → 打分 → 修订 → 再打分
 - 翻译 → 质量评估 → 修正 → 再评估
 

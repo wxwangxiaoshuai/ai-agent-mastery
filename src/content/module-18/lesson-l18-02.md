@@ -1,197 +1,330 @@
-## MVP 范围裁剪：最小可收费产品
+## 用 AI Coding 交付一个桌面端 Agent 原型
 
-MVP 这个词被用坏了。大多数人理解成「功能少一点的完整产品」，于是做出来一个功能砍了一半、但依然没人付钱的东西。
+> 本课标注"前端特例"——桌面端涉及 JS/Electron，但 Python 仍是后端 Agent 主语言。
 
-一人公司需要的不是最小可用产品（Minimum Viable Product），是**最小可收费产品** —— 能让第一个人掏出钱包的那个最小切面。
+L18-01 讲了桌面端 Agent 的架构设计。这一节用 AI Coding 从零交付一个系统托盘 Agent 原型：后台常驻、快捷键唤醒、剪贴板输入输出。全程用 OpenSpec + Superpowers 工作流。
 
-这两者的区别不在功能多少，在于**你砍功能时依据的是什么**。
+### 第一步：用 OpenSpec 写规格
 
-### 砍功能的依据：这个功能和收钱的距离
+在终端里启动 OpenSpec 工作流：
 
-把你列出的所有功能，按「离第一笔收入有多远」排序，而不是按「实现难度」或「有多酷」。
-
-以一个「AI 会议纪要」产品为例：
-
-| 功能 | 离收钱的距离 | 决定 |
-|------|------------|------|
-| 上传录音并生成纪要 | 0（这就是他付钱买的东西） | 做 |
-| 收款 | 0（不做就收不到钱） | 做 |
-| 提取「谁答应了什么」 | 0（用户最在意的那条） | 做 |
-| 注册登录 | 1（不做也能收钱：手工开账号） | 缓 |
-| 历史记录列表 | 2 | 缓 |
-| 团队协作/多人共享 | 3 | 砍 |
-| 支持 8 种导出格式 | 3 | 砍 |
-| 移动 App | 4 | 砍 |
-| 管理后台 | 4（你自己看数据库就行） | 砍 |
-
-「注册登录」被标成「缓」而不是「做」，是这张表里最反直觉的一格。工程师的本能是先搭账号体系，但在只有 5 个用户时，你完全可以手工给他们开账号、手工收款 —— 省下的两天可以用来打磨那个真正值钱的功能。
-
-判据：**这个功能不做，第一个用户还会付钱吗？** 会，就缓；不会，就做。
-
-### 一人团队必须砍掉的功能类别
-
-有几类功能，无论产品是什么，早期都该砍。它们的共同点是**维护成本远高于开发成本**。
-
-**一、多租户/团队协作。** 权限模型、邀请流程、席位计费、数据隔离 —— 每一条都是长期的复杂度来源。早期卖给个人，等有团队来问了再说（而且那时你可以直接手工帮他们建）。
-
-**二、可配置化。** 「让用户自定义提示词模板/工作流/字段」听起来很强大，实际是把你的产品变成一个需要文档和支持的平台。早期就给一套写死的最佳实践，比给用户一堆旋钮更有价值 —— 用户买的是你的判断，不是你的旋钮。
-
-**三、多平台。** Web、桌面、移动端各一份，维护成本是三倍。先只做 Web。
-
-**四、管理后台。** 你的用户量在三位数以内时，直接连数据库跑 SQL 比维护一个后台快得多。写几个查询脚本存在 `scripts/` 里就够。
-
-**五、精细的权限系统。** 早期两种角色（用户 / 你自己）足够。RBAC 那一套是有团队客户以后的事。
-
-**六、国际化。** 除非你一开始就只做海外，否则先做一种语言。i18n 一旦引入，每个文案改动的成本翻倍。
-
-砍掉这六类，你的开发量通常能减少一半以上，而对第一笔收入的影响接近于零。
-
-### 先手工，后自动：运营型功能的正确顺序
-
-有一类功能不该被砍，但也不该被开发 —— 它们应该**先用人做**。
-
-典型的有：用户开通、退款处理、异常订单修复、内容审核、用量超额提醒、月度报表。
-
-这些功能的共同特点是**频率低、逻辑会变、且做错了代价大**。早期用户少的时候，手工做一次只要五分钟；等你做了 30 次，你会非常清楚它的规则边界，那时候自动化才不会做错。
-
-具体的推进节奏：
-
-```
-第 1-10 次：完全手工，每次记录你做了什么
-    ↓ 你开始烦了
-第 10-30 次：写脚本半自动（你触发，脚本执行）
-    ↓ 规则稳定了
-第 30 次以后：全自动 + 异常告警
+```bash
+mkdir clipboard-agent && cd clipboard-agent
+openspec init
 ```
 
-**「你开始烦了」是一个可靠的自动化信号**，比任何提前规划都准。在你烦之前就自动化的东西，通常自动化错了方向。
+然后 `/opsx:explore` 探索方案：
 
-这条原则的价值不只是省开发时间。手工做用户开通的过程中，你会和每个早期用户产生一次真实接触 —— 那是最好的用户研究机会，自动化之后就没有了。
+```text
+我要做一个 Clipboard Agent：
+- 系统托盘常驻，Ctrl+Shift+Space 唤醒
+- 选中文字 → 按快捷键 → Agent 处理 → 结果写回剪贴板
+- 技术栈：Electron + Python 后端
+- 本地模型用 Ollama 做简单任务，云端模型做复杂推理
 
-### "最小"的另一半：明确不做什么
-
-范围文档里最重要的部分不是「要做什么」，是「明确不做什么」。
-
-原因和 AI 有关：你给 AI 一份只写了「要做什么」的规格，它会主动帮你补充它认为该有的功能。你说做一个上传页面，它给你加了拖拽、多文件、进度条、断点续传。每一个都合理，加起来就是范围失控。
-
-所以「不做」清单要写进 `SPEC.md`，而且要具体：
-
-```markdown
-## 明确不做（v1）
-
-- 不做用户注册。前 20 个用户由我手工开通。
-- 不做历史记录。结果生成后邮件发给用户，我这边只存 7 天。
-- 不做多语言。只有中文。
-- 不做移动端适配以外的移动优化。没有 App。
-- 不做团队/共享。一个账号一个人。
-- 不做自定义提示词。模板写死。
-- 不做管理后台。我直接查库。
-- 不做导出格式选择。只给 Markdown。
+请探索技术方案，对比以下两个方向：
+1. Electron 主进程直接 spawn Python 子进程
+2. Electron 通过 HTTP localhost 与 FastAPI 后端通信
 ```
 
-每一条后面最好带一句原因。半年后你回头看，会知道当时是「暂时不做」还是「永远不做」。
+经过 `/opsx:explore` 的探索，选择方案 2（HTTP localhost），因为：
+- 前后端解耦，可以独立测试
+- 后端可以独立升级，不影响 Electron 壳
+- 方便后续扩展到 Web 版本
 
-### 一个可执行的裁剪流程
+然后是 `/opsx:propose` 生成规格：
 
-拿到你的功能列表，走这四步：
+```text
+# proposal.md
+## 动机
+需要一个能在任何应用中使用的 AI 助手，不离开当前上下文即可调用。
 
-**第一步：找出「唯一价值点」。** 用户为什么付钱？用一句话写出来，不许有「和」。有「和」说明你还没想清楚哪个更重要。
+## 核心功能
+1. 系统托盘常驻，右键菜单（设置 / 退出）
+2. Ctrl+Shift+Space 唤醒，读取剪贴板
+3. 发送到 Python Agent 后端处理
+4. 结果写回剪贴板 + 桌面通知
+5. 设置面板：选择本地模型/云端模型、API Key 配置
 
-**第二步：标记收钱依赖。** 每个功能问一次「不做它，第一个用户还会付钱吗」。会 → 缓/砍；不会 → 做。
+# specs/clipboard-agent.md
+## 场景
+- 场景1：用户在浏览器里选中一段英文 → 快捷键 → 翻译结果写回剪贴板
+- 场景2：用户选中一段代码 → 快捷键 → Agent 解释这段代码 → 结果写回剪贴板
+- 场景3：用户选中一段文字 → 快捷键 → Agent 做摘要 → 结果写回剪贴板
+- 边界：剪贴板为空时不处理
+- 边界：后端未启动时提示用户
+- 边界：处理超过 10 秒时显示进度通知
 
-**第三步：对「做」的部分再砍一刀。** 每个保留的功能，问「它最简陋能简陋到什么程度还能用」。上传只支持一种格式行不行？只处理 30 分钟以内的音频行不行？大部分时候行。
-
-**第四步：估时。超过两周就重来。** 两周是一人公司单次交付的合理上限。超了说明第一步的「唯一价值点」还是太大。
-
-第四步的硬性时间盒很重要。范围会自己膨胀，唯一能压住它的是一个不许商量的日期 —— 这也是 L18-01 建议做预售的原因之一。
-
-### 一个完整的裁剪示例
-
-把上面的流程走一遍，看看范围怎么从「一个产品」缩到「两周能交付」。
-
-初始想法：**给自由职业者用的 AI 报价助手** —— 输入项目描述，生成一份专业报价单。
-
-初始功能列表（脑子里想到的）：项目描述解析、历史报价参考、报价单生成、多套模板、PDF 导出、客户管理、发送邮件、客户在线确认、签署、发票、收款跟踪、数据看板、多币种、团队协作。
-
-第一步，唯一价值点：**「把一段模糊的项目描述，变成一份敢发给客户的报价单」**。注意这句话里没有「和」，也没有提客户管理、签署、收款 —— 那些是另外的产品。
-
-第二步，标记：
-
-```
-做：项目描述 → 报价单生成（这就是价值本身）
-做：PDF 导出（不能导出就发不出去，等于没做完）
-做：收款（不收钱就验证不了）
-缓：历史报价参考（第一版用固定的行业参考区间）
-缓：多套模板（先给一套好看的）
-砍：客户管理、发送邮件、在线确认、签署、发票、收款跟踪、看板、多币种、团队协作
+## 验收标准
+- [ ] 快捷键在所有应用中可用
+- [ ] 处理结果在 3 秒内写回剪贴板（本地模型）
+- [ ] 离线时使用本地模型，通知用户当前为离线模式
+- [ ] 设置面板可切换模型、配置 API Key
 ```
 
-第三步，把「做」的部分再简陋一档：
+### 第二步：用 AI 生成项目骨架
 
-- 项目描述解析：只支持纯文本粘贴，不支持上传文档
-- 报价单生成：固定一种结构（工作项 + 工时 + 单价 + 总价 + 条款），不可调整
-- PDF 导出：一种模板，不可换色
-- 收款：单次付费 ¥29 生成一份，不做订阅（订阅要处理续费和退款，复杂度高一个量级）
+用 `/opsx:apply` 按 tasks.md 逐条实现。先让 AI 生成 Electron 项目骨架：
 
-第四步，估时：约 8 个工作日。在两周以内，通过。
-
-对比一下：初始列表如果全做，是三到四个月的工作量，而且做完之后你依然不知道有没有人愿意为「报价单生成」这件事付钱 —— 那才是唯一需要先验证的事。
-
-**注意「不做订阅先做单次付费」这个决定。** 它把 L18-04 里最复杂的那部分（续费、订阅状态机、退款）整个推迟了，代价只是收入模型简单一点。早期这个交换非常划算。
-
-### 常见的裁剪失误
-
-**砍掉了收钱环节。** 「先做出来给大家免费用，有人用了再加收款」—— 这是最常见也最贵的一个错。免费用户的行为和付费用户完全不同，你从免费期收集的所有信号都不能证明有人会付钱。而且从免费转收费会流失掉绝大部分用户，还会引来抱怨。
-
-**砍功能砍到没有价值。** 另一个极端：砍得只剩一个能跑的壳子，用户看不出你和一个免费工具的区别。判断标准是第一步那句「唯一价值点」有没有被伤到 —— 那一条不能砍。
-
-**把「难」当成「重要」。** 工程师容易保留技术上有意思的部分，砍掉琐碎但用户在意的部分（比如错误提示、结果的可读性）。用户不在乎你的架构，在乎结果好不好用。
-
-**用「以后要扩展」的理由保留复杂度。** 早期为可扩展性付出的成本，绝大多数会浪费掉，因为你猜错扩展方向的概率很高。等真的要扩展时再改，那时你知道得多得多。
-
-### 裁剪不是一次性的
-
-范围裁剪不是做完就完了。每做完一个功能、每收到一批用户反馈，原来的"明确不做"清单可能需要调整。**但调整必须是有意识的决定，不是"顺手就做了"。**
-
-一个简单的纪律：在项目的 README 或 OpenSpec 的 design.md 里维护一个 `NOT_DOING.md` 文件，列出当前明确不做的事情以及原因。每次想加新功能时，先看这个文件。如果这个功能已经在里面了，要么你有新的信息证明当初的判断错了，要么就继续不做。
-
-```markdown
-# NOT_DOING.md —— 当前明确不做的事
-
-## 多租户/团队功能
-理由：前 100 个用户都是个人用户，团队功能会
-让个人使用体验变差（多出来的"创建团队"流程）。
-重新评估条件：有 3 个以上用户主动问"能不能加团队成员"。
-
-## 数据导出 API
-理由：早期用户不需要，手动导出邮件就够了。
-重新评估条件：每月收到 5 次以上导出请求。
-
-## 移动端 App
-理由：响应式 Web 已经够用。原生 App 的维护成本
-（双平台、审核、更新）是一人公司承担不了的。
-重新评估条件：Web 端月活超过 5000。
+```bash
+# AI 生成的 tasks.md 第一条
+# Task 1: 初始化 Electron 项目
+mkdir clipboard-agent && cd clipboard-agent
+npm init -y
+npm install electron --save-dev
 ```
 
-这个文件的价值不只是"提醒自己不做"，更是在做产品决策时**有一个地方可以放下"好主意"**。你脑子里随时会冒出"加个 XX 功能"的想法，把它写进 NOT_DOING.md 比直接去做更安全——它被记录下来了，不会忘，但也不会占用你本周的精力。
+然后生成 Python 后端骨架：
+
+````python
+# agent_server.py —— AI 生成的 FastAPI 后端
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import subprocess
+import sys
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Electron 本地访问
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class AgentRequest(BaseModel):
+    text: str
+    action: str = "auto"  # auto / translate / explain / summarize
+
+class AgentResponse(BaseModel):
+    result: str
+    model_used: str
+    processing_time_ms: int
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+@app.post("/agent/process", response_model=AgentResponse)
+async def process(request: AgentRequest):
+    import time
+    start = time.time()
+
+    # 简单任务分类：用关键词匹配而不是 LLM（省 token）
+    action = request.action
+    if action == "auto":
+        action = classify_action(request.text)
+
+    # 执行对应的处理
+    prompt = build_prompt(request.text, action)
+    result = await call_llm(prompt)
+
+    elapsed = int((time.time() - start) * 1000)
+    return AgentResponse(
+        result=result,
+        model_used="ollama:llama3.2:3b",
+        processing_time_ms=elapsed,
+    )
+
+
+def classify_action(text: str) -> str:
+    """简单的关键词分类，避免 LLM 调用的延迟和成本。"""
+    text_lower = text.lower()
+    # 检测是否为代码
+    code_indicators = ["def ", "import ", "function ", "class ", "const ", "let ",
+                       "``" + "`", "=>", "print(", "console.log"]
+    if any(ind in text_lower for ind in code_indicators):
+        return "explain"
+    # 检测是否包含中文
+    if any('一' <= c <= '鿿' for c in text):
+        return "translate"  # 中文内容 → 翻译成英文
+    # 检测是否超过 200 词
+    if len(text_lower.split()) > 200:
+        return "summarize"
+    return "translate"  # 默认：翻译
+
+
+def build_prompt(text: str, action: str) -> str:
+    prompts = {
+        "translate": f"将以下内容翻译成英文，只输出译文：\n\n{text}",
+        "explain": f"用中文解释以下代码，说明它做了什么：\n\n{text}",
+        "summarize": f"用中文对以下内容做要点摘要，不超过 3 条：\n\n{text}",
+    }
+    return prompts.get(action, prompts["translate"])
+
+
+async def call_llm(prompt: str) -> str:
+    try:
+        import ollama
+        response = ollama.chat(
+            model="llama3.2:3b",
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response["message"]["content"]
+    except Exception:
+        return "[离线模式] 无法处理。请检查 Ollama 是否已启动。"
+
+# 启动入口：pyinstaller 打包后需要此入口才能监听端口
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=19999)
+````
+
+### 第三步：实现 Electron 系统托盘 Agent
+
+让 AI 生成 Electron 主进程代码：
+
+```javascript
+// main.js —— AI 生成的 Electron 主进程
+const { app, Tray, Menu, globalShortcut, clipboard, Notification } = require('electron')
+const { spawn } = require('child_process')
+const path = require('path')
+
+let tray = null
+let pythonProcess = null
+
+function startPythonBackend() {
+  const pythonPath = process.platform === 'win32'
+    ? path.join(__dirname, 'resources', 'agent-server.exe')
+    : path.join(__dirname, 'resources', 'agent-server')
+
+  pythonProcess = spawn(pythonPath, [], {
+    env: { ...process.env, PORT: '19999' },
+  })
+
+  pythonProcess.stdout.on('data', (data) => {
+    console.log(`Python: ${data}`)
+  })
+
+  pythonProcess.stderr.on('data', (data) => {
+    console.error(`Python err: ${data}`)
+  })
+}
+
+function createTray() {
+  tray = new Tray(path.join(__dirname, 'icon.png'))
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: '设置',
+      click: () => {
+        // 打开设置窗口
+      },
+    },
+    { type: 'separator' },
+    {
+      label: '退出',
+      click: () => {
+        if (pythonProcess) pythonProcess.kill()
+        app.quit()
+      },
+    },
+  ])
+  tray.setToolTip('Clipboard Agent')
+  tray.setContextMenu(contextMenu)
+}
+
+async function processClipboard() {
+  const text = clipboard.readText()
+  if (!text || text.trim().length === 0) {
+    new Notification({ title: 'Clipboard Agent', body: '剪贴板为空' }).show()
+    return
+  }
+
+  try {
+    const response = await fetch('http://localhost:19999/agent/process', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, action: 'auto' }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+
+    const data = await response.json()
+    clipboard.writeText(data.result)
+    new Notification({
+      title: 'Clipboard Agent',
+      body: `已处理（${data.model_used}，${data.processing_time_ms}ms）`,
+    }).show()
+  } catch (err) {
+    new Notification({
+      title: 'Clipboard Agent',
+      body: `处理失败：${err.message}`,
+    }).show()
+  }
+}
+
+app.whenReady().then(() => {
+  startPythonBackend()
+  createTray()
+
+  globalShortcut.register('CommandOrControl+Shift+Space', () => {
+    processClipboard()
+  })
+})
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll()
+  if (pythonProcess) pythonProcess.kill()
+})
+```
+
+### 第四步：用 Superpowers 做 review 和验证
+
+在 `/opsx:apply` 过程中，Superpowers 自动触发：
+
+- **Gate 4（Review 门禁）**：`requesting-code-review` skill 检查代码质量
+  - Python 后端：检查 FastAPI 路由是否正确、异常处理是否完整
+  - Electron 主进程：检查进程管理是否正确、快捷键注销是否遗漏
+- **Gate 5（完成门禁）**：`verification-before-completion` skill 逐条检查
+  - 快捷键在所有应用中可用？
+  - 剪贴板为空时是否提示？
+  - 后端未启动时是否提示？
+  - 处理超时是否有进度通知？
+
+### 打包与分发
+
+```bash
+# 1. 打包 Python 后端
+pyinstaller --onefile --name agent-server agent_server.py
+
+# 2. 复制到 Electron 资源目录
+cp dist/agent-server electron-app/resources/
+
+# 3. 打包 Electron 应用
+cd electron-app
+npx electron-builder --mac --win --linux
+```
+
+打包后的 macOS 应用结构：
+```
+ClipboardAgent.app/
+  Contents/
+    MacOS/
+      ClipboardAgent          # Electron 可执行文件
+    Resources/
+      agent-server            # pyinstaller 打包的 Python 后端
+      icon.png
+```
 
 ### 动手 5 分钟
 
-给你的产品做一次最小可收费裁剪。
+1. 用 OpenSpec 为 Clipboard Agent 写一份完整的 spec（proposal.md + specs/ + design.md + tasks.md）。
+2. 用 AI 生成 Electron 脚手架 + Python FastAPI 后端骨架。
+3. 实现快捷键 → 剪贴板读取 → HTTP 请求 → 结果写回剪贴板的最小闭环。
+4. 用 Superpowers 的 `verification-before-completion` 逐条检查验收标准。
 
-1. 用一句话写出「唯一价值点」，不许出现「和」。
-2. 把功能列表逐条问「不做它，第一个用户还会付钱吗」，标成 做 / 缓 / 砍。
-3. 从「做」里挑一个，写出它「最简陋能简陋到什么程度还能用」的版本；再写一份至少 8 条的「明确不做」清单。
-
-**验收标准**：裁剪后的范围你估时不超过两周，且收钱环节在「做」里面。如果估时超过两周，说明唯一价值点定得太大 —— 回到第 1 步再砍一次，而不是安慰自己「加加班就行」。
+**验收标准**：在任何应用里选中文字 → 按 Ctrl+Shift+Space → 3 秒内收到通知，剪贴板内容已被 Agent 处理。如果离线，能优雅降级并告知用户。
 
 ### 要点总结
 
-- 一人公司要的不是最小**可用**产品，是最小**可收费**产品 —— 能让第一个人掏钱的那个最小切面。
-- 砍功能的依据是「**离第一笔收入有多远**」，不是实现难度或有多酷。判据：不做它第一个用户还会付钱吗？
-- **注册登录常常可以缓做** —— 前 20 个用户手工开通，省下的两天用来打磨真正值钱的功能。
-- 六类早期必砍：**多租户、可配置化、多平台、管理后台、精细权限、国际化**。共同点是维护成本远高于开发成本。
-- 运营型功能**先手工后自动**：「你开始烦了」是最可靠的自动化信号，而且手工期是最好的用户研究窗口。
-- **「明确不做」清单必须写进规格**，否则 AI 会主动帮你补功能，范围一路失控。
-- 裁剪四步：找唯一价值点 → 标收钱依赖 → 每个保留功能再简陋一档 → **估时超两周就重来**。
-- 最贵的裁剪失误是**砍掉收钱环节**：免费用户的行为不能证明任何付费意愿，转收费还会流失和招骂。
+- **用 OpenSpec 写桌面端 Agent 的规格时，重点写两个文件**：proposal.md（动机 + 核心功能）+ specs/（场景 + 边界 + 验收标准）。
+- **技术选型在 `/opsx:explore` 阶段定**：Electron + Python 后端用 HTTP localhost 通信，前后端解耦、独立测试、独立升级。
+- **AI 生成 Electron 代码时，三个关键点要检查**：进程管理（spawn/kill 是否正确）、快捷键注册与注销（app.on('will-quit') 是否遗漏）、错误处理（后端未启动、剪贴板为空、处理超时）。
+- **用 Superpowers 做 review 和验证**：Gate 4（code-review）检查质量，Gate 5（verification）逐条检查验收标准。
+- **打包分两步**：pyinstaller 打包 Python 后端 → electron-builder 打包前端。注意平台差异（macOS 签名、Windows 安装包）。
+- **桌面端 Agent 的体验优势**：全程不离开当前应用，Ctrl+Shift+Space 一按即用。这就是 Web 应用做不到的"无缝嵌入工作流"。
