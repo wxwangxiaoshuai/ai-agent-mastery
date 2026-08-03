@@ -275,7 +275,7 @@ def call_llm_with_limit(messages):
     if not llm_semaphore.acquire(timeout=30):
         raise RateLimitError("LLM 并发已满，请稍后重试")
     try:
-        return client.chat.completions.create(model="gpt-4o-mini", messages=messages)
+        return client.chat.completions.create(model="gpt-4.1-mini", messages=messages)
     finally:
         llm_semaphore.release()
 ```

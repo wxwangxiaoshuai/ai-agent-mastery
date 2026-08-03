@@ -93,7 +93,7 @@ class AgentTracer:
 
     def export_json(self, filepath: str):
         """导出为 JSON 文件，便于离线分析"""
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump([t.to_dict() for t in self.traces], f, ensure_ascii=False, indent=2)
 ```
 
@@ -111,7 +111,7 @@ def agent_loop_with_tracing(question: str, max_steps: int = 10) -> str:
 
     for step in range(max_steps):
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=messages,
             tools=TOOLS,
             temperature=0,
@@ -209,7 +209,7 @@ def debug_tool_selection(question: str, tools: list):
 
     # 2. 让模型解释为什么选这个工具
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[
             {"role": "system", "content": "你是一个调试助手。分析以下工具列表和用户问题，解释应该选哪个工具以及为什么。"},
             {"role": "user", "content": f"问题: {question}\n\n工具: {json.dumps(tools, ensure_ascii=False)}"},

@@ -40,11 +40,11 @@ Computer Use 循环：
 
 ```python
 # Computer Use 概念流程（实际用 Claude Computer Use API）
-def computer_use(task: str):
+def computer_use(task: str, max_steps: int = 20):
     """让 Agent 用屏幕操作完成任务"""
     screen = take_screenshot()
     history = []
-    while not done:
+    for _ in range(max_steps):
         # 多模态模型看屏幕 + 决策下一步
         action = model.computer_use(
             task=task,

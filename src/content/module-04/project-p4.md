@@ -274,7 +274,7 @@ class RAGGenerator:
 
         # 生成
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=[
                 {"role": "system", "content": (
                     "基于以下参考资料回答问题。"

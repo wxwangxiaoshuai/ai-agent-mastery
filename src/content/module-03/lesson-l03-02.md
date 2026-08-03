@@ -40,6 +40,7 @@ class ContextAssembler:
         messages = []
 
         # 1. 静态底座：System Prompt（永远在最前面，可被 Prompt Caching 缓存）
+        # 注意：OpenAI 用 messages 中的 system role；Anthropic 需提取为顶层 system 参数
         messages.append({"role": "system", "content": self.system_prompt})
 
         # 动态注入：按预算比例分配（历史 / 工具 / 检索）
@@ -59,9 +60,9 @@ class ContextAssembler:
         # 用户输入放最后，确保模型"最先看到"最新的信息
         messages.extend(history)
         if docs_content:
-            messages.append({"role": "system", "content": f"参考资料：\n{docs_content}"})
+            messages.append({"role": "user", "content": f"参考资料：\n{docs_content}"})
         if tool_content:
-            messages.append({"role": "system", "content": f"工具返回：\n{tool_content}"})
+            messages.append({"role": "user", "content": f"工具返回：\n{tool_content}"})
         messages.append({"role": "user", "content": user_input})
 
         return messages

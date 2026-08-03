@@ -120,7 +120,7 @@ def _fetch(url: str) -> str:
 def _summarize(content: str) -> str:
     """用 LLM 总结文本"""
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{"role": "user", "content": f"用 3 句话总结以下内容：\n\n{content[:1000]}"}],
         temperature=0,
         max_tokens=200,
@@ -205,7 +205,7 @@ Final Answer: 结构化研究报告
         if len(recent_thoughts) < 2:
             return False
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=[{
                 "role": "user",
                 "content": (
@@ -232,7 +232,7 @@ Final Answer: 结构化研究报告
 
             # LLM 推理
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-mini",
                 messages=messages,
                 temperature=0,
                 max_tokens=500,

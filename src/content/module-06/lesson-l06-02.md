@@ -161,7 +161,7 @@ def select_tools(user_input: str, all_tools: dict) -> list:
     """根据用户意图动态选择工具子集"""
     # 用轻量模型分类
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{
             "role": "user",
             "content": f"判断以下问题需要哪类工具（search/data/file/communication）。只输出类别名。\n\n{user_input}",

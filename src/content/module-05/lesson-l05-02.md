@@ -142,7 +142,7 @@ def agent_loop(question: str, max_steps: int = 10) -> str:
 
         # 1. LLM 推理
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=messages,
             temperature=0,
             max_tokens=500,

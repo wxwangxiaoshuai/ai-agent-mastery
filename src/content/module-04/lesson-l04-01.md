@@ -69,7 +69,7 @@ def rag_query(question: str, top_k: int = 3) -> str:
 
     # 2. 生成
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[
             {"role": "system", "content": f"基于以下参考资料回答问题。如果资料中没有答案，说'根据现有资料无法回答'。\n\n参考资料：\n{context}"},
             {"role": "user", "content": question},
@@ -108,7 +108,7 @@ Advanced RAG 在 Naive 的基础上，在检索前（Pre-retrieval）和检索�
 def rewrite_query(question: str) -> str:
     """查询改写：把口语化问题改写为检索友好的关键词"""
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{
             "role": "user",
             "content": f"把以下问题改写为适合向量检索的查询语句（保留关键实体和概念）：\n{question}",

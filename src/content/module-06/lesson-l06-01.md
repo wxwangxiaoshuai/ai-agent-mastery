@@ -7,7 +7,7 @@ M5 的 Agent 用文本解析（正则提取 `Action:`）来调用工具——这
 ```python
 # 不用 Function Calling：模型输出文本，你用正则解析
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-4.1-mini",
     messages=[{"role": "user", "content": "北京今天天气怎么样？"}],
 )
 text = response.choices[0].message.content
@@ -20,7 +20,7 @@ text = response.choices[0].message.content
 ```python
 # 用 Function Calling：模型直接输出结构化工具调用
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-4.1-mini",
     messages=[{"role": "user", "content": "北京今天天气怎么样？"}],
     tools=[{
         "type": "function",
@@ -150,7 +150,7 @@ def chat_with_tools(user_input: str, max_rounds: int = 5) -> str:
 
     for round_num in range(max_rounds):
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=messages,
             tools=TOOLS,
             temperature=0,

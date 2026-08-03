@@ -34,15 +34,77 @@
 
 ```python
 import json
+import hashlib
 from datetime import datetime, timedelta
 from openai import OpenAI
 
 client = OpenAI()
 
+CONFLICT_PROMPT = """判断新事实与旧事实的关系。
+旧事实：{old}
+新事实：{new}
+
+输出 JSON：
+  - relation: "duplicate" | "complementary" | "contradictory"
+  - 如果 contradictory，给出 resolution: "new_wins"（新事实更新/覆盖旧） | "old_wins"（旧更可信） | "uncertain"（不确定，都存）
+  - reason: 一句话理由
+"""
+
 class MemoryUpdater:
     """记忆更新器：判断新旧关系并执行更新"""
     def __init__(self, collection):
         self.collection = collection
+
+    # ── 底层 CRUD 辅助方法 ──
+
+    def _add(self, user_id: str, fact: str, metadata: dict | None = None):
+        """新增一条记忆"""
+        meta = {"user_id": user_id, "status": "active", "created_at": datetime.now().isoformat()}
+        if metadata:
+            meta.update(metadata)
+        self.collection.add(documents=[fact], metadatas=[meta], ids=[f"mem_{user_id}_{hashlib.md5(fact.encode()).hexdigest()[:12]}"])
+
+    def _replace(self, old_id: str, user_id: str, new_fact: str):
+        """替换一条记忆（先删后加，保留 user_id 隔离）"""
+        self.collection.delete(ids=[old_id])
+        self._add(user_id, new_fact)
+
+    def _archive(self, old_id: str, user_id: str):
+        """归档一条记忆（软删除，不物理删除）"""
+        old = self.collection.get(ids=[old_id])
+        old_meta = (old.get("metadatas") or [{}])[0]
+        self.collection.update(
+            ids=[old_id],
+            metadatas=[{**old_meta, "status": "archived", "archived_at": datetime.now().isoformat()}],
+        )
+
+    def _judge_relation(self, new_fact: str, old_fact: str) -> str:
+        """用 LLM 判断新旧事实的关系：duplicate / complementary / contradictory"""
+        resp = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[{"role": "user", "content": CONFLICT_PROMPT.format(old=old_fact, new=new_fact)}],
+            temperature=0, response_format={"type": "json_object"},
+        )
+        return json.loads(resp.choices[0].message.content).get("relation", "contradictory")
+
+    def _merge(self, old_fact: str, new_fact: str) -> str:
+        """合并两条互补事实"""
+        resp = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[{"role": "user", "content": f"合并以下两条互补信息为一条完整表述：\n1. {old_fact}\n2. {new_fact}"}],
+            temperature=0,
+        )
+        return resp.choices[0].message.content.strip()
+
+    def _importance(self, meta: dict) -> float:
+        """计算记忆重要度：来源权重 × 置信度 × 检索频率"""
+        source_weight = {"explicit": 1.0, "extracted": 0.7, "inferred": 0.4}
+        src = source_weight.get(meta.get("source", "extracted"), 0.5)
+        confidence = float(meta.get("confidence", 0.5))
+        access_count = int(meta.get("access_count", 0))
+        return src * confidence * (1.0 + 0.1 * min(access_count, 10))
+
+    # ── 更新 / 冲突 / 遗忘 ──
 
     def update(self, user_id: str, new_fact: str, created_at: str | None = None):
         """处理一条新事实"""
@@ -74,6 +136,92 @@ class MemoryUpdater:
                 user_id, old_id, old_doc, old_meta, new_fact, created_at,
             )
         return "unknown"
+
+    def _resolve_conflict(
+        self, user_id: str, old_id: str, old_fact: str, old_meta: dict,
+        new_fact: str, new_created_at: str,
+    ):
+        """解决冲突：先比 created_at，再参考 LLM resolution"""
+        old_ts = old_meta.get("created_at", "")
+        # 时序优先：真实对话时间更新的胜（避免异步抽取乱序）
+        if new_created_at and old_ts and new_created_at < old_ts:
+            return "old kept (new older by created_at)"
+
+        resp = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[{"role": "user", "content": CONFLICT_PROMPT.format(
+                old=old_fact, new=new_fact)}],
+            temperature=0, response_format={"type": "json_object"},
+        )
+        data = json.loads(resp.choices[0].message.content)
+        resolution = data.get("resolution", "uncertain")
+
+        if resolution == "new_wins":
+            self._archive(old_id, user_id)
+            self._add(user_id, new_fact, metadata={
+                "supersedes": old_id, "created_at": new_created_at,
+            })
+            return "new replaced old (archived)"
+        elif resolution == "old_wins":
+            return "old kept (new ignored)"
+        else:
+            self._add(user_id, new_fact, metadata={
+                "conflicts_with": old_id, "created_at": new_created_at,
+            })
+            return "both stored (versioned)"
+
+    def forget_by_age(self, threshold_days: int = 90):
+        """遗忘超期且未被访问的记忆（排除受保护的）"""
+        cutoff = (datetime.now() - timedelta(days=threshold_days)).isoformat()
+        # Chroma 对 ISO 字符串的 $lt 比较可行；先 get 再按条件过滤删除
+        all_mem = self.collection.get()
+        ids = all_mem.get("ids") or []
+        metas = all_mem.get("metadatas") or []
+        forget_ids = []
+        for mid, meta in zip(ids, metas):
+            if meta.get("protected"):
+                continue
+            created = meta.get("created_at", "")
+            accessed = meta.get("last_accessed", created)
+            if created < cutoff and accessed < cutoff:
+                forget_ids.append(mid)
+        if forget_ids:
+            self.collection.delete(ids=forget_ids)
+
+    def forget_by_importance(self, keep_top: int = 1000):
+        """保留重要度最高的 N 条，其余遗忘"""
+        all_mem = self.collection.get()
+        ids = all_mem.get("ids") or []
+        metas = all_mem.get("metadatas") or []
+        scored = [(self._importance(m), mid) for mid, m in zip(ids, metas)]
+        scored.sort(reverse=True)
+        forget_ids = [mid for _, mid in scored[keep_top:]]
+        if forget_ids:
+            self.collection.delete(ids=forget_ids)
+
+    def recall(self, user_id: str, query: str, top_k: int = 5):
+        """检索记忆，并更新命中记忆的访问时间（保留已有元数据）"""
+        results = self.collection.query(query_texts=[query], n_results=top_k,
+                                        where={"user_id": user_id})
+        ids_list = results.get("ids") or [[]]
+        metas_list = results.get("metadatas") or [[]]
+        now = datetime.now().isoformat()
+        for i, mid in enumerate(ids_list[0]):
+            old_meta = metas_list[0][i] if i < len(metas_list[0]) else {}
+            access_count = int(old_meta.get("access_count", 0)) + 1
+            self.collection.update(ids=[mid], metadatas=[{
+                **old_meta, "last_accessed": now, "access_count": access_count}])
+        return (results.get("documents") or [[]])[0]
+
+    def soft_forget(self, memory_id: str):
+        """软遗忘：归档，不删除（保留已有元数据）"""
+        old = self.collection.get(ids=[memory_id])
+        old_meta = (old.get("metadatas") or [{}])[0]
+        self.collection.update(
+            ids=[memory_id],
+            metadatas=[{**old_meta, "status": "archived",
+                        "archived_at": datetime.now().isoformat()}],
+        )
 ```
 
 **注意**：更新前必须先检索旧记忆判断关系——无脑覆盖会丢失互补信息，无脑新增会产生重复。这一步 LLM 判断是记忆质量的保障。
@@ -89,53 +237,6 @@ class MemoryUpdater:
   3. 来源权威：人工标注 > Agent 抽取 > 推断
   4. 置信度：高置信记忆胜
   5. 不确定：都存，版本化，检索时取最新（保底）
-```
-
-**实现**：
-
-```python
-CONFLICT_PROMPT = """判断新事实与旧事实的关系。
-旧事实：{old}
-新事实：{new}
-
-输出 JSON：
-  - relation: "duplicate" | "complementary" | "contradictory"
-  - 如果 contradictory，给出 resolution: "new_wins"（新事实更新/覆盖旧） | "old_wins"（旧更可信） | "uncertain"（不确定，都存）
-  - reason: 一句话理由
-"""
-
-def _resolve_conflict(
-    self, user_id: str, old_id: str, old_fact: str, old_meta: dict,
-    new_fact: str, new_created_at: str,
-):
-    """解决冲突：先比 created_at，再参考 LLM resolution"""
-    old_ts = old_meta.get("created_at", "")
-    # 时序优先：真实对话时间更新的胜（避免异步抽取乱序）
-    if new_created_at and old_ts and new_created_at < old_ts:
-        return "old kept (new older by created_at)"
-
-    resp = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": CONFLICT_PROMPT.format(
-            old=old_fact, new=new_fact)}],
-        temperature=0, response_format={"type": "json_object"},
-    )
-    data = json.loads(resp.choices[0].message.content)
-    resolution = data.get("resolution", "uncertain")
-
-    if resolution == "new_wins":
-        self._archive(old_id, user_id)
-        self._add(user_id, new_fact, metadata={
-            "supersedes": old_id, "created_at": new_created_at,
-        })
-        return "new replaced old (archived)"
-    elif resolution == "old_wins":
-        return "old kept (new ignored)"
-    else:
-        self._add(user_id, new_fact, metadata={
-            "conflicts_with": old_id, "created_at": new_created_at,
-        })
-        return "both stored (versioned)"
 ```
 
 **关键设计**：覆盖时**归档而非删除**旧记忆——万一判断错了（用户其实是说"除了 Rust 也学 Go"），还能回溯。删除是不可逆的，归档保留了纠错能力。
@@ -160,51 +261,15 @@ def _resolve_conflict(
 
 **1. 基于时间**：太老的记忆，且长期没被检索，遗忘。
 
-```python
-from datetime import datetime, timedelta
-
-def forget_by_age(self, threshold_days: int = 90):
-    """遗忘超期且未被访问的记忆"""
-    cutoff = (datetime.now() - timedelta(days=threshold_days)).isoformat()
-    # 删除：创建时间早于 cutoff 且 last_accessed 也早于 cutoff
-    self.collection.delete(where={
-        "$and": [
-            {"created_at": {"$lt": cutoff}},
-            {"last_accessed": {"$lt": cutoff}},
-        ]
-    })
-```
+> `forget_by_age` 方法已定义在上面的 `MemoryUpdater` 类中（第 162-178 行），不再重复。
 
 **2. 基于重要性**：低重要度的记忆优先遗忘。重要度综合：来源（用户明确说的 > 推断）、置信度、被检索频率。
 
-```python
-def forget_by_importance(self, keep_top: int = 1000):
-    """保留重要度最高的 N 条，其余遗忘"""
-    all_mem = self.collection.get()
-    ids = all_mem.get("ids") or []
-    metas = all_mem.get("metadatas") or []
-    scored = [
-        (self._importance(m), mid) for mid, m in zip(ids, metas)
-    ]
-    scored.sort(reverse=True)
-    forget_ids = [mid for _, mid in scored[keep_top:]]
-    if forget_ids:
-        self.collection.delete(ids=forget_ids)
-```
+> `forget_by_importance` 方法已定义在上面的 `MemoryUpdater` 类中，不再重复。
 
 **3. 基于访问频率**：长期没人查的记忆，遗忘（LRU 思路）。
 
-```python
-# 每次检索命中时更新 last_accessed
-def recall(self, user_id, query, top_k=5):
-    results = self.collection.query(query_texts=[query], n_results=top_k,
-                                    where={"user_id": user_id})
-    # 更新命中记忆的访问时间
-    for mid in results["ids"][0]:
-        self.collection.update(ids=[mid], metadatas=[{
-            "last_accessed": datetime.now().isoformat()}])
-    return results["documents"][0]
-```
+> `recall` 方法已定义在上面的 `MemoryUpdater` 类中，每次检索命中时更新 `last_accessed` 和 `access_count`。
 
 **三者结合**：实际系统通常**时间+重要性+频率综合**——既老又低重要度又没人查的记忆，最先遗忘。
 
@@ -224,15 +289,7 @@ def recall(self, user_id, query, top_k=5):
 
 **生产推荐软遗忘**：把记忆标记 `status: "archived"`，日常检索用 `where={"status": "active"}` 过滤掉归档的，但数据仍在。合规要求（如 GDPR"被遗忘权"）才做硬删除。
 
-```python
-def soft_forget(self, memory_id: str):
-    """软遗忘：归档，不删除"""
-    self.collection.update(
-        ids=[memory_id],
-        metadatas=[{"status": "archived",
-                    "archived_at": datetime.now().isoformat()}],
-    )
-```
+> `soft_forget` 方法已定义在上面的 `MemoryUpdater` 类中，使用 `{**old_meta, ...}` 保留已有元数据。
 
 ### 遗忘的边界：什么绝不能忘
 
@@ -242,19 +299,7 @@ def soft_forget(self, memory_id: str):
 - 合规相关：用户明确要求保留的、审计需要的
 - 身份相关：用户的核心身份信息（除非用户要求删）
 
-**实现**：这类记忆标记 `protected: true`，遗忘机制跳过：
-
-```python
-def forget_by_age(self, threshold_days=90):
-    cutoff = (datetime.now() - timedelta(days=threshold_days)).isoformat()
-    self.collection.delete(where={
-        "$and": [
-            {"created_at": {"$lt": cutoff}},
-            {"last_accessed": {"$lt": cutoff}},
-            {"protected": {"$ne": True}},  # 受保护的不忘
-        ]
-    })
-```
+**实现**：这类记忆标记 `protected: true`，遗忘机制跳过——`forget_by_age` 方法中已通过 `if meta.get("protected"): continue` 实现。
 
 > 设计原则：**遗忘要有"安全网"**。重要记忆显式标记保护，遗忘机制带白名单跳过——宁可记忆库稍大，也不能遗忘关键安全信息。
 

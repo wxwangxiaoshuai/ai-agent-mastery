@@ -154,7 +154,7 @@ class RecordReplayLLM:
         if self.mode == "record":
             # 用真 LLM 调，存响应
             resp = real_llm.chat(messages, **kwargs)
-            with open(fixture, "w") as f:
+            with open(fixture, "w", encoding="utf-8") as f:
                 msg = resp.choices[0].message
                 tcs = [
                     {"name": tc.function.name,

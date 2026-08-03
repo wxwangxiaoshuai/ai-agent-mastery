@@ -169,7 +169,7 @@ def evaluation_pipeline(rag_fn, eval_dataset, output_file="eval_report.json"):
         "metrics": {k: float(v) for k, v in scores.items()},
         "details": scores.to_pandas().to_dict("records"),
     }
-    with open(output_file, "w") as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
 
     # 打印摘要

@@ -12,9 +12,10 @@
  * 退出码：0 = 通过，1 = 存在 error
  */
 
-import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync, statSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { execSync } from 'node:child_process'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const STRICT = process.argv.includes('--strict')
@@ -188,7 +189,7 @@ const lessonFiles = contentFiles.filter((f) => f.isLesson)
     process.exit(1)
   }
   const found = new Map()
-  const re = /\b(gpt-[0-9o][\w.-]*|claude-(?:opus|sonnet|haiku)-[\w.-]*|gemini-[\w.-]*)\b/g
+  const re = /\b(gpt-[0-9o][\w.-]*|o[34][\w.-]*|claude-(?:opus|sonnet|haiku)-[\w.-]*|gemini-[\w.-]*|text-embedding-[\w.-]*|whisper-[\w.-]*|tts-[\w.-]*)\b/g
   for (const f of contentFiles) {
     for (const m of f.text.matchAll(re)) {
       const id = m[1].replace(/[.,;:)）]+$/, '')
@@ -771,6 +772,169 @@ function srcTsxFiles() {
   }
   walkMd('src/content')
   if (!bad) ok('C21', '内容 Markdown 无 NUL / 二进制污染')
+}
+
+// ------------------------------------------------ C28 模型档位完整性
+{
+  const tiersSrc = read('src/data/models.ts')
+  const tiersBlock = tiersSrc.match(/export const MODEL_TIERS[^=]*= \[([\s\S]*?)\n\]/)?.[1]
+  if (tiersBlock == null) {
+    console.error('无法定位 models.ts 中的 MODEL_TIERS —— 解析逻辑可能已脱节。')
+    process.exit(1)
+  }
+  // 按 tier 名提取每个档位的 models 数组
+  const tierRegex = /tier: '(\w+)'[\s\S]*?models: \[([\s\S]*?)\]/g
+  let match
+  let bad = false
+  const tierModels = new Map()
+  while ((match = tierRegex.exec(tiersBlock)) !== null) {
+    const tierName = match[1]
+    const modelsBlock = match[2]
+    const ids = [...modelsBlock.matchAll(/id: '([^']+)'/g)].map((m) => m[1])
+    tierModels.set(tierName, ids)
+    if (ids.length === 0) {
+      err('C28', `档位 "${tierName}" 的 models 为空 —— 必须至少登记一个模型标识`)
+      bad = true
+    }
+  }
+  // 检查是否有两档完全相同
+  const entries = [...tierModels.entries()]
+  for (let i = 0; i < entries.length; i++) {
+    for (let j = i + 1; j < entries.length; j++) {
+      const [aName, aIds] = entries[i]
+      const [bName, bIds] = entries[j]
+      if (aIds.length > 0 && bIds.length > 0 && aIds.join(',') === bIds.join(',')) {
+        err('C28', `档位 "${aName}" 与 "${bName}" 的 models 完全相同（${aIds.join(', ')}）—— 必须区分`)
+        bad = true
+      }
+    }
+  }
+  if (!bad) ok('C28', `模型档位完整（${tierModels.size} 个档位，均非空且互不相同）`)
+}
+
+// ----------------------------------------------------- C22 Python 代码块语法检查
+{
+  // 从所有 .md 文件中抽取 ```python 代码块，先跑 py_compile 抓语法错误，
+  // 再跑 ruff --select F 抓未定义名等逻辑问题。C22 标记为 warn 级别，
+  // 因为部分代码块是示意性片段（如只展示关键逻辑），不是完整可执行文件。
+  //
+  // 区分"真错误"和"代码片段"的策略：
+  //   1. py_compile 明确报 SyntaxError 的 → 真错误，报 warn
+  //   2. ruff F821（未定义名）中，如果未定义名只有 `...`（Ellipsis 字面量占位符）
+  //      → 跳过（属于 Task 2.11 的占位符清理范畴）
+  //   3. 其余 ruff F 规则 → 报 warn
+
+  const TMP_DIR = join(ROOT, '.check-tmp', 'py-blocks')
+  mkdirSync(TMP_DIR, { recursive: true })
+
+  // 收集所有 .md 文件
+  const mdPaths = []
+  function walkMd(dir) {
+    const full = join(ROOT, dir)
+    if (!existsSync(full)) return
+    for (const e of readdirSync(full)) {
+      const rel = `${dir}/${e}`
+      const abs = join(ROOT, rel)
+      if (e.endsWith('.md')) mdPaths.push({ rel, abs })
+      else if (existsSync(abs) && !e.startsWith('.') && !e.startsWith('_')) {
+        try { if (statSync(abs).isDirectory()) walkMd(rel) } catch (_) {}
+      }
+    }
+  }
+  walkMd('src/content')
+
+  let syntaxBad = 0
+  let ruffBad = 0
+  let ruffAvailable = true
+  let totalBlocks = 0
+  const syntaxErrors = []
+  const ruffIssues = []
+
+  for (const { rel, abs } of mdPaths) {
+    const text = readFileSync(abs, 'utf-8')
+    const re = /```python\s*\n([\s\S]*?)```/g
+    let match
+    let blockIdx = 0
+    while ((match = re.exec(text)) !== null) {
+      totalBlocks++
+      const code = match[1]
+      const moduleName = rel.replace('src/content/', '').replace(/\//g, '_').replace(/\.md$/, '')
+      const blockFile = `${moduleName}_block${blockIdx}.py`
+      const absPath = join(TMP_DIR, blockFile)
+      writeFileSync(absPath, code, 'utf-8')
+      blockIdx++
+
+      // py_compile 语法检查
+      try {
+        execSync(`python3 -m py_compile "${absPath}"`, { stdio: 'pipe', timeout: 5000 })
+      } catch (e) {
+        const stderr = e.stderr?.toString() || ''
+        syntaxBad++
+        syntaxErrors.push(`${rel} block#${blockIdx - 1}: ${stderr.trim().split('\n')[0]}`)
+      }
+
+      // ruff --select F 检查
+      try {
+        execSync(`ruff check --select F --no-cache "${absPath}"`, { stdio: 'pipe', timeout: 10000 })
+      } catch (e) {
+        if (e.message?.includes('command not found') || e.message?.includes('not found')) {
+          ruffAvailable = false
+        } else {
+          const stdout = e.stdout?.toString() || ''
+          const stderr = e.stderr?.toString() || ''
+          const lines = (stdout + '\n' + stderr).split('\n').filter((l) => l.trim())
+          // 过滤掉仅包含 `...` 占位符的 F821（属于 Task 2.11 清理范畴）
+          const realIssues = lines.filter((l) => {
+            if (l.includes('F821') && l.includes('`...`')) return false
+            return true
+          })
+          if (realIssues.length > 0) {
+            ruffBad += realIssues.length
+            ruffIssues.push(`${rel} block#${blockIdx - 1}: ${realIssues[0]}`)
+          }
+        }
+      }
+    }
+  }
+
+  if (syntaxBad > 0) {
+    warn('C22', `Python 语法错误（py_compile）：${syntaxBad} 个块（共 ${totalBlocks} 个块）`)
+    for (const s of syntaxErrors.slice(0, 5)) warn('C22', `  ${s}`)
+    if (syntaxErrors.length > 5) warn('C22', `  ... 还有 ${syntaxErrors.length - 5} 个`)
+  }
+  if (ruffAvailable) {
+    if (ruffBad > 0) {
+      warn('C22', `ruff --select F 问题：${ruffBad} 条（共 ${totalBlocks} 个块）`)
+      for (const s of ruffIssues.slice(0, 5)) warn('C22', `  ${s}`)
+      if (ruffIssues.length > 5) warn('C22', `  ... 还有 ${ruffIssues.length - 5} 个`)
+    }
+  }
+  if (syntaxBad === 0 && ruffBad === 0) {
+    ok('C22', `Python 代码块语法检查通过（${totalBlocks} 个块）`)
+  }
+}
+
+// ----------------------------------------- C27 open(..., "w") 必须带 encoding=
+{
+  let bad = 0
+  for (const f of contentFiles) {
+    const lines = f.text.split('\n')
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+      // 匹配 open(..., "w") 或 open(..., 'w') 但未带 encoding=
+      if (/open\([^)]*["']w["']/.test(line) && !/encoding\s*=/.test(line)) {
+        // 排除注释行
+        if (/^\s*#/.test(line)) continue
+        // 排除 open(..., "wb") 二进制模式
+        if (/open\([^)]*["']w[b+]/.test(line)) continue
+        // 排除 tarfile.open / io.open / codecs.open 等非文件写入
+        if (/tarfile\.open|io\.open|codecs\.open/.test(line)) continue
+        bad++
+        warn('C27', `${f.rel}:${i + 1} open(..., "w") 缺少 encoding= —— 应显式指定 encoding="utf-8"`)
+      }
+    }
+  }
+  if (!bad) ok('C27', '所有 open(..., "w") 调用均带 encoding=')
 }
 
 // ------------------------------------------------------------------ 输出

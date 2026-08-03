@@ -96,7 +96,11 @@ def resilient(
     fallback=None,
     retryable_exceptions: tuple = (TimeoutError, ConnectionError, OSError),
 ):
-    """弹性装饰器：超时 + 重试 + 熔断 + 降级"""
+    """弹性装饰器：超时 + 重试 + 熔断 + 降级
+
+    注意：教学示例用 ThreadPoolExecutor 实现通用超时，适合非 SDK 函数。
+    对于有原生 timeout 参数的 SDK 调用（如 openai/anthropic），优先用 SDK 的 timeout=。
+    """
     breaker = CircuitBreaker(failure_threshold, recovery_timeout)
 
     def decorator(fn):
@@ -111,7 +115,6 @@ def resilient(
             last_error = None
             for attempt in range(max_retries + 1):
                 try:
-                    # 用线程池落实 timeout（教学示例；生产可用 SDK 原生 timeout）
                     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
                         fut = ex.submit(fn, *args, **kwargs)
                         result = fut.result(timeout=timeout)
@@ -120,6 +123,8 @@ def resilient(
                 except concurrent.futures.TimeoutError as e:
                     last_error = TimeoutError(f"{fn.__name__} 超时 ({timeout}s)")
                     logger.info(f"超时: {last_error}")
+                    # 注意：超时后原线程可能仍在执行（Python 无法强制终止线程），
+                    # 生产环境对 IO 密集型调用应优先用 SDK 原生 timeout=
                 except retryable_exceptions as e:
                     last_error = e
                 except Exception as e:
@@ -225,8 +230,8 @@ def _static_reply(**kw):
 
 # 模型降级链
 model_chain = FallbackChain("model")
-model_chain.add(lambda **kw: _call_model("gpt-4o", **kw), "GPT-4o")
-model_chain.add(lambda **kw: _call_model("gpt-4o-mini", **kw), "GPT-4o-mini")
+model_chain.add(lambda **kw: _call_model("gpt-5", **kw), "GPT-4o")
+model_chain.add(lambda **kw: _call_model("gpt-4.1-mini", **kw), "GPT-4o-mini")
 model_chain.add(_static_reply, "静态兜底")
 
 # 工具降级链（示例：搜索）

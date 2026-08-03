@@ -69,14 +69,14 @@ class TokenBudgetManager:
 import tiktoken
 
 # 不同模型使用不同的 encoding
-enc = tiktoken.encoding_for_model("gpt-4o")
+enc = tiktoken.encoding_for_model("gpt-5")
 
-def count_tokens(text: str, model: str = "gpt-4o") -> int:
+def count_tokens(text: str, model: str = "gpt-5") -> int:
     """精确计算文本的 token 数"""
     enc = tiktoken.encoding_for_model(model)
     return len(enc.encode(text))
 
-def count_messages_tokens(messages: list, model: str = "gpt-4o") -> int:
+def count_messages_tokens(messages: list, model: str = "gpt-5") -> int:
     """计算完整 messages 列表的 token 数（含格式开销）"""
     enc = tiktoken.encoding_for_model(model)
     tokens_per_message = 3  # 每条 message 的格式开销
@@ -95,7 +95,7 @@ def count_messages_tokens(messages: list, model: str = "gpt-4o") -> int:
 **Anthropic 模型的计数**：
 
 ```python
-# Anthropic SDK 自带 token 计数
+# Anthropic SDK 自带 token 计数（已 GA）
 from anthropic import Anthropic
 
 client = Anthropic()
@@ -109,12 +109,12 @@ response = client.messages.create(
 print(f"输入 token: {response.usage.input_tokens}")
 print(f"输出 token: {response.usage.output_tokens}")
 
-# 方法 2：用 anthropic 的 token counting API（如果可用）
-# 或用 tiktoken 的 cl100k_base 做近似估算
-def count_anthropic_tokens(text: str) -> int:
-    """近似估算 Anthropic 模型的 token 数"""
-    enc = tiktoken.get_encoding("cl100k_base")
-    return len(enc.encode(text))
+# 方法 2：调用前提前计数（不消耗 API 调用额度）
+count = client.messages.count_tokens(
+    model="claude-sonnet-4-20250514",
+    messages=[{"role": "user", "content": "Hello"}],
+)
+print(f"预估 token 数: {count.input_tokens}")
 ```
 
 > **重要**：OpenAI 和 Anthropic 的 tokenizer 不同，同一段文本在两个模型上的 token 数可能差 5-15%。做预算规划时要用目标模型的 tokenizer。
@@ -130,7 +130,7 @@ class OverflowHandler:
     @staticmethod
     def _count_list(items: list) -> int:
         """统一把 list 序列化后再计 token"""
-        return TokenCounter.count(str(items))
+        return count_tokens(str(items))
 
     @staticmethod
     def handle(history: list, tool_results: list, retrieved_docs: list,
@@ -145,9 +145,9 @@ class OverflowHandler:
         # Level 2：截断工具结果——按 token 预算截断长输出
         for result in tool_results:
             output = result["output"]
-            while TokenCounter.count(output) > 500 and len(output) > 20:
+            while count_tokens(output) > 500 and len(output) > 20:
                 output = output[: int(len(output) * 0.8)]
-            if TokenCounter.count(result["output"]) > 500:
+            if count_tokens(result["output"]) > 500:
                 result["output"] = output + "\n...(已截断)"
                 print("[降级] 截断工具结果")
 
@@ -156,10 +156,11 @@ class OverflowHandler:
             retrieved_docs = retrieved_docs[:1] if retrieved_docs else []
             print("[降级] 只保留最相关的 1 个文档")
 
-        # Level 4：用摘要替代完整历史
-        if OverflowHandler._count_list(history) > budget["history"] and len(history) > 2:
-            summary = summarize_history(history[:-2])  # 用 LLM 摘要旧历史
-            history = [{"role": "system", "content": f"之前对话摘要：{summary}"}] + history[-2:]
+        # Level 4：用摘要替代完整历史（历史较长时用 LLM 摘要旧轮次）
+        if len(history) > 6:
+            # 只对最早的部分做摘要，保留最近 2 轮（4 条消息）完整
+            summary = summarize_history(history[:-4])
+            history = [{"role": "user", "content": f"之前对话摘要：{summary}"}] + history[-4:]
             print("[降级] 用摘要替代旧历史")
 
         # Level 5：放弃非核心内容

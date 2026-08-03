@@ -121,7 +121,13 @@ class DevAssistantGraph:
         for a in ["code_retriever", "doc_agent", "coder", "ops"]:
             g.add_edge(a, "supervisor")  # 下属干完回主管
         g.add_edge("approve_pr", "supervisor")  # 审批后继续
-        return g.compile(checkpointer=SqliteSaver.from_conn_string(":memory:"))
+        from langgraph.checkpoint.memory import InMemorySaver
+
+        return g.compile(checkpointer=InMemorySaver())
+        # 生产环境用 SqliteSaver：
+        #   from langgraph.checkpoint.sqlite import SqliteSaver
+        #   with SqliteSaver.from_conn_string("checkpoints.db") as cp:
+        #       g.compile(checkpointer=cp)
         # invoke 时传 recursion_limit，勿放进 compile：
         # config = {"configurable": {"thread_id": "..."}, "recursion_limit": 25}
 ```
@@ -153,7 +159,8 @@ def retrieve_code(query): return hybrid_search(query)  # BM25+向量+rerank
 memory = LongTermMemory()   # 跨会话记住用户偏好（常用语言/项目）
 def chat(user_id, msg):
     related = memory.recall(user_id, msg)  # recall 偏好
-    ...
+    # TODO: 将 related 注入到 LLM 调用的 context 中
+    # response = llm.invoke(msg, context=related)
     memory.remember(user_id, msg)  # 抽取新偏好
 ```
 
@@ -165,7 +172,8 @@ eval_pipeline = EvalPipeline(dataset="evals/dev_assist.yaml",
                              judge=llm_judge, gate=QUALITY_GATE)
 # 全链路 tracing（L13-03）
 @traced
-def agent_run(...): ...
+def agent_run(input):  # 具体签名取决于各模块实现
+    pass
 # 护栏（L13-04）
 def guarded_run(input):
     if not input_guardrail(input): return "输入被拦"

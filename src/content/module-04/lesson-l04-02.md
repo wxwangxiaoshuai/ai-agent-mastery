@@ -162,7 +162,7 @@ def agentic_chunk(text: str, target_chunks: int = 5) -> list[str]:
     from openai import OpenAI
     client = OpenAI()
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{
             "role": "user",
             "content": f"""将以下文档分成约 {target_chunks} 个语义完整的段落。

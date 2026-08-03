@@ -67,7 +67,7 @@ trace.set_tracer_provider(provider)
 tracer = trace.get_tracer("agent")
 
 # 给 Agent 每步埋 span
-def llm_call(messages, model="gpt-4o-mini"):
+def llm_call(messages, model="gpt-4.1-mini"):
     """带 span 的 LLM 调用"""
     with tracer.start_as_current_span("llm_call") as span:
         span.set_attribute("llm.model", model)
@@ -115,7 +115,7 @@ def run_agent(question: str):
         for step in range(MAX_STEPS):
             t0 = time.perf_counter()
             resp = client.chat.completions.create(
-                model="gpt-4o-mini", messages=messages, tools=TOOLS, temperature=0)
+                model="gpt-4.1-mini", messages=messages, tools=TOOLS, temperature=0)
             latency_ms = (time.perf_counter() - t0) * 1000
             msg = resp.choices[0].message
             total_tokens += resp.usage.total_tokens
@@ -154,7 +154,7 @@ def run_agent(question: str):
 
 ```
 agent_run (总 8.5s, 3200 tokens)
- ├─ llm_call [gpt-4o-mini] 1.2s, 800 tok ✓
+ ├─ llm_call [gpt-4.1-mini] 1.2s, 800 tok ✓
  ├─ tool:search 5.0s ←── 慢！外部搜索 API 拖累
  │    └─ args: "天气 北京"
  ├─ tool:fetch 0.8s ✓

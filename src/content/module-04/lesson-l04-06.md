@@ -30,7 +30,7 @@ def self_rag_query(question: str, collection, client) -> str:
     """Self-RAG：模型决定是否检索"""
     # Step 1: 判断是否需要检索
     judge_response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{
             "role": "user",
             "content": f"判断以下问题是否需要检索知识库才能回答。只输出 yes 或 no。\n\n问题：{question}",
@@ -43,7 +43,7 @@ def self_rag_query(question: str, collection, client) -> str:
     if not need_retrieval:
         # 不需要检索，直接回答
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=[{"role": "user", "content": question}],
         )
         return f"[直接回答] {response.choices[0].message.content}"
@@ -57,7 +57,7 @@ def self_rag_query(question: str, collection, client) -> str:
 
     # Step 3: 判断检索结果是否相关
     relevance_response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{
             "role": "user",
             "content": f"判断以下检索结果是否能回答问题。只输出 relevant 或 irrelevant。\n\n问题：{question}\n\n检索结果：{context[:500]}",
@@ -70,14 +70,14 @@ def self_rag_query(question: str, collection, client) -> str:
     if not is_relevant:
         # 检索不相关，用自身知识回答（并标注）
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=[{"role": "user", "content": question}],
         )
         return f"[检索不相关，使用模型知识] {response.choices[0].message.content}"
 
     # Step 4: 基于检索结果生成
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[
             {"role": "system", "content": f"基于以下资料回答：\n{context}"},
             {"role": "user", "content": question},
@@ -112,7 +112,7 @@ def crag_query(question: str, collection, web_search_fn, client) -> str:
 
     # Step 2: 评估检索质量
     eval_response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{
             "role": "user",
             "content": f"评估以下检索结果对回答问题的帮助程度。输出 high/low/ambivalent。\n\n问题：{question}\n\n检索结果：{kb_context[:500]}",
@@ -136,7 +136,7 @@ def crag_query(question: str, collection, web_search_fn, client) -> str:
 
     # Step 4: 生成回答
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[
             {"role": "system", "content": f"基于以下资料回答。如果资料不足，说明缺什么。\n\n{context}"},
             {"role": "user", "content": question},
@@ -177,7 +177,7 @@ def build_graph_rag(documents: list[str], client) -> dict:
     for doc in documents:
         # 用 LLM 抽取实体和关系
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-5",
             messages=[{
                 "role": "user",
                 "content": f"""从以下文档中抽取实体和关系，输出 JSON：
@@ -239,7 +239,7 @@ def agentic_rag(question: str, search_fn, client, max_steps: int = 5) -> str:
 
     for step in range(max_steps):
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=messages,
             temperature=0,
             max_tokens=500,

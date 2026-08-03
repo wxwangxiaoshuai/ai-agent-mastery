@@ -63,7 +63,7 @@ def run_sandboxed(code: str, timeout: int = 10) -> dict:
         tmpfs={"/tmp": "size=10m,mode=1777"},  # 临时文件系统，10MB，容器停就消失
         # 磁盘配额：部分存储驱动支持 storage_opt；通用做法是靠 tmpfs size 限制可写空间
         # storage_opt={"size": "100m"},  # overlay size 限制（视 Docker/存储驱动而定）
-        security_opt=["no-new-privileges", "seccomp=default"],  # 禁提权 + 默认 seccomp
+        security_opt=["no-new-privileges"],  # 禁提权（seccomp 默认配置自动生效）
         cap_drop=["ALL"],                 # 删除所有 Linux capabilities
         working_dir="/tmp",
     )
@@ -161,6 +161,9 @@ Agent 经常要"给沙箱一个数据文件，跑完拿回结果"。容器只读
 def run_with_file(code: str, input_files: dict, timeout=10) -> dict:
     """传文件进沙箱执行。input_files: {文件名: 内容bytes}
     关键：必须先 start（tmpfs 挂载后）再 put_archive，否则写入会被 tmpfs 覆盖。
+
+    注意：Docker SDK exec_run 不支持 timeout 参数，timeout 用于容器级 wait。
+    对长时间运行的代码，建议用异步执行 + 外部计时器，或使用 E2B 等托管方案。
     """
     container = client.containers.create(
         image=SANDBOX_IMAGE,
@@ -168,7 +171,7 @@ def run_with_file(code: str, input_files: dict, timeout=10) -> dict:
         detach=True, network_mode="none", mem_limit="256m", memswap_limit="256m",
         cpu_quota=50000, pids_limit=50, user="nobody", read_only=True,
         tmpfs={"/tmp": "size=50m,mode=1777"},
-        security_opt=["no-new-privileges", "seccomp=default"],
+        security_opt=["no-new-privileges"],
         cap_drop=["ALL"], working_dir="/tmp",
     )
     try:

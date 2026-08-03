@@ -37,7 +37,7 @@ client = OpenAI()
 def stream_llm(messages):
     """流式调 LLM，yield 每个 token"""
     stream = client.chat.completions.create(
-        model="gpt-4o-mini", messages=messages, temperature=0,
+        model="gpt-4.1-mini", messages=messages, temperature=0,
         stream=True,   # 关键：开启流式
     )
     for chunk in stream:

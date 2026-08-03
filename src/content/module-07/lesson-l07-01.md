@@ -114,7 +114,7 @@ def run_agent(question: str) -> str:
     messages = [{"role": "user", "content": question}]
     while True:                                    # 问题一：没有步数上限
         resp = client.chat.completions.create(     # 问题二：没有超时、没有重试
-            model="gpt-4o", messages=messages, tools=TOOLS,
+            model="gpt-5", messages=messages, tools=TOOLS,
         )
         msg = resp.choices[0].message
         if not msg.tool_calls:

@@ -115,7 +115,7 @@ def process_image(image_path: str) -> dict:
     b64 = base64.b64encode(open(image_path, "rb").read()).decode()
     # 一次性多任务：让模型判断是普通图/含文字/含图表，并分别处理
     resp = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-5",
         messages=[{"role": "user", "content": [
             {"type": "text", "text":
                 "分析这张图片。只输出 JSON 对象，字段示例："
@@ -158,7 +158,7 @@ def process_audio(audio_path: str) -> dict:
             model="whisper-1", file=f, language="zh").text
 
     resp = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{"role": "user", "content":
             "分析这段语音转写文本。只输出 JSON 对象，字段示例："
             '{"summary":"摘要(3句内)","sentiment":"正面|负面|中性",'
@@ -192,7 +192,7 @@ def process_video(video_path: str, max_frames: int = 20) -> dict:
         content.append({"type": "image_url",
                         "image_url": {"url": f"data:image/jpeg;base64,{b64}"}})
     resp = client.chat.completions.create(
-        model="gpt-4o", messages=[{"role": "user", "content": content}],
+        model="gpt-5", messages=[{"role": "user", "content": content}],
         temperature=0, response_format={"type": "json_object"})
     result = json.loads(resp.choices[0].message.content)
     result["frame_count"] = len(frames)   # 实际采样帧数，非事件数
@@ -243,7 +243,7 @@ def process_pdf(pdf_path: str, max_pages: int = 10) -> dict:
         content.append({"type": "image_url",
                         "image_url": {"url": f"data:image/png;base64,{b64}"}})
     resp = client.chat.completions.create(
-        model="gpt-4o", messages=[{"role": "user", "content": content}],
+        model="gpt-5", messages=[{"role": "user", "content": content}],
         temperature=0, response_format={"type": "json_object"})
     return json.loads(resp.choices[0].message.content)
 ```

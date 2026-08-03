@@ -268,7 +268,7 @@ jobs:
 
 ### 模型升级时的回归测试
 
-当你切换模型版本（如 `gpt-4o` → `gpt-4o-2024-11-20`，或从 OpenAI 切到 Anthropic），**必须重跑测试集**——新模型可能改变输出习惯（格式、语气、JSON 字段顺序），导致原本通过的 Prompt 退化。
+当你切换模型版本（如 `gpt-5` → `gpt-5-2025-08-07`，或从 OpenAI 切到 Anthropic），**必须重跑测试集**——新模型可能改变输出习惯（格式、语气、JSON 字段顺序），导致原本通过的 Prompt 退化。
 
 ```python
 def regression_test_on_model_switch(

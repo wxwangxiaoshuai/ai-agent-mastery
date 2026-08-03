@@ -58,7 +58,7 @@ M8 五节课讲了记忆的分类、短期窗口、长期架构、程序记忆�
 
 ```python
 from openai import OpenAI
-import chromadb, json, numpy as np
+import chromadb, json, hashlib, numpy as np
 from datetime import datetime, timedelta
 
 client = OpenAI()
@@ -83,7 +83,7 @@ class SummarizingWindowMemory:
                   f"已有摘要：\n{existing or '（无）'}\n\n"
                   f"新消息({old['role']})：\n{old['content']}\n\n更新后摘要：")
         r = client.chat.completions.create(
-            model="gpt-4o-mini", messages=[{"role":"user","content":prompt}],
+            model="gpt-4.1-mini", messages=[{"role":"user","content":prompt}],
             temperature=0, max_tokens=500)
         return r.choices[0].message.content
 
@@ -116,7 +116,7 @@ class LongTermMemory:
 每条原子化，输出 JSON：{"facts":[{"fact":"","type":""}]}。无可抽取返回{"facts":[]}。
 对话：""" + dialog
         r = client.chat.completions.create(
-            model="gpt-4o-mini", messages=[{"role":"user","content":prompt}],
+            model="gpt-4.1-mini", messages=[{"role":"user","content":prompt}],
             temperature=0, response_format={"type":"json_object"})
         return json.loads(r.choices[0].message.content).get("facts", [])
 
@@ -124,13 +124,14 @@ class LongTermMemory:
         """更新策略：判断新旧关系后覆盖/合并/新增（L08-05）"""
         new_fact = fact_obj["fact"]
         new_ts = datetime.now().isoformat()
+        fact_hash = hashlib.md5(new_fact.encode()).hexdigest()[:12]
         old = self.col.query(
             query_texts=[new_fact], n_results=1,
             where={"$and": [{"user_id": user_id}, {"status": "active"}]},
         )
         old_ids = (old.get("ids") or [[]])[0]
         if not old_ids:
-            self.col.add(ids=[f"{user_id}_{abs(hash(new_fact))}"],
+            self.col.add(ids=[f"{user_id}_{fact_hash}"],
                 documents=[new_fact], metadatas=[{
                     "user_id": user_id, "type": fact_obj.get("type","fact"),
                     "created_at": new_ts,
@@ -150,7 +151,9 @@ class LongTermMemory:
         if old_meta.get("created_at", "") > new_ts:
             return "old kept (newer timestamp)"
         self.col.update(ids=old_ids, metadatas=[{**old_meta, "status": "archived"}])
-        self.col.add(ids=[f"{user_id}_{abs(hash(new_fact))}_v2"],
+        # 用时间戳后缀避免冲突链碰撞
+        ts_suffix = datetime.now().strftime("%Y%m%d%H%M%S%f")
+        self.col.add(ids=[f"{user_id}_{fact_hash}_{ts_suffix}"],
             documents=[new_fact], metadatas=[{
                 "user_id": user_id, "type": fact_obj.get("type","fact"),
                 "created_at": new_ts,
@@ -159,14 +162,14 @@ class LongTermMemory:
         return "replaced"
 
     def _judge_relation(self, old, new):
-        r = client.chat.completions.create(model="gpt-4o-mini",
+        r = client.chat.completions.create(model="gpt-4.1-mini",
             messages=[{"role":"user","content":
                 f'判断关系，输出JSON{{"relation":"duplicate|complementary|contradictory"}}\n旧:{old}\n新:{new}'}],
             temperature=0, response_format={"type":"json_object"})
         return json.loads(r.choices[0].message.content)["relation"]
 
     def _merge(self, old, new):
-        r = client.chat.completions.create(model="gpt-4o-mini",
+        r = client.chat.completions.create(model="gpt-4.1-mini",
             messages=[{"role":"user","content":f"合并为一条更全的事实。\n旧:{old}\n新:{new}\n合并:"}],
             temperature=0, max_tokens=200)
         return r.choices[0].message.content
@@ -176,18 +179,29 @@ class LongTermMemory:
         res = self.col.query(query_texts=[query], n_results=top_k,
             where={"$and":[{"user_id":user_id},{"status":"active"}]})
         ids = res["ids"][0]
-        if ids:  # 更新访问时间（L08-05 LRU）
-            self.col.update(ids=ids, metadatas=[{"last_accessed":datetime.now().isoformat()}]*len(ids))
+        if ids:  # 更新访问时间，保留已有元数据（L08-05 LRU）
+            metas = (res.get("metadatas") or [[]])[0]
+            now = datetime.now().isoformat()
+            self.col.update(ids=ids, metadatas=[
+                {**metas[i], "last_accessed": now} for i in range(len(ids))])
         return res["documents"][0]
 
     def forget(self, days=90):
         """软遗忘：超期未访问且非受保护的归档（L08-05）"""
         cutoff = (datetime.now()-timedelta(days=days)).isoformat()
-        self.col.update(where={"$and":[
-            {"last_accessed":{"$lt":cutoff}},
-            {"protected":{"$ne":True}},
-            {"status":"active"}]},
-            metadatas=[{"status":"archived"}])
+        # Chroma 的 update() 不支持 where 参数，先 get 过滤再按 ids 更新
+        all_mem = self.col.get()
+        ids = all_mem.get("ids") or []
+        metas = all_mem.get("metadatas") or []
+        forget_ids = []
+        for mid, meta in zip(ids, metas):
+            accessed = meta.get("last_accessed", "")
+            if (accessed < cutoff
+                    and not meta.get("protected")
+                    and meta.get("status") == "active"):
+                forget_ids.append(mid)
+        if forget_ids:
+            self.col.update(ids=forget_ids, metadatas=[{"status": "archived"}]*len(forget_ids))
 ```
 
 **Step 3：私有文档 RAG（复用 M4 混合检索 + Reranker）**
@@ -237,9 +251,13 @@ class PrivateRAG:
         qemb = client.embeddings.create(model="text-embedding-3-small", input=query).data[0].embedding
         vec = self.col.query(query_embeddings=[qemb], n_results=top_k*2)
         vec_ids = vec["ids"][0]
-        bm_scores = self.bm25.get_scores(tokenize(query))
-        bm_top = [self.bm25_corpus[i][0] for i in np.argsort(bm_scores)[::-1][:top_k*2]]
-        cand_ids = rrf_fuse([vec_ids, bm_top])
+        # BM25 仅在已索引文档时可用
+        if self.bm25 is not None and self.bm25_corpus:
+            bm_scores = self.bm25.get_scores(tokenize(query))
+            bm_top = [self.bm25_corpus[i][0] for i in np.argsort(bm_scores)[::-1][:top_k*2]]
+            cand_ids = rrf_fuse([vec_ids, bm_top])
+        else:
+            cand_ids = vec_ids
         docs = []
         for cid in cand_ids:
             r = self.col.get(ids=[cid])
@@ -292,7 +310,7 @@ class KnowledgeButler:
         ctx.append({"role":"user","content":user_msg})
 
         # 4. 推理
-        resp = client.chat.completions.create(model="gpt-4o-mini", messages=ctx, temperature=0)
+        resp = client.chat.completions.create(model="gpt-4.1-mini", messages=ctx, temperature=0)
         reply = resp.choices[0].message.content
 
         # 5. 写入短期 + 触发长期记忆抽取（异步更好，此处同步示意）

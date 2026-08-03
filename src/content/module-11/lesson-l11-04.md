@@ -34,7 +34,7 @@ AutoGen 一切围绕"能对话的 Agent"。每个 Agent 有 system message（角
 import autogen
 
 # 配置 LLM
-config_list = [{"model": "gpt-4o-mini", "api_key": "..."}]
+config_list = [{"model": "gpt-4.1-mini", "api_key": "..."}]
 
 # 1. 定义能对话的 Agent
 coder = autogen.ConversableAgent(

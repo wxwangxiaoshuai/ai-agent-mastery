@@ -160,7 +160,7 @@ class ToolboxAgent:
 
         for step in range(self.max_steps):
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-mini",
                 messages=messages,
                 tools=TOOLS_SCHEMA,
                 temperature=0,
@@ -380,7 +380,7 @@ class SkillRegistry:
             + "\n\n返回最匹配的 Skill ID（只返回 ID，不返回其他内容）："
         )
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=[{"role": "user", "content": prompt}],
             temperature=0,
             max_tokens=20,
@@ -425,7 +425,7 @@ class SkillAwareAgent:
         for _ in range(self.max_steps):
             active_schema = [t for t in TOOLS_SCHEMA if t["function"]["name"] in active_tools]
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-mini",
                 messages=messages,
                 tools=active_schema,
                 temperature=0,
@@ -526,8 +526,8 @@ for i, question in enumerate(test_cases, 1):
 print("\n" + "=" * 60)
 print("对比结论：")
 print("- Skills 系统减少了每次调用的工具选择范围，降低了模型选错工具的概率")
-print("- 对于"研究+保存"类任务，research_skill 只暴露 3 个工具而非 5 个")
-print("- 对于"数据分析"类任务，analysis_skill 只暴露 2 个工具，跳过搜索和文件")
+print("- 对于「研究+保存」类任务，research_skill 只暴露 3 个工具而非 5 个")
+print("- 对于「数据分析」类任务，analysis_skill 只暴露 2 个工具，跳过搜索和文件")
 print("- Skills 的 system_prompt 给 Agent 了更明确的角色指引")
 ```
 
@@ -658,7 +658,7 @@ class TestSkills:
 # Function Calling vs Skills 对比报告
 
 ## 实验环境
-- 模型：gpt-4o-mini
+- 模型：gpt-4.1-mini
 - 测试用例：3 个（研究保存、数据分析、搜索+代码）
 - 每种方式跑 3 次取平均
 

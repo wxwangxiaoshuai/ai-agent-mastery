@@ -172,7 +172,7 @@ def agent_loop_fc(question: str, max_steps: int = 10) -> str:
 
     for step in range(max_steps):
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=messages,
             tools=tools,
             temperature=0,

@@ -129,7 +129,7 @@ class CheckpointAgent:
         for step in range(start_step, self.max_steps):
             try:
                 response = client.chat.completions.create(
-                    model="gpt-4o-mini",
+                    model="gpt-4.1-mini",
                     messages=messages,
                     tools=TOOLS,
                     temperature=0,
@@ -142,7 +142,7 @@ class CheckpointAgent:
                     self.store.delete(agent_id)
                     return msg.content
 
-                messages.append(msg)
+                messages.append(msg.model_dump())
 
                 for tool_call in msg.tool_calls:
                     fn_name = tool_call.function.name

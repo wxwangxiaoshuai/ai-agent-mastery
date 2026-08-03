@@ -85,7 +85,7 @@ client = OpenAI()
 def plan(state: ResearchState) -> dict:
     """规划：把研究问题分解为子查询"""
     resp = client.chat.completions.create(
-        model="gpt-4o-mini", temperature=0,
+        model="gpt-4.1-mini", temperature=0,
         messages=[{"role": "user", "content":
             "把研究问题分解为 3 个子查询（不同角度）。"
             '只输出 JSON 对象，格式：{"queries":["...","...","..."]}。\n'
@@ -115,7 +115,7 @@ def synthesize(state: ResearchState) -> dict:
     """综合：基于去重结果产出草稿"""
     context = "\n\n".join(f"[{r['source']}] {r['title']}\n{r['snippet']}" for r in state["deduped"])
     resp = client.chat.completions.create(
-        model="gpt-4o-mini", temperature=0,
+        model="gpt-4.1-mini", temperature=0,
         messages=[{"role": "system", "content": "基于资料写研究报告，标注来源。"},
                   {"role": "user", "content": f"问题：{state['question']}\n\n资料：\n{context}"}])
     return {"draft": resp.choices[0].message.content}
@@ -126,6 +126,7 @@ def synthesize(state: ResearchState) -> dict:
 ```python
 # research/hitl.py
 from langgraph.types import interrupt, Command
+from langgraph.graph import END
 
 def review(state: ResearchState):
     """人工审阅：暂停等批准/编辑/拒绝"""
@@ -332,7 +333,7 @@ class TestResearchAgent:
         self.app.invoke({"question": "测试"}, config=self.config)
         state = self.app.get_state(self.config)
         # raw_results 来自 3 个搜索节点（reducer 累加）
-        assert len(state.values.get("raw_results", [])) >= 0
+        assert len(state.values.get("raw_results", [])) > 0  # 并行搜索应有结果汇聚
 
     def test_hitl_resume_approve(self):
         """审阅 approve 后到 finalize"""

@@ -69,7 +69,7 @@ def understand_batch(page_images: list, schema: dict, page_offset: int) -> dict:
         content.append({"type": "image_url",
                         "image_url": {"url": f"data:image/png;base64,{b64}"}})
     resp = client.chat.completions.create(
-        model="gpt-4o", messages=[{"role": "user", "content": content}],
+        model="gpt-5", messages=[{"role": "user", "content": content}],
         temperature=0, response_format={"type": "json_object"})
     return json.loads(resp.choices[0].message.content)
 ```
@@ -98,7 +98,7 @@ def extract_mixed_chart(image_path: str) -> dict:
     """混合图表提取，分维度"""
     b64 = base64.b64encode(open(image_path,"rb").read()).decode()
     resp = client.chat.completions.create(
-        model="gpt-4o",   # 混合图表必须强模型
+        model="gpt-5",   # 混合图表必须强模型
         messages=[{"role": "user", "content": [
             {"type": "text", "text":
                 "分析这张混合图表。可能有多个数据系列（柱状/折线/饼图）"
@@ -136,7 +136,7 @@ def extract_table(image_path: str) -> dict:
     """表格结构化提取"""
     b64 = base64.b64encode(open(image_path,"rb").read()).decode()
     resp = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-5",
         messages=[{"role": "user", "content": [
             {"type": "text", "text":
                 "提取图中的表格为结构化 JSON。要求："

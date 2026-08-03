@@ -50,7 +50,7 @@ from opentelemetry import trace
 AGENT_CONFIG = {
     "version": "2026.07.23",   # 整体配置版本
     "prompt": {"id": "sys_v5", "source": "prompts/sys_v5.md"},
-    "model": {"name": "gpt-4o", "fallback": "gpt-4o-mini"},
+    "model": {"name": "gpt-5", "fallback": "gpt-4.1-mini"},
     "tools": ["search@v3", "code_exec@v2", "fetch@v1"],   # 工具带版本
 }
 

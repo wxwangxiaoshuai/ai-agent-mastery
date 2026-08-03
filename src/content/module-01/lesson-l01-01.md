@@ -132,7 +132,7 @@ LLM 在每一步生成时，并不是只给出一个确定的 token，而是为�
 
 ```python
 resp = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-5",
     messages=[{"role": "user", "content": "ISO 8601 里表示周数的字母是什么？"}],
     logprobs=True,
     top_logprobs=3,       # 顺带看看它纠结在哪几个候选之间

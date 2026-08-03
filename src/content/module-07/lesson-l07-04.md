@@ -40,6 +40,7 @@
 
 ```python
 import time
+import threading
 from enum import Enum
 from dataclasses import dataclass, field
 
@@ -50,7 +51,7 @@ class CircuitState(Enum):
 
 @dataclass
 class CircuitBreaker:
-    """熔断器"""
+    """熔断器（线程安全）"""
     failure_threshold: int = 5        # 连续失败多少次触发熔断
     recovery_timeout: float = 60.0    # 熔断后等待多少秒才半开
     half_open_max_calls: int = 1      # 半开时最多放行几个请求
@@ -60,50 +61,53 @@ class CircuitBreaker:
     success_count: int = 0
     last_failure_time: float = 0
     half_open_calls: int = 0
+    _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     def can_execute(self) -> bool:
         """判断是否允许执行"""
-        if self.state == CircuitState.CLOSED:
-            return True
-
-        if self.state == CircuitState.OPEN:
-            # 检查是否到了冷却时间
-            if time.time() - self.last_failure_time >= self.recovery_timeout:
-                self.state = CircuitState.HALF_OPEN
-                self.half_open_calls = 0
-                print("[CircuitBreaker] Open → Half-Open（冷却结束，试探中）")
-                # 落入下方 HALF_OPEN 分支统一计数，避免多放行 1 次
-            else:
-                return False  # 熔断中，拒绝
-
-        if self.state == CircuitState.HALF_OPEN:
-            if self.half_open_calls < self.half_open_max_calls:
-                self.half_open_calls += 1
+        with self._lock:
+            if self.state == CircuitState.CLOSED:
                 return True
-            return False  # 半开名额用完
 
-        return False
+            if self.state == CircuitState.OPEN:
+                # 检查是否到了冷却时间
+                if time.time() - self.last_failure_time >= self.recovery_timeout:
+                    self.state = CircuitState.HALF_OPEN
+                    self.half_open_calls = 0
+                    print("[CircuitBreaker] Open → Half-Open（冷却结束，试探中）")
+                else:
+                    return False  # 熔断中，拒绝
+
+            if self.state == CircuitState.HALF_OPEN:
+                if self.half_open_calls < self.half_open_max_calls:
+                    self.half_open_calls += 1
+                    return True
+                return False  # 半开名额用完
+
+            return False
 
     def record_success(self):
         """记录成功"""
-        if self.state == CircuitState.HALF_OPEN:
-            self.state = CircuitState.CLOSED
-            self.failure_count = 0
-            print("[CircuitBreaker] Half-Open → Closed（恢复正常）")
-        else:
-            self.failure_count = 0  # 重置失败计数
+        with self._lock:
+            if self.state == CircuitState.HALF_OPEN:
+                self.state = CircuitState.CLOSED
+                self.failure_count = 0
+                print("[CircuitBreaker] Half-Open → Closed（恢复正常）")
+            else:
+                self.failure_count = 0  # 重置失败计数
 
     def record_failure(self):
         """记录失败"""
-        self.failure_count += 1
-        self.last_failure_time = time.time()
+        with self._lock:
+            self.failure_count += 1
+            self.last_failure_time = time.time()
 
-        if self.state == CircuitState.HALF_OPEN:
-            self.state = CircuitState.OPEN
-            print("[CircuitBreaker] Half-Open → Open（试探失败，重新熔断）")
-        elif self.failure_count >= self.failure_threshold:
-            self.state = CircuitState.OPEN
-            print(f"[CircuitBreaker] Closed → Open（连续失败 {self.failure_count} 次）")
+            if self.state == CircuitState.HALF_OPEN:
+                self.state = CircuitState.OPEN
+                print("[CircuitBreaker] Half-Open → Open（试探失败，重新熔断）")
+            elif self.failure_count >= self.failure_threshold:
+                self.state = CircuitState.OPEN
+                print(f"[CircuitBreaker] Closed → Open（连续失败 {self.failure_count} 次）")
 
 
 # 使用：给 LLM 调用加熔断
@@ -115,7 +119,7 @@ def call_llm_with_breaker(messages):
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini", messages=messages, timeout=30
+            model="gpt-4.1-mini", messages=messages, timeout=30
         )
         llm_breaker.record_success()
         return response
@@ -170,7 +174,7 @@ bucket = TokenBucket(rate=2, capacity=5)  # 2 令牌/秒，桶容量 5（允许�
 
 def call_llm_rate_limited(messages):
     bucket.wait()  # 等待令牌
-    return client.chat.completions.create(model="gpt-4o-mini", messages=messages)
+    return client.chat.completions.create(model="gpt-4.1-mini", messages=messages)
 ```
 
 ### 限流：滑动窗口（可选替代）
@@ -241,7 +245,8 @@ import threading
 class AgentTaskQueue:
     """Agent 任务队列"""
 
-    def __init__(self, max_workers: int = 3, max_queue_size: int = 100):
+    def __init__(self, agent, max_workers: int = 3, max_queue_size: int = 100):
+        self.agent = agent
         self.task_queue = queue.Queue(maxsize=max_queue_size)
         self.workers = []
         self.max_workers = max_workers
@@ -266,7 +271,7 @@ class AgentTaskQueue:
         while True:
             task = self.task_queue.get()
             try:
-                result = agent.run(task["question"])
+                result = self.agent.run(task["question"])
                 task.get("callback", lambda r: None)(result)
             except Exception as e:
                 print(f"[Worker {worker_id}] 任务失败: {e}")

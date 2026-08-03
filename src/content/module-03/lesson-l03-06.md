@@ -24,7 +24,7 @@ class ContextDebugger:
     """Context 可视化调试器"""
 
     @staticmethod
-    def visualize(messages: list, model: str = "gpt-4o") -> str:
+    def visualize(messages: list, model: str = "gpt-5", context_window: int = 128000) -> str:
         """可视化 messages 列表：显示每条消息的角色、内容摘要和 token 数"""
         total_tokens = 0
         lines = ["=" * 70, "CONTEXT VISUALIZATION", "=" * 70]
@@ -46,14 +46,8 @@ class ContextDebugger:
         lines.append("\n" + "-" * 70)
         lines.append(f"总 token 数: {total_tokens}")
 
-        # 预算检查
-        if model == "gpt-4o":
-            limit = 128000
-        else:
-            limit = 200000
-
-        usage_pct = total_tokens / limit * 100
-        lines.append(f"窗口使用率: {usage_pct:.1f}% ({total_tokens}/{limit})")
+        usage_pct = total_tokens / context_window * 100
+        lines.append(f"窗口使用率: {usage_pct:.1f}% ({total_tokens}/{context_window})")
 
         if usage_pct > 80:
             lines.append("⚠️ 警告：上下文使用率超过 80%，建议压缩")
@@ -65,7 +59,7 @@ class ContextDebugger:
     @staticmethod
     def dump_to_file(messages: list, filepath: str = "context_debug.txt"):
         """将完整 context 写入文件，便于离线分析"""
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             for i, msg in enumerate(messages):
                 content = msg["content"] if isinstance(msg["content"], str) else str(msg["content"])
                 f.write(f"=== Message {i} [{msg['role']}] ===\n")
@@ -191,7 +185,7 @@ class ContextRegressionTest:
     def save_snapshot(messages: list, name: str):
         """保存 context 快照"""
         import json
-        with open(f"snapshots/{name}.json", "w") as f:
+        with open(f"snapshots/{name}.json", "w", encoding="utf-8") as f:
             json.dump({"messages": messages, "tokens": count_tokens(str(messages))}, f,
                       ensure_ascii=False, indent=2)
 

@@ -17,7 +17,7 @@
  */
 
 /** 课程内部使用的模型档位。正文优先引用档位，而不是具体型号。 */
-export type ModelTier = 'nano' | 'small' | 'mid' | 'large' | 'embedding'
+export type ModelTier = 'nano' | 'small' | 'mid' | 'large' | 'embedding' | 'speech'
 
 export interface ModelEntry {
   /** 厂商 API 里使用的标识 */
@@ -42,7 +42,7 @@ export interface TierSpec {
  * 白名单最后一次对照厂商文档核对的日期（ISO）。
  * 改动 MODEL_TIERS 时请一并更新，C14 会在超过 180 天未校准时告警。
  */
-export const CALIBRATED_ON = '2026-07-27'
+export const CALIBRATED_ON = '2026-08-03'
 
 /** 超过这个天数未校准，check 会发出警告。 */
 export const CALIBRATION_MAX_AGE_DAYS = 180
@@ -54,7 +54,7 @@ export const MODEL_TIERS: TierSpec[] = [
     useFor: '意图分类、路由判断、格式校验这类"一句话就能说清"的窄任务',
     avoidFor: '任何需要多步推理或长上下文的场景，它会自信地给出错误答案',
     models: [
-      { id: 'gpt-4o-mini', vendor: 'OpenAI', snapshot: false },
+      { id: 'gpt-4.1-mini', vendor: 'OpenAI', snapshot: false },
       { id: 'claude-haiku-4-5', vendor: 'Anthropic', snapshot: false },
       { id: 'gemini-2.0-flash', vendor: 'Google', snapshot: false },
     ],
@@ -65,7 +65,8 @@ export const MODEL_TIERS: TierSpec[] = [
     useFor: '结构化抽取、摘要、简单工具调用；高频调用时的成本主力',
     avoidFor: '开放式规划、需要自我纠错的长链路任务',
     models: [
-      { id: 'gpt-4o-mini', vendor: 'OpenAI', snapshot: false },
+      { id: 'gpt-4.1-mini', vendor: 'OpenAI', snapshot: false },
+      { id: 'gpt-4.1-nano', vendor: 'OpenAI', snapshot: false },
       { id: 'claude-haiku-4-5', vendor: 'Anthropic', snapshot: false },
     ],
   },
@@ -77,9 +78,8 @@ export const MODEL_TIERS: TierSpec[] = [
     models: [
       { id: 'claude-sonnet-5', vendor: 'Anthropic', snapshot: false },
       { id: 'claude-sonnet-4-20250514', vendor: 'Anthropic', snapshot: true },
-      { id: 'gpt-4o', vendor: 'OpenAI', snapshot: false },
-      { id: 'gpt-4o-2024-08-06', vendor: 'OpenAI', snapshot: true },
-      { id: 'gpt-4o-2024-11-20', vendor: 'OpenAI', snapshot: true },
+      { id: 'gpt-5', vendor: 'OpenAI', snapshot: false },
+      { id: 'gpt-5-2025-08-07', vendor: 'OpenAI', snapshot: true },
     ],
   },
   {
@@ -94,7 +94,20 @@ export const MODEL_TIERS: TierSpec[] = [
     name: '向量档',
     useFor: 'RAG 建库与查询向量化；建库与查询必须用同一个模型',
     avoidFor: '拿它做相关性精排 —— 那是 reranker 的活',
-    models: [],
+    models: [
+      { id: 'text-embedding-3-small', vendor: 'OpenAI', snapshot: false },
+      { id: 'text-embedding-3-large', vendor: 'OpenAI', snapshot: false },
+    ],
+  },
+  {
+    tier: 'speech',
+    name: '语音档',
+    useFor: '语音转文字（STT）与文字转语音（TTS）',
+    avoidFor: '需要高精度专业术语识别的场景 —— 通用语音模型在专业领域误差较大',
+    models: [
+      { id: 'whisper-1', vendor: 'OpenAI', snapshot: false },
+      { id: 'tts-1', vendor: 'OpenAI', snapshot: false },
+    ],
   },
 ]
 

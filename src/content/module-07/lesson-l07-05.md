@@ -29,34 +29,55 @@ Layer 3: 静态兜底（预设回复 + 人工转接）
 ### Layer 1：模型降级链
 
 ```python
+from anthropic import Anthropic
+
+anthropic_client = Anthropic()
+
 class ModelFallbackChain:
     """模型降级链：主模型 → 备用模型 → 轻量模型"""
 
     def __init__(self):
         self.chain = [
-            {"model": "claude-sonnet-4-20250514", "timeout": 30, "label": "主力模型"},
-            {"model": "gpt-4o", "timeout": 30, "label": "备用模型"},
-            {"model": "gpt-4o-mini", "timeout": 15, "label": "轻量模型"},
-            {"model": "local-fallback", "timeout": 5, "label": "本地兜底"},
+            {"model": "claude-sonnet-5", "provider": "anthropic", "timeout": 30, "label": "主力模型"},
+            {"model": "gpt-5", "provider": "openai", "timeout": 30, "label": "备用模型"},
+            {"model": "gpt-4.1-mini", "provider": "openai", "timeout": 15, "label": "轻量模型"},
+            {"model": "local-fallback", "provider": "static", "timeout": 5, "label": "本地兜底"},
         ]
+
+    def _call_model(self, provider: str, model: str, messages: list, tools: list = None, timeout: int = 30):
+        """按 provider 分派调用"""
+        if provider == "anthropic":
+            # 转换消息格式：OpenAI 格式 → Anthropic 格式
+            system_msg = next((m["content"] for m in messages if m["role"] == "system"), None)
+            user_msgs = [m for m in messages if m["role"] != "system"]
+            kwargs = {"model": model, "max_tokens": 1024, "messages": user_msgs, "timeout": timeout}
+            if system_msg:
+                kwargs["system"] = system_msg
+            resp = anthropic_client.messages.create(**kwargs)
+            return resp.content[0].text
+        elif provider == "openai":
+            resp = client.chat.completions.create(
+                model=model, messages=messages, tools=tools,
+                timeout=timeout, temperature=0,
+            )
+            return resp.choices[0].message.content
+        else:
+            return self._static_fallback(messages)
 
     def call(self, messages: list, tools: list = None) -> tuple[str, bool]:
         """按降级链依次尝试。返回 (内容, degraded)：degraded=True 表示已落到静态兜底。"""
         for i, config in enumerate(self.chain):
             try:
-                if config["model"] == "local-fallback":
+                if config["provider"] == "static":
                     return self._static_fallback(messages), True
 
-                response = client.chat.completions.create(
-                    model=config["model"],
-                    messages=messages,
-                    tools=tools,
-                    timeout=config["timeout"],
-                    temperature=0,
+                content = self._call_model(
+                    config["provider"], config["model"], messages,
+                    tools=tools, timeout=config["timeout"],
                 )
                 if i > 0:
                     print(f"[降级] 使用 {config['label']} 成功（第 {i+1} 个）")
-                return response.choices[0].message.content, False
+                return content, False
 
             except Exception as e:
                 print(f"[降级] {config['label']} 失败: {e}")

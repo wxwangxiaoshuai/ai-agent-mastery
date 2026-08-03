@@ -145,7 +145,7 @@ def devil_advocate_round(consensus, history):
               "你的职责是找出至少两个反对这个共识的理由，"
               "哪怕牵强也要找——确保决策经过对抗检验。").format(consensus=consensus)
     resp = client.chat.completions.create(
-        model="gpt-4o-mini", temperature=0.7,
+        model="gpt-4.1-mini", temperature=0.7,
         messages=[{"role": "system", "content": prompt},
                   {"role": "user", "content": f"辩论历史：{history}"}],
     )
@@ -164,7 +164,7 @@ def judge_agent(question, arguments):
     summary = "\n\n".join(f"【{pos}】\n" + "\n".join(args)
                            for pos, args in arguments.items())
     resp = client.chat.completions.create(
-        model="gpt-4o",   # 裁判用更强的模型
+        model="gpt-5",   # 裁判用更强的模型
         messages=[{"role": "system", "content":
             "你是裁判。综合各方论点，给出最终结论，"
             "明确标注：采纳了哪方哪些观点、否定了哪方哪些、理由。"},

@@ -133,7 +133,7 @@ Agent 回答：{agent_answer}
 {{"score": 1-5, "reason": "打分理由", "issues": ["问题1", "问题2"]}}
 评分要严格：5=优秀，3=及格有瑕疵，1=答非所问/错误。"""
     resp = judge_client.chat.completions.create(
-        model="gpt-4o",   # 裁判用强模型
+        model="gpt-5",   # 裁判用强模型
         messages=[{"role": "user", "content": prompt}],
         temperature=0,
         response_format={"type": "json_object"},

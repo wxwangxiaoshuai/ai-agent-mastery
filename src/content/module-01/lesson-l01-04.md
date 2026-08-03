@@ -128,7 +128,7 @@ elif 任务 == "复杂推理 / 多步骤 Agent / 长文档分析":
 def route_task(user_input: str) -> str:
     """简单路由：根据关键词和复杂度选择模型"""
     if len(user_input) < 50 and not any(kw in user_input for kw in ["分析", "总结", "推理"]):
-        return "gpt-4o-mini"
+        return "gpt-4.1-mini"
     elif any(kw in user_input for kw in ["代码", "debug", "架构", "设计"]):
         return "claude-opus-5"
     return "claude-sonnet-5"
@@ -142,7 +142,7 @@ def route_task(user_input: str) -> str:
 def smart_route(user_input: str) -> str:
     """用轻量模型做任务分类"""
     response = client.chat.completions.create(
-        model="gpt-4o-mini",  # 用最便宜的模型做分类
+        model="gpt-4.1-mini",  # 用最便宜的模型做分类
         messages=[
             {"role": "system", "content": "判断用户输入的任务复杂度。只输出 simple/standard/complex。"},
             {"role": "user", "content": user_input},
@@ -151,7 +151,7 @@ def smart_route(user_input: str) -> str:
         max_tokens=10,
     )
     level = response.choices[0].message.content.strip()
-    return {"simple": "gpt-4o-mini", "standard": "claude-sonnet-5", "complex": "claude-opus-5"}.get(level, "claude-sonnet-5")
+    return {"simple": "gpt-4.1-mini", "standard": "claude-sonnet-5", "complex": "claude-opus-5"}.get(level, "claude-sonnet-5")
 ```
 
 > **工程权衡**：LLM 路由更准确，但每次请求多一次轻量模型调用（增加延迟和成本）。规则路由零额外成本但不够灵活。建议从规则路由开始，随着场景复杂化再升级为 LLM 路由。
@@ -159,17 +159,17 @@ def smart_route(user_input: str) -> str:
 ### 模型版本管理
 
 模型会持续更新。生产环境需要注意**别名**与**快照 ID**的区别：
-- 别名（如 `claude-sonnet-5`、`gpt-4o`）：始终指向该系列当前默认版本，方便试用，但可能被厂商无声升级
-- 快照 ID（如 `gpt-4o-2024-08-06`、`claude-sonnet-4-20250514`）：钉死具体版本，行为更稳定
+- 别名（如 `claude-sonnet-5`、`gpt-5`）：始终指向该系列当前默认版本，方便试用，但可能被厂商无声升级
+- 快照 ID（如 `gpt-5-2025-08-07`、`claude-sonnet-4-20250514`）：钉死具体版本，行为更稳定
 
 **版本固定**：生产环境建议固定到快照 ID，避免厂商更新模型后行为变化导致线上故障。
 
 ```python
 # 不推荐：使用别名，模型可能在某天被无声升级
-model = "gpt-4o"
+model = "gpt-5"
 
 # 推荐：固定到具体版本（以官方支持的版本号为准）
-model = "gpt-4o-2024-08-06"
+model = "gpt-5-2025-08-07"
 ```
 
 **版本迁移**：当需要升级模型版本时：
@@ -199,7 +199,7 @@ model = "gpt-4o-2024-08-06"
 2. 按本节的档位表，先选档位再选具体型号；写清你为什么不用更高一档、也不用更低一档。
 3. 估算月成本：`日请求量 × (输入 tokens + 输出 tokens × 输出倍率) × 单价 × 30`。
 
-**验收标准**：你的结论里出现的是快照 ID（如 `gpt-4o-2024-11-20`）而不是别名，并且你能说出如果三个月后这个模型下线，你要改哪几个文件。
+**验收标准**：你的结论里出现的是快照 ID（如 `gpt-5-2025-08-07`）而不是别名，并且你能说出如果三个月后这个模型下线，你要改哪几个文件。
 
 ### 要点总结
 

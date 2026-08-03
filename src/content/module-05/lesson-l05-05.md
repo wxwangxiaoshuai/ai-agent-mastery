@@ -32,7 +32,7 @@ def self_refine(task: str, max_iterations: int = 3) -> str:
 
     # Step 1: 生成初始输出
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{"role": "user", "content": task}],
         temperature=0.7,
     )
@@ -42,7 +42,7 @@ def self_refine(task: str, max_iterations: int = 3) -> str:
     for i in range(max_iterations):
         # Step 2: 生成批评
         critique_response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=[
                 {"role": "system", "content": "你是一个严格的评审。审视以下输出，指出具体问题（不准确、不完整、不清晰）。如果没有问题，输出 'LGTM'。"},
                 {"role": "user", "content": f"任务：{task}\n\n输出：\n{current_output}"},
@@ -58,7 +58,7 @@ def self_refine(task: str, max_iterations: int = 3) -> str:
 
         # Step 3: 修订
         refine_response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=[
                 {"role": "system", "content": "根据评审意见修订输出。只输出修订后的内容。"},
                 {"role": "user", "content": f"任务：{task}\n\n当前输出：\n{current_output}\n\n评审意见：\n{critique}"},
@@ -107,7 +107,7 @@ def reflexion_agent(task: str, max_attempts: int = 3) -> str:
 
         # 执行任务（带历史反思）
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=[{
                 "role": "user",
                 "content": f"{task}{reflection_context}",
@@ -119,7 +119,7 @@ def reflexion_agent(task: str, max_attempts: int = 3) -> str:
 
         # 评估结果
         eval_response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=[{
                 "role": "user",
                 "content": f"评估以下输出是否正确完成了任务。输出 PASS 或 FAIL + 原因。\n\n任务：{task}\n\n输出：{output}",
@@ -134,7 +134,7 @@ def reflexion_agent(task: str, max_attempts: int = 3) -> str:
 
         # 反思失败原因
         reflection_response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=[{
                 "role": "user",
                 "content": f"你尝试完成以下任务但失败了。分析失败原因，给出下次应改进的策略（一句话）。\n\n任务：{task}\n\n输出：{output}\n\n评估：{evaluation}\n\n失败分析：",

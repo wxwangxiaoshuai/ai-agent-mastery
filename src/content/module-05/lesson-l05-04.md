@@ -101,7 +101,7 @@ def generate_plan(goal: str, completed: list = None, results: dict = None) -> li
             context += f"- {step}: {results.get(step, '无结果')[:200]}\n"
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{
             "role": "user",
             "content": f"""把以下任务分解为 3-6 个具体步骤。每步一句话。
@@ -127,7 +127,7 @@ def execute_step(step: str, context: dict = None) -> str:
         context_str = "\n已知信息：\n" + "\n".join(f"- {k}: {v[:200]}" for k, v in context.items())
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{
             "role": "user",
             "content": f"执行以下任务步骤，给出简洁结果。{context_str}\n\n步骤：{step}",
@@ -141,7 +141,7 @@ def execute_step(step: str, context: dict = None) -> str:
 def check_completion(goal: str, plan: list, results: dict) -> list:
     """检查是否有未完成的步骤"""
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{
             "role": "user",
             "content": f"""判断以下任务是否已完成。
@@ -167,7 +167,7 @@ def synthesize(goal: str, results: dict) -> str:
     """综合所有结果生成最终答案"""
     summary = "\n\n".join(f"### {step}\n{result}" for step, result in results.items())
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{
             "role": "user",
             "content": f"基于以下信息，回答任务目标。\n\n任务：{goal}\n\n信息：\n{summary}",

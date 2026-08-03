@@ -87,7 +87,7 @@ def vision_base64(image_path: str, question: str) -> str:
     with open(image_path, "rb") as f:
         b64 = base64.b64encode(f.read()).decode()
     resp = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{
             "role": "user",
             "content": [
@@ -107,7 +107,7 @@ def vision_base64(image_path: str, question: str) -> str:
 # URL 方式（图片已在公网）
 def vision_url(image_url: str, question: str) -> str:
     resp = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{
             "role": "user",
             "content": [
@@ -138,7 +138,7 @@ def analyze_multiple(images: list[str], question: str) -> str:
         content.append({"type": "image_url",
                         "image_url": {"url": f"data:image/png;base64,{b64}"}})
     resp = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{"role": "user", "content": content}])
     return resp.choices[0].message.content
 

@@ -49,7 +49,7 @@ class TokenCounter:
     _encoders: dict = {}
 
     @classmethod
-    def count(cls, text: str, model: str = "gpt-4o") -> int:
+    def count(cls, text: str, model: str = "gpt-5") -> int:
         if model not in cls._encoders:
             try:
                 cls._encoders[model] = tiktoken.encoding_for_model(model)
@@ -58,7 +58,7 @@ class TokenCounter:
         return len(cls._encoders[model].encode(text))
 
     @classmethod
-    def count_messages(cls, messages: list, model: str = "gpt-4o") -> int:
+    def count_messages(cls, messages: list, model: str = "gpt-5") -> int:
         """计算 messages 列表的总 token 数（含格式开销）"""
         total = 0
         for msg in messages:
@@ -115,7 +115,7 @@ from typing import Optional
 class ContextAssembler:
     """动态 Context 组装器：静态底座 + 动态注入 + 优先级裁剪"""
 
-    def __init__(self, system_prompt: str, model: str = "gpt-4o",
+    def __init__(self, system_prompt: str, model: str = "gpt-5",
                  context_window: int = 128000, output_reserve: int = 4096):
         self.system_prompt = system_prompt
         self.model = model
@@ -134,17 +134,19 @@ class ContextAssembler:
         alloc = self.budget.allocate(self.system_tokens)
 
         # 1. System Prompt（最高优先级，不裁剪）
-        # enable_cache=True 时生成 Claude 风格的 cache_control（OpenAI 请保持 False）
+        # 注意：Anthropic Claude 的 system 是顶层独立参数，不在 messages 里；
+        # OpenAI 的 system 在 messages[0] 中。cache_control 仅 Claude 支持。
+        # 此处组装为通用格式，调用方需按 provider 适配：
+        #   - OpenAI: messages 直接传入
+        #   - Anthropic: 提取 messages[0]["content"] 作为 system 参数，其余作为 messages
         messages = []
+        system_content = self.system_prompt
         if enable_cache:
-            # 仅 Anthropic Claude 支持；发给 OpenAI 会报参数错误
-            messages.append({
-                "role": "system",
-                "content": [{"type": "text", "text": self.system_prompt,
-                             "cache_control": {"type": "ephemeral"}}],
-            })
-        else:
-            messages.append({"role": "system", "content": self.system_prompt})
+            # Claude 的 cache_control 需要放在 content block 中，并通过顶层 system 参数传入
+            # 此处仅标记；实际调用时需在 Anthropic SDK 的 system 参数中设置
+            system_content = [{"type": "text", "text": self.system_prompt,
+                               "cache_control": {"type": "ephemeral"}}]
+        messages.append({"role": "system", "content": system_content})
 
         # 2. 裁剪对话历史（从最早的开始删除）
         history = self._trim_history(history or [], alloc.history)
@@ -158,9 +160,10 @@ class ContextAssembler:
         # 5. 组装顺序：历史 → 文档 → 工具 → 用户输入
         messages.extend(history)
         if docs_content:
-            messages.append({"role": "system", "content": f"参考资料：\n{docs_content}"})
+            # 检索文档和工具结果用 user role 而非 system，兼容 Anthropic 和 OpenAI 两家
+            messages.append({"role": "user", "content": f"参考资料：\n{docs_content}"})
         if tool_content:
-            messages.append({"role": "system", "content": f"工具返回：\n{tool_content}"})
+            messages.append({"role": "user", "content": f"工具返回：\n{tool_content}"})
         messages.append({"role": "user", "content": user_input})
 
         return messages
@@ -215,7 +218,7 @@ class CompressionPipeline:
         if TokenCounter.count(text) <= target_tokens:
             return text
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=[{"role": "user", "content": (
                 f"将以下内容压缩为不超过 {target_tokens} token 的摘要，"
                 f"保留所有关键事实和数据：\n\n{text}"
@@ -235,7 +238,7 @@ class CompressionPipeline:
         if old:
             old_text = "\n".join(f"[{m['role']}] {m['content']}" for m in old)
             summary = CompressionPipeline.summarize_text(old_text, 500, client)
-            return [{"role": "system", "content": f"[之前对话摘要]\n{summary}"}] + recent
+            return [{"role": "user", "content": f"[之前对话摘要]\n{summary}"}] + recent
         return recent
 ```
 
@@ -246,7 +249,7 @@ class ContextDebugger:
     """Context 可视化调试器"""
 
     @staticmethod
-    def visualize(messages: list, model: str = "gpt-4o") -> str:
+    def visualize(messages: list, model: str = "gpt-5", context_window: int = 128000) -> str:
         total = 0
         lines = ["=" * 60, "CONTEXT VISUALIZATION", "=" * 60]
         for i, msg in enumerate(messages):
@@ -260,12 +263,12 @@ class ContextDebugger:
             lines.append(f"\n[{i}] {role} ({tokens} tokens)")
             lines.append(f"    {preview}")
         lines.append("\n" + "-" * 60)
-        lines.append(f"总 token: {total} | 预算使用率: {total/128000*100:.1f}%")
+        lines.append(f"总 token: {total} | 预算使用率: {total/context_window*100:.1f}%")
         return "\n".join(lines)
 
     @staticmethod
     def cost_report(input_tokens: int, output_tokens: int,
-                    input_price: float = 0.15, output_price: float = 0.60) -> str:
+                    input_price: float, output_price: float) -> str:
         cost = input_tokens / 1e6 * input_price + output_tokens / 1e6 * output_price
         return (f"输入: {input_tokens:,} | 输出: {output_tokens:,} | "
                 f"费用: ${cost:.4f}")
@@ -277,7 +280,7 @@ class ContextDebugger:
 class ContextManager:
     """完整的上下文管理系统：组装 + 预算 + 压缩 + 调试"""
 
-    def __init__(self, system_prompt: str, model: str = "gpt-4o",
+    def __init__(self, system_prompt: str, model: str = "gpt-5",
                  context_window: int = 128000):
         self.assembler = ContextAssembler(system_prompt, model, context_window)
         self.total_input_tokens = 0
@@ -378,7 +381,7 @@ class TestContextAssembler:
 2. **压缩管道升级**：集成 LLMLingua 做 token 级压缩，对比摘要压缩的效果差异（主路径验收不要求）
 3. **实时监控仪表盘**：用 Streamlit/Gradio 做一个 Web 界面，实时显示每次调用的 token 分布
 4. **自动预算调优**：根据历史调用数据自动调整预算分配比例（如历史越长，history 预算占比越大）
-5. **多模型路由**：根据 token 预算自动选择模型（预算紧张用 mini，预算充足用 4o）
+5. **多模型路由**：根据 token 预算自动选择模型（预算紧张用小档模型，预算充足用中档模型）
 
 ### 常见问题
 

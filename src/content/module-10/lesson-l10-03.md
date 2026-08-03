@@ -49,13 +49,14 @@ M5 定义了 Agent 的自主性——"模型决定下一步"。但自主性是�
 LangGraph 提供 `interrupt`——在节点里调用它，图会暂停，state 存进 checkpoint，等外部传入审核结果后续跑：
 
 ```python
-from typing import TypedDict
+from typing import TypedDict, Annotated
 from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import add_messages
 from langgraph.types import interrupt, Command
 from langgraph.checkpoint.memory import InMemorySaver
 
 class State(TypedDict):
-    messages: list
+    messages: Annotated[list, add_messages]
     email_draft: str
     approval: str        # approve / reject / edit
     sent: bool

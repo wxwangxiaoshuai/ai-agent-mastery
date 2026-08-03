@@ -30,7 +30,7 @@ OpenAI 的 Function Calling 原生支持并行——模型可以在一次响应�
 ```python
 # from openai import OpenAI; client = OpenAI()  # 沿用 L06-01
 response = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-5",
     messages=[{"role": "user", "content": "北京和上海现在的天气怎么样？"}],
     tools=[
         {
@@ -105,7 +105,7 @@ def agent_loop_parallel(user_input: str, max_rounds: int = 5) -> str:
 
     for _ in range(max_rounds):
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=messages,
             tools=TOOLS,
             temperature=0,

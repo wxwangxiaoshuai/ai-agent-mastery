@@ -81,7 +81,7 @@ OpenAI 的缓存是**自动的**——不需要显式标记，只要前缀满足
 ```python
 # OpenAI 自动缓存，无需特殊代码
 response = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-5",
     messages=[
         {"role": "system", "content": LONG_SYSTEM_PROMPT},  # 自动缓存
         {"role": "user", "content": "用户问题"},

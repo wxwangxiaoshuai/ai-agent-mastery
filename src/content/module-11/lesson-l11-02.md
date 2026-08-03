@@ -89,6 +89,9 @@ g.add_conditional_edges("supervisor", route,
 g.add_edge("researcher", "supervisor")       # 下属干完回主管
 g.add_edge("coder", "supervisor")
 app = g.compile(checkpointer=InMemorySaver())
+
+# 成环图必须设 recursion_limit 防止无限循环（L10-02/L10-06 已讲）
+# result = app.invoke(initial_state, config={"recursion_limit": 25})
 ```
 
 **看清这张图**：
@@ -116,15 +119,24 @@ def llm_route(messages, options, prompt):
         + "\n选项: " + ", ".join(options)
         + '\n只输出 JSON 对象，格式：{"next":"<选项之一>"}'
     )
+    # 将 LangChain BaseMessage 转为 dict 格式（OpenAI SDK 需要 dict）
+    msg_dicts = []
+    for m in messages:
+        if hasattr(m, 'model_dump'):
+            msg_dicts.append(m.model_dump())
+        elif isinstance(m, dict):
+            msg_dicts.append(m)
+        else:
+            msg_dicts.append({"role": "user", "content": str(m)})
     resp = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "system", "content": system}] + messages,
+        model="gpt-4.1-mini",
+        messages=[{"role": "system", "content": system}] + msg_dicts,
         temperature=0,   # 路由要确定
         response_format={"type": "json_object"},
     )
     nxt = json.loads(resp.choices[0].message.content)["next"]
     if nxt not in options:
-        raise ValueError(f"非法路由: {nxt}")  # 上层 route() 也可兜底回 supervisor
+        return "unknown"  # 非法路由，返回 sentinel 让上层兜底
     return nxt
 ```
 

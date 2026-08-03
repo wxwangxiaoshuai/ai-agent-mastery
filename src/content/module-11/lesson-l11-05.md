@@ -220,8 +220,10 @@ class MultiAgentGuardrails:
         # 限制：轮次上限
         if self.round > self.max_rounds:
             return {"action": "force_end", "reason": "超 max_rounds"}
-        # 监测：内容重复（互相恭维/绕圈）
-        h = hash(str(state["messages"][-1:])[:100])
+        # 监测：内容重复（互相恭维/绕圈）——取最后一条消息的 content 做 hash
+        last_msg = state["messages"][-1]
+        content = getattr(last_msg, 'content', '') if hasattr(last_msg, 'content') else str(last_msg)
+        h = hash(content[:200])
         if h in self.history_hashes[-3:]:
             return {"action": "force_end", "reason": "内容重复疑似循环"}
         self.history_hashes.append(h)

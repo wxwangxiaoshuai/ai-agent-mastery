@@ -109,7 +109,7 @@ client = OpenAI()
 
 def llm_review_code(code: str) -> tuple[bool, str]:
     resp = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{"role": "user", "content": REVIEW_PROMPT.format(code=code)}],
         temperature=0, response_format={"type": "json_object"},
     )

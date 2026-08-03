@@ -110,7 +110,7 @@ from openai import OpenAI
 client = OpenAI()  # 自动读取 OPENAI_API_KEY
 
 response = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-5",
     messages=[
         {"role": "system", "content": "你是一个 AI 技术助手。"},
         {"role": "user", "content": "用一句话介绍什么是 Agent。"},
@@ -126,7 +126,7 @@ print(response.choices[0].message.content)
 
 ```python
 stream = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-5",
     messages=[{"role": "user", "content": "写一首关于 AI 的五言绝句。"}],
     stream=True,
 )
@@ -187,7 +187,7 @@ print()
 
 > **工程建议**：如果你希望代码同时兼容两家 API，可以封装一个统一接口。后续 M5 的 Agent Loop 会用到这个思路。
 >
-> **模型名说明**：本节示例使用别名（如 `gpt-4o`、`claude-sonnet-5`），方便上手。生产环境建议钉死快照 ID（见 L01-04），避免厂商无声升级导致行为变化。
+> **模型名说明**：本节示例使用别名（如 `gpt-5`、`claude-sonnet-5`），方便上手。生产环境建议钉死快照 ID（见 L01-04），避免厂商无声升级导致行为变化。
 
 ---
 
@@ -225,7 +225,7 @@ def chat():
 
         try:
             stream = client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-5",
                 messages=messages,
                 stream=True,
                 timeout=30.0,
@@ -279,7 +279,7 @@ def call_with_retry(messages, max_retries=3, base_delay=1):
     for attempt in range(max_retries):
         try:
             return client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-5",
                 messages=messages,
                 timeout=30.0,
             )

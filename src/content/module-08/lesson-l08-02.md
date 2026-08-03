@@ -18,7 +18,7 @@
   轮次15：累计 35,000 token
 
   模型上下文窗口 128K → 看起来远没满？
-  但实测：超过 ~32K 后，模型对早期内容的遵循度开始下降（Lost in the Middle）
+  但实测：超过约 32K token 后，模型对早期内容的遵循度开始下降（Lost in the Middle 效应，量级参考 Liu et al. 2023；具体阈值因模型而异）
 ```
 
 两个问题叠加：**硬上限**（窗口满了报错或被截断）和**软衰减**（没满但模型"忘了"中间的内容）。窗口管理要同时对付两者。
@@ -86,7 +86,9 @@ class SummarizingWindowMemory:
 
     def add(self, message: dict):
         self.recent.append(message)
-        # 超过窗口，逐条压缩最老消息进摘要（生产可改为成对 pop user/assistant）
+        # 超过窗口，逐条压缩最老消息进摘要
+        # 注意：工具调用场景中，assistant(tool_calls) 和 tool 消息是成对的，
+        # 逐条 pop 可能拆散配对。生产环境应成对处理（pop assistant + tool 一起）
         while len(self.recent) > self.max_recent:
             old = self.recent.pop(0)
             self.summary = self._summarize(self.summary, old)
@@ -102,7 +104,7 @@ class SummarizingWindowMemory:
             "输出更新后的摘要："
         )
         resp = client.chat.completions.create(
-            model="gpt-4o-mini", messages=[{"role": "user", "content": prompt}],
+            model="gpt-4.1-mini", messages=[{"role": "user", "content": prompt}],
             temperature=0, max_tokens=self.max_summary_tokens,
         )
         return resp.choices[0].message.content
@@ -137,10 +139,10 @@ class TokenBudgetMemory:
         self.system = ""
         self.summary = ""
         self.recent = []
-        self.enc = tiktoken.encoding_for_model("gpt-4o")
+        self.enc = tiktoken.encoding_for_model("gpt-5")
 
-    def _count(self, text: str) -> int:
-        return len(self.enc.encode(text))
+    def _count(self, text: str | None) -> int:
+        return len(self.enc.encode(text or ""))
 
     def add(self, message: dict):
         self.recent.append(message)
@@ -161,7 +163,7 @@ class TokenBudgetMemory:
             "请输出更新后的简洁摘要，保留关键事实与偏好。"
         )
         resp = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=[{"role": "user", "content": prompt}],
             temperature=0,
             max_tokens=300,
@@ -169,8 +171,12 @@ class TokenBudgetMemory:
         return resp.choices[0].message.content
 
     def _total_tokens(self) -> int:
+        # 每条消息约 3 token 的格式开销
+        overhead = (3 * len(self.recent)
+                    + (3 if self.system else 0)
+                    + (3 if self.summary else 0))
         return (self._count(self.system) + self._count(self.summary)
-                + sum(self._count(m["content"]) for m in self.recent))
+                + sum(self._count(m.get("content")) for m in self.recent) + overhead)
 ```
 
 **好处**：token 预算可以按模型窗口精确设置（如 GPT-4o-mini 128K → 留 16K 给历史），且**自动触发压缩**——不用猜"几条消息会超"。

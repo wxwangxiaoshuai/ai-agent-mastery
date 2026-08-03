@@ -49,7 +49,7 @@ EXTRACT_PROMPT = """从以下对话中抽取值得长期记住的用户事实/�
 def extract_memories(dialog: str) -> list[dict]:
     """从对话抽取记忆条目"""
     resp = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{"role": "user", "content": EXTRACT_PROMPT.format(dialog=dialog)}],
         temperature=0,
         response_format={"type": "json_object"},
@@ -65,6 +65,7 @@ def extract_memories(dialog: str) -> list[dict]:
 抽取出的记忆条目存进向量库，按用户隔离。语义事实常用向量库做模糊 recall；精确字段（如过敏原）可额外落 KV——与 L08-01 存储选型一致。
 
 ```python
+import hashlib
 import chromadb
 
 class LongTermMemory:
@@ -79,7 +80,7 @@ class LongTermMemory:
         for i, f in enumerate(facts):
             # 存时带 user_id 元数据，检索时按用户隔离
             self.collection.add(
-                ids=[f"{user_id}_{hash(f['fact']) & 0xffff}_{i}"],
+                ids=[f"{user_id}_{hashlib.md5(f['fact'].encode()).hexdigest()[:8]}_{i}"],
                 documents=[f["fact"]],
                 metadatas=[{"user_id": user_id, "type": f.get("type", "fact")}],
             )
@@ -103,7 +104,7 @@ class LongTermMemory:
 
 ### MemGPT 思路：虚拟内存分层
 
-Mem0 是"对话→抽取→存库"。MemGPT 换了个角度——**模拟操作系统的虚拟内存**：LLM 的上下文窗口是"内存"，外部存储是"磁盘"，Agent 自己像 OS 一样在两者间换页。
+MemGPT（现已产品化为 **Letta**，2024 年下半年更名）换了个角度——**模拟操作系统的虚拟内存**：LLM 的上下文窗口是"内存"，外部存储是"磁盘"，Agent 自己像 OS 一样在两者间换页。
 
 ```
 MemGPT 分层：
@@ -184,7 +185,7 @@ class MemoryAugmentedAgent:
 
         # 3. LLM 推理
         resp = client.chat.completions.create(
-            model="gpt-4o-mini", messages=context, temperature=0,
+            model="gpt-4.1-mini", messages=context, temperature=0,
         )
         reply = resp.choices[0].message.content
 

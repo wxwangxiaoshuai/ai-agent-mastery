@@ -22,7 +22,7 @@ def summarize_for_context(text: str, max_tokens: int = 500) -> str:
         return text  # 已经够短，不需要压缩
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",  # 用轻量模型做摘要，省钱
+        model="gpt-4.1-mini",  # 用轻量模型做摘要，省钱
         messages=[{
             "role": "user",
             "content": f"请将以下内容压缩为不超过 {max_tokens} token 的摘要，"
@@ -175,7 +175,7 @@ def compress_history(history: list, max_tokens: int = 2000) -> list:
     if old:
         old_text = "\n".join(f"{m['role']}: {m['content']}" for m in old)
         summary = summarize_for_context(old_text, max_tokens=500)
-        summary_msg = {"role": "system", "content": f"[之前对话摘要]\n{summary}"}
+        summary_msg = {"role": "user", "content": f"[之前对话摘要]\n{summary}"}
         return [summary_msg] + recent
 
     return recent

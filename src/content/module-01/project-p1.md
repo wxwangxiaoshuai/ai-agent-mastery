@@ -42,10 +42,6 @@
 ```bash
 # Python 方案
 pip install openai python-dotenv
-
-# TypeScript 方案
-npm install openai
-npm install -D @types/node dotenv tsx
 ```
 
 创建 `.env` 文件（记得加进 `.gitignore`）：
@@ -74,7 +70,7 @@ while True:
         continue
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{"role": "user", "content": user_input}],
     )
     print(f"AI: {response.choices[0].message.content}")
@@ -86,7 +82,7 @@ while True:
 
 ```python
 stream = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-4.1-mini",
     messages=[{"role": "user", "content": user_input}],
     stream=True,
 )
@@ -112,7 +108,7 @@ while True:
 
     messages.append({"role": "user", "content": user_input})
     stream = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=messages,
         stream=True,
     )
@@ -290,7 +286,7 @@ def chat():
 
         try:
             stream = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-mini",
                 messages=full_messages,
                 stream=True,
             )
@@ -373,7 +369,7 @@ AI: [等待几秒后]
 完成基础功能后，尝试以下扩展：
 
 1. **Token 统计**：每次显示本次输入/输出消耗了多少 token
-2. **多模型切换**：在 `default`/`coder`/`translator` 之外加入 `gpt-4o`、`claude-sonnet-5` 等模型选项
+2. **多模型切换**：在 `default`/`coder`/`translator` 之外加入 `gpt-5`、`claude-sonnet-5` 等模型选项
 3. **对话导出**：输入 `/export` 把当前对话导出为 Markdown 文件
 4. **多会话管理**：支持创建/切换/删除多个独立对话
 5. **成本计算**：根据模型价格计算本次会话累计花费
@@ -381,7 +377,7 @@ AI: [等待几秒后]
 
 ### 常见问题
 
-**Q1: 为什么用 `gpt-4o-mini` 而不是 `gpt-4o`？**
+**Q1: 为什么用 `gpt-4.1-mini` 而不是 `gpt-5`？**
 A: 这个项目的核心是"跑通流程"而不是"追求质量"，用 mini 成本低、速度快、足够支撑调试。完成后再切到主力模型测试效果差异。
 
 **Q2: 历史文件存哪里？什么时候存？**

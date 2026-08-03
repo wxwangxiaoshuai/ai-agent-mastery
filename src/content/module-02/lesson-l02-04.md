@@ -55,7 +55,7 @@ Agent 的"手"要能解析模型的输出。如果模型返回的是自由格式
 **OpenAI JSON Mode**：
 ```python
 response = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-5",
     messages=[{"role": "user", "content": "列出 3 种水果及其颜色"}],
     response_format={"type": "json_object"},
 )
@@ -67,7 +67,7 @@ OpenAI 支持 `json_schema` 类型，不仅保证输出合法 JSON，还保证**
 
 ```python
 response = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-5",
     messages=[{"role": "user", "content": "列出 3 种水果及其颜色"}],
     response_format={
         "type": "json_schema",
@@ -171,7 +171,7 @@ Function Calling 是当前最可靠的结构化输出方式。它利用模型的
 
 ```python
 response = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-5",
     messages=[{"role": "user", "content": "分析这段代码：def fib(n): return n if n<2 else fib(n-1)+fib(n-2)"}],
     tools=[{
         "type": "function",
@@ -245,7 +245,7 @@ class CodeAnalysis(BaseModel):
     suggestions: list[str] = Field(description="改进建议")
 
 analysis = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-5",
     response_model=CodeAnalysis,
     messages=[{"role": "user", "content": "分析这段代码：def fib(n): return n if n<2 else fib(n-1)+fib(n-2)"}],
 )

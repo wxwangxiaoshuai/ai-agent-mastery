@@ -33,21 +33,21 @@ pm = Agent(
     role="产品经理",
     goal="把模糊需求拆解成清晰、可执行的功能点",
     backstory="资深 PM，擅长把用户语言翻译成开发能懂的需求",
-    llm="gpt-4o-mini",
+    llm="gpt-4.1-mini",
     allow_delegation=False,
 )
 architect = Agent(
     role="架构师",
     goal="为功能设计技术方案，选择合适的技术栈",
     backstory="10 年后端经验，擅长做技术选型和架构权衡",
-    llm="gpt-4o-mini",
+    llm="gpt-4.1-mini",
     allow_delegation=False,
 )
 coder = Agent(
     role="程序员",
     goal="按方案实现功能代码",
     backstory="全栈工程师，代码质量高、写得快",
-    llm="gpt-4o-mini",
+    llm="gpt-4.1-mini",
     allow_delegation=True,   # 允许委托（需要时请其他角色帮忙）
 )
 
@@ -118,7 +118,7 @@ crew = Crew(
     agents=[pm, architect, coder],
     tasks=[req_task, design_task, impl_task],
     process=Process.hierarchical,
-    manager_llm="gpt-4o",   # 主管用更强的模型
+    manager_llm="gpt-5",   # 主管用更强的模型
     verbose=True,
 )
 ```
@@ -156,7 +156,7 @@ researcher = Agent(
     goal="用搜索工具调研指定主题",
     backstory="擅长用搜索快速收集资料",
     tools=[web_search],   # 这个角色有搜索能力
-    llm="gpt-4o-mini",
+    llm="gpt-4.1-mini",
 )
 ```
 

@@ -87,7 +87,7 @@ PROMPT_V1 = """分析以下文档，输出 JSON：
 
 def analyze_document_v1(document: str) -> dict:
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{"role": "user", "content": PROMPT_V1.format(document=document)}],
         temperature=0,
     )
@@ -107,7 +107,7 @@ client = instructor.from_openai(OpenAI())
 def analyze_document(document: str) -> DocumentAnalysis:
     """用 Function Calling 做结构化抽取"""
     return client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         response_model=DocumentAnalysis,
         messages=[{
             "role": "user",

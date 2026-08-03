@@ -46,7 +46,7 @@ from langgraph.graph.message import add_messages
 class ResearchState(TypedDict):
     messages: Annotated[list, add_messages]   # 对话历史（add_messages 自动累加）
     query: str                                # 当前检索查询
-    docs: list                                # 检索到的文档
+    docs: Annotated[list, lambda a, b: a + b]  # 检索到的文档（累加合并）
     quality: str                              # 检索质量评估
 
 # 2. 定义节点（每个节点是 普通函数）

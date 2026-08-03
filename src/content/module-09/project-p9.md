@@ -87,13 +87,14 @@ def run_sandboxed(code: str, timeout: int = 10, mem: str = "256m") -> dict:
     peak_mem = 0
     try:
         container.start()
-        # 采样内存峰值（简化：取结束时的 stats）
+        result = container.wait(timeout=timeout)
+        # 采样内存峰值（执行结束后采，cgroup v1 用 max_usage，v2 用 usage）
         try:
             stats = container.stats(stream=False)
-            peak_mem = stats["memory_stats"].get("max_usage", 0) // (1024*1024)
+            mem = stats["memory_stats"]
+            peak_mem = (mem.get("max_usage") or mem.get("usage", 0)) // (1024 * 1024)
         except Exception:
             pass
-        result = container.wait(timeout=timeout)
         return {
             "exit_code": result["StatusCode"],
             "stdout": container.logs(stdout=True, stderr=False).decode(errors="replace"),
@@ -142,7 +143,7 @@ def llm_review(code: str) -> tuple[bool, str]:
               "密钥读取、与任务无关的可疑代码。\n"
               '输出JSON: {"safe":bool,"reason":"...","risk":"low|medium|high"}\n代码:\n' + code)
     r = client.chat.completions.create(
-        model="gpt-4o-mini", messages=[{"role":"user","content":prompt}],
+        model="gpt-4.1-mini", messages=[{"role":"user","content":prompt}],
         temperature=0, response_format={"type":"json_object"})
     d = json.loads(r.choices[0].message.content)
     return (d["risk"] != "high" and d["safe"]), d["reason"]

@@ -29,7 +29,7 @@ def retry_with_backoff(
     max_retries: int = 3,
     base_delay: float = 1.0,
     max_delay: float = 30.0,
-    retryable_exceptions: tuple = (Exception,),
+    retryable_exceptions: tuple = (TimeoutError, ConnectionError, OSError),
 ):
     """指数退避 + 随机抖动的重试装饰器"""
     def decorator(fn):
@@ -56,8 +56,11 @@ def retry_with_backoff(
 
 # 使用
 @retry_with_backoff(max_retries=3, base_delay=1.0)
-def call_llm(messages):
-    return client.chat.completions.create(model="gpt-4o-mini", messages=messages)
+def call_llm(messages, timeout=None):
+    kwargs = {"model": "gpt-4.1-mini", "messages": messages}
+    if timeout is not None:
+        kwargs["timeout"] = timeout
+    return client.chat.completions.create(**kwargs)
 ```
 
 **为什么需要 Jitter？**
@@ -110,7 +113,7 @@ def call_llm_safe(messages):
     """只重试可恢复错误；429/超时/连接错误由 SDK 直接抛出并进入重试"""
     try:
         return client.chat.completions.create(
-            model="gpt-4o-mini", messages=messages, timeout=30.0,
+            model="gpt-4.1-mini", messages=messages, timeout=30.0,
         )
     except APIStatusError as e:
         if e.status_code >= 500:
@@ -134,11 +137,11 @@ def call_llm_safe(messages):
 
 ```python
 # ❌ 没有超时：如果 API 永远不响应，Agent 永远卡住
-response = client.chat.completions.create(model="gpt-4o-mini", messages=messages)
+response = client.chat.completions.create(model="gpt-4.1-mini", messages=messages)
 
 # ✅ 有超时：30 秒不响应就报错，交给重试逻辑处理
 response = client.chat.completions.create(
-    model="gpt-4o-mini",
+    model="gpt-4.1-mini",
     messages=messages,
     timeout=30.0,  # 30 秒超时
 )
@@ -214,7 +217,7 @@ def robust_call(fn, *args, max_retries=3, timeout=30, base_delay=1.0, **kwargs):
 # Agent 中的使用
 response = robust_call(
     client.chat.completions.create,
-    model="gpt-4o-mini",
+    model="gpt-4.1-mini",
     messages=messages,
     max_retries=3,
     timeout=30,

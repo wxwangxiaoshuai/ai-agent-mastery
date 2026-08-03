@@ -111,7 +111,7 @@ class SkillRegistry:
         return skill.tools
 ```
 
-**关键设计决策**：意图匹配用 nano 档模型（gpt-4o-mini / claude-haiku-4-5），不需要大模型。匹配一个 Skill 的 description 是"一句话就能说清"的窄任务，nano 档完全够用，且延迟和成本都极低（L01-04 的模型选型原则在这里落地）。
+**关键设计决策**：意图匹配用 nano 档模型（gpt-4.1-mini / claude-haiku-4-5），不需要大模型。匹配一个 Skill 的 description 是"一句话就能说清"的窄任务，nano 档完全够用，且延迟和成本都极低（L01-04 的模型选型原则在这里落地）。
 
 ### Skills 与 Function Calling 的协作
 
@@ -177,7 +177,7 @@ class SkillAwareAgent:
         # Phase 2: Agent Loop（只暴露当前 Skill 的工具）
         for _ in range(self.max_steps):
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1-mini",
                 messages=messages,
                 tools=[t for t in TOOLS_SCHEMA if t["function"]["name"] in active_tools],
                 temperature=0,

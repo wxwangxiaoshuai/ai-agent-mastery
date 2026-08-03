@@ -60,7 +60,7 @@ Top-k 是最简单粗暴的截断——只保留概率最高的 k 个 token。�
 
 ```python
 response = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-5",
     messages=[{"role": "user", "content": "解释 RAG 的原理"}],
     max_tokens=500,    # 最多生成 500 token
     temperature=0.7,
@@ -76,7 +76,7 @@ response = client.chat.completions.create(
 
 ```python
 response = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-5",
     messages=[{"role": "user", "content": "列出 5 种编程语言的优缺点"}],
     temperature=0.7,
     frequency_penalty=0.5,   # 减少重复用词
@@ -88,7 +88,7 @@ response = client.chat.completions.create(
 
 ```python
 response = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-5",
     messages=[{"role": "user", "content": "生成一个测试用例"}],
     temperature=0.7,
     seed=42,             # 相同 seed + 相同输入 → 可复现输出
@@ -121,7 +121,7 @@ response = client.chat.completions.create(
 
 ```python
 resp = client.chat.completions.create(
-    model="gpt-4o",
+    model="gpt-5",
     messages=[{"role": "user", "content": "写一条 SQL，然后解释它"}],
     stop=["\n\n解释"],    # 只要 SQL，不要后面的解释
     max_tokens=300,
@@ -157,8 +157,8 @@ class GenConfig:
     seed: int | None = None
 
 # 每个用途一份具名配置，改动可被 code review 看见
-EXTRACT = GenConfig(model="gpt-4o", temperature=0.0, max_tokens=800, seed=42)
-CHAT = GenConfig(model="gpt-4o", temperature=0.6, top_p=0.9, max_tokens=1200)
+EXTRACT = GenConfig(model="gpt-5", temperature=0.0, max_tokens=800, seed=42)
+CHAT = GenConfig(model="gpt-5", temperature=0.6, top_p=0.9, max_tokens=1200)
 
 def call(cfg: GenConfig, messages: list[dict]) -> str:
     resp = client.chat.completions.create(messages=messages, **asdict(cfg))

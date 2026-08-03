@@ -2468,21 +2468,6 @@ export const curriculum: Curriculum = {
         },
         {
           id: 'L19-06',
-          title: '长期经营：护城河、倦怠与退出',
-          summary: '独立开发最常见的结局不是失败，是做腻了。这一节谈怎么走得久一点。',
-          duration: 35,
-          type: '复盘',
-          objectives: [
-            '评估一人产品可能的护城河与它的真实厚度',
-            '识别倦怠信号并设计可持续的工作节奏',
-            '理解退出（出售/开源/关停）也是一种成功结局',
-          ],
-          tags: ['长期主义', '护城河', '职业规划'],
-          prerequisites: ['L16-04'],
-          competency: '职业规划',
-        },
-        {
-          id: 'L19-07',
           title: '用 AI Skills 驱动增长运营',
           summary: '把 OpenSpec + Superpowers 工作流用在内容营销、增长实验与用户反馈分析上。',
           duration: 45,
@@ -2495,6 +2480,21 @@ export const curriculum: Curriculum = {
           tags: ['AI 辅助', 'SEO', '增长实验', '反馈分析'],
           prerequisites: ['L17-13', 'L19-02'],
           competency: '增长运营',
+        },
+        {
+          id: 'L19-07',
+          title: '长期经营：护城河、倦怠与退出',
+          summary: '独立开发最常见的结局不是失败，是做腻了。这一节谈怎么走得久一点。',
+          duration: 35,
+          type: '复盘',
+          objectives: [
+            '评估一人产品可能的护城河与它的真实厚度',
+            '识别倦怠信号并设计可持续的工作节奏',
+            '理解退出（出售/开源/关停）也是一种成功结局',
+          ],
+          tags: ['长期主义', '护城河', '职业规划'],
+          prerequisites: ['L16-04'],
+          competency: '职业规划',
         },
       ],
       project: {

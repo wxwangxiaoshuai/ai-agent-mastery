@@ -82,7 +82,7 @@ from openai import OpenAI
 import json
 client = OpenAI()
 
-def call_llm(system, user, json_out=False, model="gpt-4o-mini"):
+def call_llm(system, user, json_out=False, model="gpt-4.1-mini"):
     kwargs = {"model": model, "temperature": 0,
               "messages": [{"role": "system", "content": system},
                             {"role": "user", "content": user}]}
@@ -161,7 +161,7 @@ def debate_architecture(state):
     # 裁判综合（用更强模型，呼应 L11-03）
     verdict = call_llm(JUDGE_PROMPT,
         f"辩题：{question}\n\nArchitect论点：{args['architect']}\n\nReviewer质疑：{args['reviewer']}",
-        model="gpt-4o")
+        model="gpt-5")
     return {"architecture": verdict}
 ```
 
@@ -303,6 +303,7 @@ class TestSoftwareTeam:
         """评审闭环不无限转——靠 MAX_REVISIONS + recursion_limit"""
         r = self.team.invoke({"requirement": "复杂需求", "revisions": 0}, config=self.config)
         assert r.get("test_report")  # 不论是否通过评审，最终到 tester
+        assert r.get("revisions", 0) >= 1  # 评审闭环至少转了一次
 
     def test_debate_produces_verdict(self):
         """debate 产出裁决而非坍缩"""

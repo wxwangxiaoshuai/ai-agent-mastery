@@ -48,7 +48,7 @@ def describe_image(image_path: str, focus: str = None) -> str:
     b64 = base64.b64encode(open(image_path, "rb").read()).decode()
     prompt = focus or "详细描述这张图片的内容，包括主体、场景、细节。"
     resp = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{"role": "user", "content": [
             {"type": "text", "text": prompt},
             {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
@@ -78,7 +78,7 @@ def extract_chart_data(image_path: str) -> dict:
     """从图表提取结构化数据"""
     b64 = base64.b64encode(open(image_path, "rb").read()).decode()
     resp = client.chat.completions.create(
-        model="gpt-4o",   # 数据提取用更强模型
+        model="gpt-5",   # 数据提取用更强模型
         messages=[{"role": "user", "content": [
             {"type": "text", "text":
                 "分析这张图表。输出 JSON："
@@ -127,7 +127,7 @@ def ocr_understand(image_path: str, schema: dict) -> dict:
     """OCR 并按 schema 提取字段"""
     b64 = base64.b64encode(open(image_path, "rb").read()).decode()
     resp = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{"role": "user", "content": [
             {"type": "text", "text":
                 f"识别图中的文字，按以下 JSON schema 提取：{json.dumps(schema)}。"
@@ -192,7 +192,7 @@ def understand_document(pdf_path: str, schema: dict) -> dict:
                         "image_url": {"url": f"data:image/png;base64,{b64}"}})
 
     resp = client.chat.completions.create(
-        model="gpt-4o", messages=[{"role": "user", "content": content}],
+        model="gpt-5", messages=[{"role": "user", "content": content}],
         temperature=0, response_format={"type": "json_object"})
     return json.loads(resp.choices[0].message.content)
 ```

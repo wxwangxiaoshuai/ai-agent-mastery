@@ -125,7 +125,7 @@ def understand_video(frames: list, interval_sec: float, question: str) -> str:
                         "image_url": {"url": f"data:image/jpeg;base64,{b64}"}})
 
     resp = client.chat.completions.create(
-        model="gpt-4o", messages=[{"role": "user", "content": content}],
+        model="gpt-5", messages=[{"role": "user", "content": content}],
         temperature=0)
     return resp.choices[0].message.content
 ```
@@ -174,7 +174,7 @@ def locate_event(video_path: str, event_desc: str, segment_sec: float = 3.0) -> 
     for start, end, frame in segments:
         b64 = frame_to_b64(frame)
         resp = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4.1-mini",
             messages=[{"role":"user","content":[
                 {"type":"text","text":f"这帧画面是否包含：{event_desc}？只回是/否。"},
                 {"type":"image_url","image_url":{"url":f"data:image/jpeg;base64,{b64}"}}]}],

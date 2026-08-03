@@ -19,6 +19,8 @@
 朴素的程序记忆就是存"步骤 1→2→3"，但那只是个脚本。真正的程序记忆要能**被复用、被适配、被评估**，结构得更完整：
 
 ```python
+from dataclasses import dataclass, field
+
 @dataclass
 class Skill:
     """一条程序记忆/技能"""
@@ -26,10 +28,10 @@ class Skill:
     name: str                    # 技能名（如 "tech_research"）
     description: str             # 何时该用（供检索匹配）
     steps: list[dict]            # 步骤序列
-    preconditions: list[str]     # 前置条件（什么场景才适用）
-    tools: list[str]             # 依赖的工具
-    success_criteria: str        # 怎么算成功（供评估）
-    example_input: str           # 典型输入示例
+    preconditions: list[str] = field(default_factory=list)  # 前置条件
+    tools: list[str] = field(default_factory=list)          # 依赖的工具
+    success_criteria: str = ""   # 怎么算成功（供评估）
+    example_input: str = ""      # 典型输入示例
     usage_count: int = 0         # 被复用次数
     success_rate: float = 1.0    # 历史成功率
     created_at: str = ""
@@ -84,7 +86,7 @@ client = OpenAI()
 def maybe_learn_skill(task: str, trace: list, result: str) -> Skill | None:
     """任务完成后，尝试沉淀技能"""
     resp = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[{"role": "user", "content": REFLECT_PROMPT.format(
             task=task, trace=trace, result=result)}],
         temperature=0,
@@ -118,29 +120,33 @@ class SkillLibrary:
 
     def retrieve(self, task: str, top_k: int = 3) -> list[Skill]:
         """按任务意图匹配技能"""
+        import numpy as np
+        # 任务只编码一次（避免每条技能各发一次 embedding 请求）
+        task_emb = np.array(self._embed(task))
         scored = []
         for skill in self.skills:
-            # 1. 检查前置条件（硬过滤）
             if not self._check_preconditions(task, skill):
                 continue
-            # 2. 计算意图相似度（description + example_input 与任务匹配）
-            score = self._intent_similarity(task, skill)
-            # 3. 加权历史成功率（好技能优先复用）
+            score = self._intent_similarity(task_emb, skill)
             score *= (0.7 + 0.3 * skill.success_rate)
             scored.append((score, skill))
         scored.sort(reverse=True, key=lambda x: x[0])
         return [s for _, s in scored[:top_k]]
 
+    def _embed(self, text: str) -> list[float]:
+        """计算文本的 embedding"""
+        return client.embeddings.create(
+            model="text-embedding-3-small", input=text).data[0].embedding
+
     def _check_preconditions(self, task: str, skill: Skill) -> bool:
         """示意：生产可用关键词规则或小模型硬过滤；此处恒 True 仅演示流程"""
         return True
 
-    def _intent_similarity(self, task: str, skill: Skill) -> float:
-        """用 embedding 算任务与技能描述的意图相似度"""
+    def _intent_similarity(self, task_emb, skill: Skill) -> float:
+        """用预计算的 task embedding 与技能描述做余弦相似度"""
         import numpy as np
-        def emb(text): return client.embeddings.create(
-            model="text-embedding-3-small", input=text).data[0].embedding
-        v1, v2 = np.array(emb(task)), np.array(emb(skill.description))
+        v1 = task_emb
+        v2 = np.array(self._embed(skill.description))
         return float(v1 @ v2 / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 ```
 
