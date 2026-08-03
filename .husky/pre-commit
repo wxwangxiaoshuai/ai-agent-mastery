@@ -1,0 +1,15 @@
+#!/bin/sh
+# Pre-commit: run curriculum checks before every commit.
+# Fails fast on errors (non-zero exit), warns on warnings pass through.
+
+echo "→ Running pnpm check..."
+pnpm check
+
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ 课程检查未通过。请修复错误后再提交。"
+  echo "   运行 pnpm check 查看详情。"
+  exit 1
+fi
+
+echo "✓ 课程检查通过"
