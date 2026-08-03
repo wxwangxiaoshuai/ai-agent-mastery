@@ -113,7 +113,12 @@ class BudgetManager:
 from typing import Optional
 
 class ContextAssembler:
-    """动态 Context 组装器：静态底座 + 动态注入 + 优先级裁剪"""
+    """动态 Context 组装器：静态底座 + 动态注入 + 优先级裁剪。
+
+    相比 L03-02 的版本，此处升级了两点：
+    1. 参数从 max_tokens= 升级为 context_window= + output_reserve=（更精确地建模窗口与输出）
+    2. 引入 BudgetManager 做按比例动态分配（替换手动 if/else 裁剪）
+    """
 
     def __init__(self, system_prompt: str, model: str = "gpt-5",
                  context_window: int = 128000, output_reserve: int = 4096):

@@ -72,12 +72,12 @@ import tiktoken
 enc = tiktoken.encoding_for_model("gpt-5")
 
 def count_tokens(text: str, model: str = "gpt-5") -> int:
-    """精确计算文本的 token 数"""
+    """精确计算文本的 token 数。P3 项目中升级为 TokenCounter.count()，签名一致。"""
     enc = tiktoken.encoding_for_model(model)
     return len(enc.encode(text))
 
 def count_messages_tokens(messages: list, model: str = "gpt-5") -> int:
-    """计算完整 messages 列表的 token 数（含格式开销）"""
+    """计算完整 messages 列表的 token 数（含格式开销）。P3 中对应 TokenCounter.count_messages()。"""
     enc = tiktoken.encoding_for_model(model)
     tokens_per_message = 3  # 每条 message 的格式开销
     tokens_per_name = 1     # role 字段的额外开销

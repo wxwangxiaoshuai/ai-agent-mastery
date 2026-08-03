@@ -327,7 +327,7 @@ def inject_llm_failure():
     set_llm_mock(return_429=True)
     time.sleep(60)  # 观察
     # 验证：模型降级链触发、用户收到降级回复、告警触发
-    assert fallback_model_triggered
+    assert fallback_model_triggered()  # 调用函数检查降级是否触发
     assert alert_fired("LLMDown")
     reset_llm_mock()
 
@@ -336,8 +336,8 @@ def inject_tool_failure():
     subprocess.run(["docker", "stop", "search_service"])
     time.sleep(60)
     # 验证：工具熔断触发、Agent 降级为无该工具模式
-    assert circuit_breaker_open("search")
-    assert agent_runs_without_search()
+    assert circuit_breaker_open("search")  # 调用函数检查熔断状态
+    assert agent_runs_without_search()    # 调用函数检查降级运行
     subprocess.run(["docker", "start", "search_service"])
 
 def inject_instance_kill():

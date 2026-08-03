@@ -349,16 +349,16 @@ class TestProcessors:
         r = analyze("test_data/chart.png")
         assert r["modality"] == "image"
         assert "summary" in r and "confidence" in r
-        assert "description" in r["content"]
+        assert r["content"].get("description")  # 描述内容非空
     def test_audio_report_schema(self):
         r = analyze("test_data/voice.mp3")
         assert r["modality"] == "audio"
-        assert "transcript" in r["content"]
-        assert "sentiment" in r["content"]
+        assert r["content"].get("transcript")  # 转录内容非空
+        assert r["content"].get("sentiment")   # 情感标签非空
     def test_video_report_schema(self):
         r = analyze("test_data/clip.mp4")
         assert r["modality"] == "video"
-        assert "events" in r["content"]
+        assert len(r["content"].get("events", [])) > 0  # 至少有一个事件
 ```
 
 ### 进阶挑战

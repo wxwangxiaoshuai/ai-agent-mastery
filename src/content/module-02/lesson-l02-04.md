@@ -231,9 +231,13 @@ Function Calling 的优势：
 
 Google Gemini 也支持通过 `response_schema` 参数约束输出结构：
 
+> **注意**：Google 已于 2025 年将 SDK 从 `google-generativeai`（`import google.generativeai`）迁移到 `google-genai`（`from google import genai`）。以下为新 SDK 写法，旧版需安装 `google-generativeai`。
+
 ```python
-import google.generativeai as genai
+from google import genai
 from pydantic import BaseModel
+
+client = genai.Client()
 
 # 定义 Schema（Pydantic 模型）
 class Fruit(BaseModel):
@@ -244,10 +248,10 @@ class FruitList(BaseModel):
     fruits: list[Fruit]
 
 # 使用 response_schema 约束输出
-model = genai.GenerativeModel("gemini-2.0-flash")
-response = model.generate_content(
-    "列出 3 种水果及其颜色",
-    generation_config={
+response = client.models.generate_content(
+    model="gemini-2.0-flash",
+    contents="列出 3 种水果及其颜色",
+    config={
         "response_mime_type": "application/json",
         "response_schema": FruitList,
     },
@@ -268,8 +272,11 @@ from openai import OpenAI
 
 client = instructor.from_openai(OpenAI())
 
+from typing import Literal
+from pydantic import BaseModel, Field
+
 class CodeAnalysis(BaseModel):
-    complexity: str = Field(description="时间复杂度", enum=["O(1)", "O(n)", "O(n²)", "O(2ⁿ)"])
+    complexity: Literal["O(1)", "O(n)", "O(n²)", "O(2ⁿ)"] = Field(description="时间复杂度")
     issues: list[str] = Field(description="发现的问题")
     suggestions: list[str] = Field(description="改进建议")
 

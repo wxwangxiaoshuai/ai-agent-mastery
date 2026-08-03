@@ -468,6 +468,8 @@ class SkillAwareAgent:
 
 **Step 6：Function Calling vs Skills 对比实验**
 
+> **方法论提醒**：本对比实验中，ToolboxAgent 使用并行工具执行，SkillAwareAgent 使用串行执行——耗时差异受"并行 vs 串行"这个混杂变量影响，不能简单归因于 Skills 系统本身。更严格的对比实验应控制执行模式一致（都并行或都串行），只改变是否启用 Skills。
+
 这是 P6 最有价值的产出——用数据说话，对比两种方式：
 
 ```python

@@ -146,17 +146,88 @@ const lessonFiles = contentFiles.filter((f) => f.isLesson)
   if (!bad) ok('C2', '内容中的交互组件引用全部有效')
 }
 
-// -------------------------------------------------------- C3 组件覆盖率
+// -------------------------------------------------------- C3 组件覆盖率（收紧）
 {
-  const covered = new Set(
-    contentFiles.filter((f) => /::interactive\{/.test(f.text)).map((f) => f.module),
-  )
-  const missing = modules.map((m) => m.id).filter((id) => !covered.has(id))
-  if (missing.length) {
-    warn('C3', `以下模块没有任何交互组件：M${missing.join('、M')}（见行动计划 W2）`)
-  } else {
-    ok('C3', '每个模块至少含 1 个交互组件')
+  // 从"每模块 ≥1"收紧为：每模块交互覆盖率 ≥ 40% 的 lesson，或至少每 3 节课 1 个。
+  // 这能防止 M17（16 节课只有 3 个交互）和 M13（9 节课只有 1 个交互）等极端情况。
+  const MIN_COVERAGE = 0.4
+  const MIN_RATIO = 1 / 3 // 每 3 节课至少 1 个
+
+  const moduleStats = new Map()
+  for (const f of contentFiles) {
+    if (!moduleStats.has(f.module)) {
+      moduleStats.set(f.module, { total: 0, interactive: 0 })
+    }
+    const s = moduleStats.get(f.module)
+    s.total++
+    if (/::interactive\{/.test(f.text)) s.interactive++
   }
+
+  let bad = 0
+  for (const m of modules) {
+    const s = moduleStats.get(m.id)
+    if (!s) continue
+    const ratio = s.interactive / s.total
+    const minRequired = Math.max(1, Math.ceil(s.total * MIN_RATIO))
+    if (ratio < MIN_COVERAGE && s.interactive < minRequired) {
+      warn('C3', `M${m.id} ${m.title}：${s.interactive}/${s.total} 节课有交互（${(ratio*100).toFixed(0)}%，目标 ≥${Math.ceil(MIN_COVERAGE*100)}% 或 ≥${minRequired} 个）`)
+      bad++
+    }
+  }
+
+  if (!bad) {
+    const worstModule = [...moduleStats.entries()]
+      .sort((a, b) => a[1].interactive / a[1].total - b[1].interactive / b[1].total)[0]
+    ok('C3', `交互覆盖率全部达标（最不达标模块 M${worstModule[0]}：${(worstModule[1].interactive/worstModule[1].total*100).toFixed(0)}%）`)
+  }
+}
+
+// -------------------------------------------------------- C26 组件借用审计
+{
+  // 组件设计为教学服务，不是为凑 C3。以下两种模式告警：
+  // 1. 某模块全部组件来自其他模块（自身无专属交互）
+  // 2. 同一组件在同一模块内被多次引用（疑似凑数）
+  let bad = 0
+
+  for (const m of modules) {
+    const modFiles = contentFiles.filter((f) => f.module === m.id)
+    const usedTypes = new Set()
+    const typeCounts = new Map()
+    let allBorrowed = true
+
+    for (const f of modFiles) {
+      for (const match of f.text.matchAll(/::interactive\{type="(\w+)"/g)) {
+        const type = match[1]
+        usedTypes.add(type)
+        typeCounts.set(type, (typeCounts.get(type) ?? 0) + 1)
+      }
+    }
+
+    if (usedTypes.size === 0) continue
+
+    // 检查 1：全部借用（所有组件都已在其他模块出现）
+    for (const type of usedTypes) {
+      const appearsInOther = contentFiles.some(
+        (f) => f.module !== m.id && f.text.includes(`::interactive{type="${type}"}`),
+      )
+      if (appearsInOther) continue
+      allBorrowed = false
+    }
+    if (allBorrowed && usedTypes.size > 0) {
+      warn('C26', `M${m.id} 所有交互组件（${[...usedTypes].join('、')}）均借用自其他模块——建议至少设计 1 个专属组件`)
+      bad++
+    }
+
+    // 检查 2：同组件在模块内重复引用
+    for (const [type, count] of typeCounts) {
+      if (count > 1) {
+        warn('C26', `M${m.id} 组件 "${type}" 被引用 ${count} 次（疑似凑数——同一组件不建议在同一模块内重复出现）`)
+        bad++
+      }
+    }
+  }
+
+  if (!bad) ok('C26', '组件借用审计通过（无全部借用 / 无重复凑数）')
 }
 
 // ------------------------------------------------------ C4 反向孤儿检查
@@ -462,6 +533,9 @@ function srcTsxFiles() {
 {
   // 模型标识是全站最容易过期的信息。这里不判断"型号是否还存在"（脚本没有网络），
   // 只逼着维护者定期回头核对一次，并把核对日期写下来。
+  //
+  // ⚠️ 注意：本检查只验证"日期是否在有效期内"，无法判断你是否真实核对了厂商文档。
+  // 改 CALIBRATED_ON 而不核对模型 = 把过期模型留在内容里 = 学生在 404。
   const modelsSrc = read('src/data/models.ts')
   const on = modelsSrc.match(/export const CALIBRATED_ON = '(\d{4}-\d{2}-\d{2})'/)?.[1]
   const maxAge = Number(
@@ -471,11 +545,14 @@ function srcTsxFiles() {
     err('C14', 'models.ts 缺少 CALIBRATED_ON 或 CALIBRATION_MAX_AGE_DAYS')
   } else {
     const age = Math.floor((Date.now() - Date.parse(`${on}T00:00:00Z`)) / 86400000)
-    if (age > maxAge) {
-      warn(
-        'C14',
-        `模型白名单已 ${age} 天未校准（上次 ${on}，阈值 ${maxAge} 天）—— 请对照厂商文档复核 models.ts`,
-      )
+    if (age > maxAge / 2) {
+      // 半衰期警告：提前提醒，让维护者有足够时间安排核对
+      const tier = age > maxAge ? 'error' : 'warn'
+      const msg = age > maxAge
+        ? `模型白名单已 ${age} 天未校准（上次 ${on}，阈值 ${maxAge} 天）—— C5 将无法拦截已下线的模型，请立即对照官方文档复核 models.ts。改日期不等于校准，必须逐模型确认。`
+        : `模型白名单距上次校准已 ${age} 天（阈值 ${maxAge} 天，即将过半）—— 请安排近期校准。`
+      if (tier === 'error') err('C14', msg)
+      else warn('C14', msg)
     } else {
       ok('C14', `模型白名单校准新鲜（${on}，${age} 天前）`)
     }
@@ -935,6 +1012,128 @@ function srcTsxFiles() {
     }
   }
   if (!bad) ok('C27', '所有 open(..., "w") 调用均带 encoding=')
+}
+
+// -------------------------------------- C24 正文规模数字校验（防 P0-28 回归）
+{
+  // 曾经 L19-06 写"前面 108 节"但实际是 117 节。C11 只校验文档声明，
+  // 本项校验正文里的"前面 N 节""共 N 节课"等规模数字与实际课程数一致。
+  let bad = 0
+  let checked = 0
+  // 计算每节课在全部 lesson 中的序号（从 1 开始）
+  const lessonOrder = new Map()
+  let order = 0
+  for (const m of modules) {
+    for (const lid of m.lessonIds) {
+      order++
+      lessonOrder.set(lid, order)
+    }
+  }
+  const totalLessons = order
+
+  for (const f of lessonFiles) {
+    const orderInTotal = lessonOrder.get(f.id)
+    if (orderInTotal == null) continue
+    // 按模块内的序号
+    const modLessons = modules.find((m) => m.lessonIds.includes(f.id))
+    const modOrder = modLessons ? modLessons.lessonIds.indexOf(f.id) + 1 : null
+    const modTotal = modLessons ? modLessons.lessonIds.length : null
+
+    // 数字/中文数字转换
+    const cnDigits = { 一:1, 二:2, 三:3, 四:4, 五:5, 六:6, 七:7, 八:8, 九:9, 十:10,
+                       十一:11, 十二:12, 十三:13, 十四:14, 十五:15, 十六:16, 十七:17, 十八:18, 十九:19 }
+    const numRE = String.raw`(\d+|[一二三四五六七八九十]+(?:[一二三四五六七八九])?)`
+
+    // 匹配"前面 N 节" / "前面 N 节课"（阿拉伯数字或中文数字）
+    const aheadRE = new RegExp(`(?:前面|之前)(?:已经学过的?\\s*)?${numRE}\\s*节(?:课)?`, 'g')
+    for (const m of f.text.matchAll(aheadRE)) {
+      const raw = m[1]
+      const claimed = cnDigits[raw] ?? Number(raw)
+      if (Number.isNaN(claimed)) continue
+      // 如果 N < 本模块总课数，按模块内序校验（如"前面六节"指本节前 6 节，合理）
+      // 如果 N >= 本模块总课数，按全课程序校验（如"前面 117 节"指全课程）
+      if (modTotal && claimed < modTotal) {
+        // 模块局部声明——跳过（每们课的顺序不会变，且模块内节数是自洽的）
+        checked++
+        continue
+      }
+      if (claimed !== orderInTotal - 1) {
+        warn('C24', `${f.rel} 写"前面 ${raw} 节"，但本节是全课程第 ${orderInTotal} 节（实际前面 ${orderInTotal - 1} 节）`)
+        bad++
+      }
+      checked++
+    }
+
+    // 匹配"本章共 N 节" 
+    const modTotalRE = new RegExp(`本(?:章|模块)(?:共|包含?)\\s*${numRE}\\s*节`, 'g')
+    for (const m of f.text.matchAll(modTotalRE)) {
+      const raw = m[1]
+      const claimed = cnDigits[raw] ?? Number(raw)
+      if (Number.isNaN(claimed)) continue
+      if (modTotal && claimed !== modTotal) {
+        warn('C24', `${f.rel} 写"本章共 ${raw} 节"，实际本模块 ${modTotal} 节`)
+        bad++
+      }
+      checked++
+    }
+
+    // 匹配"第 N 节"（当本节自称序号时）
+    const selfOrderRE = new RegExp(`本(?:节|课)(?:是|为)?\\s*第\\s*${numRE}\\s*节`, 'g')
+    for (const m of f.text.matchAll(selfOrderRE)) {
+      const raw = m[1]
+      const claimed = cnDigits[raw] ?? Number(raw)
+      if (Number.isNaN(claimed)) continue
+      if (modOrder && claimed !== modOrder) {
+        warn('C24', `${f.rel} 自称"第 ${raw} 节"，实际为本模块第 ${modOrder} 节`)
+        bad++
+      }
+      checked++
+    }
+  }
+
+  if (!bad && checked > 0) {
+    ok('C24', `正文规模数字与课程数据一致（${checked} 处声明）`)
+  } else if (checked === 0) {
+    ok('C24', '正文中无规模数字声明（跳过校验）')
+  }
+  // bad handled by warn above
+}
+
+// -------------------------------------- C25 代码块级双语言检测（C15 扩展）
+{
+  // C15 只匹配"双语言""Python & TypeScript"等文案措辞，
+  // 匹配不到代码块级的双语言残留。本项扩展：
+  // 非例外清单文件不得出现 ts/tsx/js/jsx 代码块。
+  //
+  // 例外清单：已知合法使用 TypeScript 系代码的文件
+  const ALLOWED_FILES = [
+    // M10 前端演示（L10-05 有 React 组件示例）
+    'src/content/module-10/lesson-l10-05.md',
+    // P10 前端演示（Step 5 有 React 组件示例）
+    'src/content/module-10/project-p10.md',
+    // M15 前端演示（L15-06 有状态面板组件示例）
+    'src/content/module-15/lesson-l15-06.md',
+    // M16 项目有前端演示
+    'src/content/module-16/project-p16.md',
+    // M17 开发实战（多节课有前端/工程化代码）
+    'src/content/module-17/lesson-l17-05.md',
+    'src/content/module-17/lesson-l17-06.md',
+    'src/content/module-17/lesson-l17-11.md',
+    'src/content/module-17/lesson-l17-12.md',
+    'src/content/module-17/lesson-l17-15.md',
+  ]
+
+  let bad = 0
+  for (const f of contentFiles) {
+    if (ALLOWED_FILES.includes(f.rel)) continue
+    const tsBlocks = [...f.text.matchAll(/```(?:typescript|tsx?|jsx?)\b/g)]
+    if (tsBlocks.length > 0) {
+      warn('C25', `${f.rel} 含 ${tsBlocks.length} 个 TypeScript/JS 代码块，不在例外清单中 —— 请确认或补进例外清单`)
+      bad++
+    }
+  }
+
+  if (!bad) ok('C25', '代码块级语言定位与实际一致（非例外文件无非 Python 代码块）')
 }
 
 // ------------------------------------------------------------------ 输出

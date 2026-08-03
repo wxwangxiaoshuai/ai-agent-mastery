@@ -1,6 +1,6 @@
 ## A2A 协议与 Agent 互联
 
-M6 讲了 MCP——连接"一个 Agent"与"工具/数据"。这一节讲另一个层面的互联：**Agent 和 Agent 之间怎么通信**。当 Agent 不只是你自己的，而是不同组织、不同平台各自开发的——它们怎么协作？Google 的 A2A（Agent-to-Agent）协议就是为这个设计的。这是 Agent 生态从"单体"走向"互联"的关键。
+M6 讲了 MCP——连接"一个 Agent"与"工具/数据"。这一节讲另一个层面的互联：**Agent 和 Agent 之间怎么通信**。当 Agent 不只是你自己的，而是不同组织、不同平台各自开发的——它们怎么协作？A2A（Agent-to-Agent）协议（由 Google 发起，现由 Linux Foundation 托管）就是为这个设计的。这是 Agent 生态从"单体"走向"互联"的关键。
 
 ### 为什么需要 A2A
 

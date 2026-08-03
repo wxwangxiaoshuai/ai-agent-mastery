@@ -138,7 +138,7 @@ MASKERS = [
     (r"\d{17}[\dXx]", "[ID]"),          # 身份证
     (r"1[3-9]\d{9}", "[PHONE]"),         # 手机
     (r"\d{16,19}", "[CARD]"),            # 银行卡
-    (r"sk-[a-zA-Z0-9]{48}", "[KEY]"),    # API密钥
+    (r"sk-[a-zA-Z0-9_-]{20,}", "[KEY]"),    # API密钥（匹配 sk-proj-... / sk-svcacct-... 等）
 ]
 
 def mask_pii(text: str) -> tuple[str, int]:

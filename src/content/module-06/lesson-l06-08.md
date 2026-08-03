@@ -301,9 +301,9 @@ agent = SkillAwareAgent(
 )
 ```
 
-**重构的核心收益**：
-- 从 10 个平铺工具变成 3 个 Skill，Agent 做选择时噪音降了 70%
-- 每个 Skill 只能看到 3-4 个工具，权限范围清晰
+**重构的核心收益**（量级示意，实际效果因工具数量和 Skill 设计而异）：
+- 从 10 个平铺工具变成 3 个 Skill，Agent 做选择时工具候选范围从 10 个降到 3-4 个（缩小约 60-70%），选择噪音显著下降
+- 每个 Skill ��能看到 3-4 个工具，权限范围清晰
 - 新增功能只需新增 Skill，不影响已有 Skill
 - 每个 Skill 有独立的 System Prompt，Agent 在不同任务中切换角色
 
@@ -322,5 +322,5 @@ agent = SkillAwareAgent(
 - **意图匹配用 Function Calling 而非字符串匹配**——让 LLM 自己判断"这个意图最匹配哪个 Skill 的 description"，这是 nano 档模型就能做好的窄任务。
 - **上下文隔离是 Skills 的工程价值所在**：每个 Skill 激活时注入独立的 System Prompt + 工具集，Agent 权限最小化、注意力聚焦、组合安全。
 - **Skill 可以组合**：一个用户请求可能触发多个 Skill 的协作。Agent 依次激活、执行、卸载，每个 Skill 在独立的上下文中运行。
-- **P6 重构的核心收益**：10 个平铺工具 → 3 个 Skill，选择噪音降 70%，权限范围清晰，新增功能只需新增 Skill。
+- **P6 重构的核心收益**：10 个平铺工具 → 3 个 Skill，工具候选范围从 10 个降到 3-4 个，选择噪音显著下降，权限范围清晰，新增功能只需新增 Skill。
 - **Function Calling vs Skills 的架构差异**：Function Calling 是"Agent 在工具箱里挑工具"，Skills 是"Agent 先选技能包，再在技能包里挑工具"。后者在工具数量增长时复杂度可控。

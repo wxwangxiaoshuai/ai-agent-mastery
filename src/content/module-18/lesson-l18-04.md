@@ -41,7 +41,7 @@ class SubStatus(str, Enum):
 TRANSITIONS = {
     SubStatus.NONE:     {SubStatus.PENDING},
     SubStatus.PENDING:  {SubStatus.ACTIVE, SubStatus.NONE},
-    SubStatus.ACTIVE:   {SubStatus.PAST_DUE, SubStatus.CANCELED, SubStatus.REFUNDED},
+    SubStatus.ACTIVE:   {SubStatus.PAST_DUE, SubStatus.CANCELED, SubStatus.REFUNDED, SubStatus.EXPIRED},  # EXPIRED: 固定期限到期
     SubStatus.PAST_DUE: {SubStatus.ACTIVE, SubStatus.EXPIRED},
     SubStatus.CANCELED: {SubStatus.ACTIVE, SubStatus.EXPIRED},
     SubStatus.EXPIRED:  {SubStatus.PENDING},

@@ -150,8 +150,8 @@ def llm_review(code: str) -> tuple[bool, str]:
 
 SENSITIVE = [
     (r"AKIA[0-9A-Z]{16}", "AWS密钥"),
-    (r"sk-[a-zA-Z0-9]{48}", "OpenAI密钥"),
-    (r"ghp_[a-zA-Z0-9]{36}", "GitHub Token"),
+    (r"sk-[a-zA-Z0-9_-]{20,}", "OpenAI密钥"),  # 匹配 sk-proj-... / sk-svcacct-... 等格式
+    (r"ghp_[a-zA-Z0-9]{36}", "GitHub Token"),  # 经典格式；新版 fine-grained token 为 ghp_... 按相同正则匹配
     (r"(?:\d{1,3}\.){3}\d{1,3}", "IP地址"),
 ]
 def review_output(stdout: str, stderr: str) -> tuple[str, str, list]:

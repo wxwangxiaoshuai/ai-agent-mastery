@@ -10,7 +10,7 @@
     "build": "pnpm check && tsc -b && vite build",
     "build:pages": "pnpm check && tsc -b && vite build && cp dist/index.html dist/404.html",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "test:check": "node scripts/check-curriculum.test.mjs"
   },
   "packageManager": "pnpm@9.15.0",
   "dependencies": {

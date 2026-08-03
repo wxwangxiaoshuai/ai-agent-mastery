@@ -256,8 +256,11 @@ def generate_report(agent) -> dict:
             "failures": len(red_team["failures"]),
         },
         "tool_safety": {
-            "sandbox": True, "least_privilege": True,
-            "audit_log": True, "approval_for_dangerous": True,
+            # 以下字段应从 Agent 的实际配置读取，非硬编码常量
+            "sandbox": agent_sandbox_enabled(agent),
+            "least_privilege": agent_uses_least_privilege(agent),
+            "audit_log": agent_audit_enabled(agent),
+            "approval_for_dangerous": agent_approval_required(agent),
         },
         "mock_regression": {"passed": run_mock_suite(), "duration_sec": 3},
     }
