@@ -80,19 +80,47 @@ debate 有成本（多个 Agent 多轮交互），不是所有任务都该用：
 
 ```python
 DEBATE_ROUNDS = 3
+# 每轮递进的 prompt：亮观点→反驳→修正
+ROUND_PROMPTS = {
+    1: "请亮出你的核心观点和论据。立场要鲜明，给出具体理由。",
+    2: "针对其他方的观点找出漏洞并反驳。必须指出对方论证中最薄弱的一点。",
+    3: "综合各方的反驳，修正你的立场（如果有道理就承认），给出最终结论。",
+}
+
+def agent_debate(position, transcript, round_idx):
+    """单方辩论发言——每轮 prompt 不同，防止说车轱辘话"""
+    round_prompt = ROUND_PROMPTS.get(round_idx + 1, ROUND_PROMPTS[3])
+    # 强制对立：明确要求与别人不同
+    system = (f"你是{position}的辩手。{round_prompt}"
+              f"你的对手是其他立场，你必须坚持自己的立场并找出对方漏洞。"
+              f"禁止附和对方——即使你部分同意，也要先反驳再承认。")
+    resp = client.chat.completions.create(
+        model="gpt-4.1-mini", temperature=0.7,
+        messages=[{"role": "system", "content": system},
+                  {"role": "user", "content": f"辩论记录：\n{transcript}"}],
+    )
+    return resp.choices[0].message.content
 
 def debate(question, positions):
-    """多立场辩论"""
-    # transcript 用带说话人标签的字符串列表；真正调 API 时再组装 messages
+    """多立场辩论——含防坍缩三手段：递进prompt、强制对立、魔鬼代言人"""
     transcript = [f"辩题：{question}"]
-    arguments = {pos: [] for pos in positions}   # 每方论点
+    arguments = {pos: [] for pos in positions}
 
+    # 主辩论阶段（2-3 轮递进）
     for round_idx in range(DEBATE_ROUNDS):
         for pos in positions:
             reply = agent_debate(pos, transcript, round_idx)
             arguments[pos].append(reply)
-            transcript.append(f"[{pos}] {reply}")  # 勿一律标 role=user，避免污染对话角色
+            transcript.append(f"[{pos}] {reply}")
 
+    # 防坍缩：魔鬼代言人轮次——永远找反对理由
+    consensus = judge_agent(question, arguments)
+    transcript.append(f"[初步共识] {consensus}")
+    devil = devil_advocate_round(consensus, transcript)
+    arguments["devil_advocate"] = [devil]
+    transcript.append(f"[魔鬼代言人] {devil}")
+
+    # 最终裁判：综合魔鬼代言人的反对意见后裁决
     verdict = judge_agent(question, arguments)
     return {"arguments": arguments, "verdict": verdict}
 ```
@@ -166,8 +194,11 @@ def judge_agent(question, arguments):
     resp = client.chat.completions.create(
         model="gpt-5",   # 裁判用更强的模型
         messages=[{"role": "system", "content":
-            "你是裁判。综合各方论点，给出最终结论，"
-            "明确标注：采纳了哪方哪些观点、否定了哪方哪些、理由。"},
+            "你是裁判。综合各方论点，给出最终结论。"
+            "必须包含以下字段，用中文关键词：\n"
+            "采纳：列出采纳了哪方哪些观点及理由\n"
+            "否定：列出否定了哪方哪些观点及理由\n"
+            "结论：综合裁定"},
                   {"role": "user", "content": f"辩题：{question}\n\n辩论记录：\n{summary}"}],
         temperature=0)
     return resp.choices[0].message.content

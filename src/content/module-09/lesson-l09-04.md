@@ -47,11 +47,14 @@ L09-02、L09-03 把沙箱隔离做得很强。但隔离只是第一道防线—�
 import ast
 
 DANGEROUS_CALLS = {
-    "os.system", "os.popen", "os.exec", "os.spawn",
+    "os.system", "os.popen", "os.execv", "os.execve", "os.spawnl", "os.spawnv",
     "subprocess.run", "subprocess.call", "subprocess.Popen",
     "eval", "exec", "compile",      # 元编程，可绕过其他检查
     "__import__",                    # 动态导入
     # open 默认放行（数据分析常需读文件）；高危场景可加入集合
+    # 注意：AST 静态检查无法拦截重命名导入（import os as o → o.system）、
+    # from-import（from os import system）、getattr 拼接等绕过方式；
+    # 这是纵深防御的第一层，不可替代 LLM 审查和沙箱隔离
 }
 
 def check_code_safety(code: str) -> tuple[bool, str]:
@@ -100,7 +103,7 @@ REVIEW_PROMPT = """你是代码安全审查员。判断以下代码是否安全�
 5. 环境变量/密钥读取
 6. 看起来"不像在完成用户任务"的可疑代码
 
-输出 JSON: {"safe": bool, "reason": "...", "risk": "low|medium|high"}
+输出 JSON: {{"safe": bool, "reason": "...", "risk": "low|medium|high"}}
 代码：
 {code}"""
 
@@ -147,7 +150,7 @@ def llm_review_code(code: str) -> tuple[bool, str]:
 ```python
 SENSITIVE_PATTERNS = [
     (r"AKIA[0-9A-Z]{16}", "AWS密钥"),
-    (r"sk-[a-zA-Z0-9]{48}", "OpenAI密钥"),
+    (r"sk-[a-zA-Z0-9_-]{20,}", "OpenAI密钥"),  # 匹配 sk-proj-... / sk-svcacct-... 等格式
     (r"(?:\d{1,3}\.){3}\d{1,3}", "IP地址"),
     # ... 手机号、身份证、私钥等
 ]

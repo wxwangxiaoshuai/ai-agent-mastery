@@ -164,9 +164,12 @@ class TokenBucket:
                 return True
             return False
 
-    def wait(self, tokens: int = 1):
-        """获取令牌，不够就等"""
+    def wait(self, tokens: int = 1, timeout: float = 30.0):
+        """获取令牌，不够就等；超时后抛 TimeoutError"""
+        deadline = time.time() + timeout
         while not self.acquire(tokens):
+            if time.time() >= deadline:
+                raise TimeoutError(f"TokenBucket 等待超时 ({timeout}s)")
             time.sleep(0.1)
 
 # 使用：限制 LLM 调用频率为每秒 2 次

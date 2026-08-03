@@ -140,7 +140,7 @@ def supervisor_route(state):
         # 没人认领的任务，强制派给最相关角色
         return assign_to_most_relevant(state["unclaimed_task"])
     # 正常路由
-    return llm_route(state["messages"], options=[...])
+    return llm_route(state["messages"], options=OPTIONS)
 ```
 
 ### 病态行为四：发散 / 无限讨论

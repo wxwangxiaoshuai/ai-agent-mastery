@@ -98,7 +98,7 @@ REPL（如 `python -i`、Jupyter kernel）适合人类探索，**不适合作为
 起一个子进程跑代码，比 exec 强一点——至少主进程不被直接污染：
 
 ```python
-import subprocess, tempfile, os
+import subprocess, tempfile, os, sys, shutil
 
 def subprocess_exec(code: str, timeout: int = 10) -> str:
     sandbox_dir = tempfile.mkdtemp(prefix="sandbox_")
@@ -109,15 +109,17 @@ def subprocess_exec(code: str, timeout: int = 10) -> str:
         script = f.name
     try:
         result = subprocess.run(
-            ["python", script],
+            [sys.executable, script],
             capture_output=True, text=True, timeout=timeout,
             env={"PATH": "/usr/bin:/bin", "HOME": sandbox_dir},
             cwd=sandbox_dir,
         )
         return result.stdout + result.stderr
+    except subprocess.TimeoutExpired:
+        return f"[错误] 代码执行超时 ({timeout}s)"
     finally:
         os.unlink(script)
-        os.rmdir(sandbox_dir)
+        shutil.rmtree(sandbox_dir, ignore_errors=True)
 ```
 
 **比 exec 好在哪**：代码在子进程跑，主进程崩溃不影响；有 timeout；能控制工作目录和环境变量。

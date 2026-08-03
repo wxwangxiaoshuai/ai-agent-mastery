@@ -162,8 +162,7 @@ def run_with_file(code: str, input_files: dict, timeout=10) -> dict:
     """传文件进沙箱执行。input_files: {文件名: 内容bytes}
     关键：必须先 start（tmpfs 挂载后）再 put_archive，否则写入会被 tmpfs 覆盖。
 
-    注意：Docker SDK exec_run 不支持 timeout 参数，timeout 用于容器级 wait。
-    对长时间运行的代码，建议用异步执行 + 外部计时器，或使用 E2B 等托管方案。
+	    # 注意：docker-py 6.x+ 的 exec_run 支持 timeout 参数；若使用旧版 SDK，需用异步执行 + 外部计时器。
     """
     container = client.containers.create(
         image=SANDBOX_IMAGE,
@@ -185,7 +184,7 @@ def run_with_file(code: str, input_files: dict, timeout=10) -> dict:
         container.put_archive("/tmp", tar_stream)
 
         exec_result = container.exec_run(
-            ["python", "/tmp/main.py"], demux=True,
+            ["python", "/tmp/main.py"], demux=True, timeout=timeout,
         )
         out, err = exec_result.output if isinstance(exec_result.output, tuple) else (exec_result.output, b"")
         return {

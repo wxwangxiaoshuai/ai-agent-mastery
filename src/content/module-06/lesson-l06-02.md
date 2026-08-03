@@ -61,12 +61,12 @@ Agent 的能力上限不取决于 LLM 有多聪明，而取决于**工具设计�
 - 参数名用**自然语言**：`query` 而非 `q`，`file_path` 而非 `fp`
 - description 写**模型能理解的说明**：不是"查询接口"，而是"搜索互联网获取实时信息"
 
-```python
+```json
 # ❌ 差 description
-{"name": "db_q", "description": "DB query interface", ...}
+{"name": "db_q", "description": "DB query interface", "parameters": {}}
 
 # ✅ 好 description
-{"name": "query_database", "description": "从公司数据库中查询数据。输入 SQL 语句，返回查询结果。仅支持 SELECT 查询，不支持修改操作。", ...}
+{"name": "query_database", "description": "从公司数据库中查询数据。输入 SQL 语句，返回查询结果。仅支持 SELECT 查询，不支持修改操作。", "parameters": {}}
 ```
 
 ### 错误信息：让模型能自我修复

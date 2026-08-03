@@ -56,7 +56,8 @@ def computer_use(task: str, max_steps: int = 20):
         execute_action(action)
         history.append({"screen": screen, "action": action})
         screen = take_screenshot()   # 看动作效果
-        if task_completed(history): break
+        if task_completed(history):
+            break
     return history
 ```
 
@@ -153,10 +154,13 @@ Computer Use 真正发挥价值的场景：
 ```
 
 ```python
-def reliable_computer_use(task, fail_limit: int = 3):
+def reliable_computer_use(task, fail_limit: int = 3, max_steps: int = 20):
+    """带可靠性增强的 Computer Use：步骤验证 + 连续失败转人工"""
+    screen = take_screenshot()
+    history = []
     fail_streak = 0
-    for step in range(MAX_STEPS):
-        screen = take_screenshot()
+    result = None
+    for step in range(max_steps):
         action = model.decide(task, screen, history)
         execute(action)
         next_screen = take_screenshot()
@@ -165,8 +169,14 @@ def reliable_computer_use(task, fail_limit: int = 3):
             fail_streak += 1
             if fail_streak >= fail_limit:
                 human_intervene()  # 连续失败 N 次转人工
+                break              # 人工介入后停止循环
             continue
         fail_streak = 0
+        screen = next_screen
+        history.append({"screen": screen, "action": action})
+        if task_completed(history):
+            result = {"status": "completed", "steps": len(history)}
+            break
     return result
 ```
 

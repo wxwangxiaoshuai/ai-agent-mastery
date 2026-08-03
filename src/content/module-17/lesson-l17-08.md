@@ -112,6 +112,8 @@ jobs:
     needs: check
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    env:
+      HOST: ${{ secrets.DEPLOY_HOST }}
     steps:
       - uses: actions/checkout@v4
 
@@ -119,7 +121,7 @@ jobs:
         run: |
           IMAGE=ghcr.io/${{ github.repository }}:${{ github.sha }}
           docker build -t $IMAGE .
-          echo "$IMAGE" >> $GITHUB_ENV
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
 
       - name: 推送并部署
         run: |

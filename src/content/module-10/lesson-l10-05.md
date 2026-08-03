@@ -217,16 +217,18 @@ LangGraph 原生支持流式输出两种东西：state 变化和 token：
 
 ```python
 # 流式：每个节点执行后推 state 增量
-for event in app.stream(input, config=config, stream_mode="updates"):
-    # event = {节点名: 该节点返回的 state 更新}
-    yield {"type": "node_update", "node": list(event.keys())[0]}
+def stream_updates(app, input, config):
+    for event in app.stream(input, config=config, stream_mode="updates"):
+        # event = {节点名: 该节点返回的 state 更新}
+        yield {"type": "node_update", "node": list(event.keys())[0]}
 
 # 流式 token：messages 模式 yield 的是 (msg_chunk, metadata) 元组，不是单个 chunk
-for msg_chunk, metadata in app.stream(input, config=config, stream_mode="messages"):
-    # msg_chunk.content 可能是 str，也可能是多模态 list；先取文本
-    text = msg_chunk.content if isinstance(msg_chunk.content, str) else ""
-    if text:
-        yield {"type": "token", "content": text, "node": metadata.get("langgraph_node")}
+def stream_tokens(app, input, config):
+    for msg_chunk, metadata in app.stream(input, config=config, stream_mode="messages"):
+        # msg_chunk.content 可能是 str，也可能是多模态 list；先取文本
+        text = msg_chunk.content if isinstance(msg_chunk.content, str) else ""
+        if text:
+            yield {"type": "token", "content": text, "node": metadata.get("langgraph_node")}
 ```
 
 `stream_mode` 选项：`updates`（节点 state 变化）、`messages`（LLM token，值为 `(chunk, metadata)`）、`values`（完整 state）。**用 `updates` 做"步骤流"，用 `messages` 做 token 流**——和前面的两层流式对应。

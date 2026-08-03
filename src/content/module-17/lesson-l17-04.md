@@ -101,7 +101,7 @@ def head(path: str, n: int = 80) -> str:
     """给内圈文件的前 n 行 —— 通常足够看清签名和风格。"""
     p = ROOT / path
     lines = p.read_text(encoding="utf-8").splitlines()[:n]
-    return f"<file path='{path}' truncated='{len(lines) < n}'>\n" + "\n".join(lines) + "\n</file>"
+    return f"<file path='{path}' truncated='{len(lines) >= n}'>\n" + "\n".join(lines) + "\n</file>"
 
 def full(path: str) -> str:
     p = ROOT / path
@@ -204,17 +204,23 @@ def check_import_direction(filepath: Path) -> list[str]:
     tree = ast.parse(content)
 
     for node in ast.walk(tree):
-        if isinstance(node, (ast.Import, ast.ImportFrom)):
+        # ast.ImportFrom 有 .module 属性；ast.Import 没有，用 names[0].name 代替
+        if isinstance(node, ast.ImportFrom):
             module = node.module or ""
-            # 检查 service 层是否 import 了 fastapi（违反"不 import fastapi"）
-            if "services" in str(filepath) and "fastapi" in module:
-                issues.append(f"{filepath}: import fastapi in service layer")
-            # 检查 model 层是否有业务方法（违反"model 不写业务方法"）
-            if "models" in str(filepath):
-                for n in ast.walk(tree):
-                    if isinstance(n, ast.FunctionDef) and n.name not in ("__init__", "__repr__", "__str__"):
-                        if not n.name.startswith("_"):
-                            issues.append(f"{filepath}:{n.lineno}: model 中出现方法 {n.name}，约定禁止在 model 中写业务方法")
+        elif isinstance(node, ast.Import):
+            module = node.names[0].name if node.names else ""
+        else:
+            continue
+        # 检查 service 层是否 import 了 fastapi（违反"不 import fastapi"）
+        if "services" in str(filepath) and "fastapi" in module:
+            issues.append(f"{filepath}: import fastapi in service layer")
+
+    # 检查 model 层是否有业务方法（独立于 import 检查，避免重复报告）
+    if "models" in str(filepath):
+        for n in ast.walk(tree):
+            if isinstance(n, ast.FunctionDef) and n.name not in ("__init__", "__repr__", "__str__"):
+                if not n.name.startswith("_"):
+                    issues.append(f"{filepath}:{n.lineno}: model 中出现方法 {n.name}，约定禁止在 model 中写业务方法")
 
     return issues
 

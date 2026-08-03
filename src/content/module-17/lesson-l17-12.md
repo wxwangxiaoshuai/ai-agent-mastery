@@ -76,7 +76,7 @@ npm install electron --save-dev
 
 然后生成 Python 后端骨架：
 
-```python
+````python
 # agent_server.py —— AI 生成的 FastAPI 后端
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -135,21 +135,21 @@ def classify_action(text: str) -> str:
     text_lower = text.lower()
     # 检测是否为代码
     code_indicators = ["def ", "import ", "function ", "class ", "const ", "let ",
-                       "```", "{", "}", "=>", "print(", "console.log"]
-    if any(ind in text for ind in code_indicators):
+                       "``" + "`", "=>", "print(", "console.log"]
+    if any(ind in text_lower for ind in code_indicators):
         return "explain"
     # 检测是否包含中文
     if any('一' <= c <= '鿿' for c in text):
         return "translate"  # 中文内容 → 翻译成英文
-    # 检测是否超过 200 字
-    if len(text.split()) > 200:
+    # 检测是否超过 200 词
+    if len(text_lower.split()) > 200:
         return "summarize"
     return "translate"  # 默认：翻译
 
 
 def build_prompt(text: str, action: str) -> str:
     prompts = {
-        "translate": f"将以下内容翻译成中文，只输出译文：\n\n{text}",
+        "translate": f"将以下内容翻译成英文，只输出译文：\n\n{text}",
         "explain": f"用中文解释以下代码，说明它做了什么：\n\n{text}",
         "summarize": f"用中文对以下内容做要点摘要，不超过 3 条：\n\n{text}",
     }
@@ -165,9 +165,13 @@ async def call_llm(prompt: str) -> str:
         )
         return response["message"]["content"]
     except Exception:
-        # 离线降级：返回原文
-        return f"[离线模式] 无法处理。原文：{prompt[:200]}..."
-```
+        return "[离线模式] 无法处理。请检查 Ollama 是否已启动。"
+
+# 启动入口：pyinstaller 打包后需要此入口才能监听端口
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=19999)
+````
 
 ### 第三步：实现 Electron 系统托盘 Agent
 

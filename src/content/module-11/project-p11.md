@@ -101,7 +101,7 @@ REVIEWER_PROMPT = """你是代码审查员。职责：
 ARCH_REVIEWER_PROMPT = """你是架构质疑方（非代码审查）。职责：
 找出方案至少 2 个风险或漏洞（可扩展性/复杂度/安全/落地成本），具体反驳，禁止空泛附和。"""
 TESTER_PROMPT = "你是测试工程师。基于需求和代码写测试用例并运行，输出测试报告（通过/失败/覆盖）。"
-JUDGE_PROMPT = "你是架构评审裁判。综合 Architect 方案和 Reviewer 质疑，给最终架构结论，标注采纳/否定了哪些。"
+JUDGE_PROMPT = "你是架构评审裁判。综合 Architect 方案和 Reviewer 质疑，给最终架构结论。必须包含：采纳（列出采纳了谁的观点）、否定（列出否定了谁的观点及理由）、结论（综合裁定）。"
 ```
 
 **Step 2：主流程节点（PM/Coder/Tester）**
@@ -150,11 +150,11 @@ def debate_architecture(state):
 
     for round_idx in range(2):   # 2 轮：亮观点 + 反驳
         arch_msg = call_llm(ARCH_PROMPT + ("\n第2轮：回应质疑，可修正方案。" if round_idx else "\n第1轮：亮你的方案。"),
-                            f"需求：{question}\n已有辩论：{history}")
+                            f"需求：{question}\n已有辩论：\n" + "\n".join(history))
         args["architect"].append(arch_msg)
         history.append(f"[Architect] {arch_msg}")
         rev_msg = call_llm(ARCH_REVIEWER_PROMPT + "\n尽力反驳，禁止附和。",
-                           f"需求：{question}\nArchitect方案：{arch_msg}\n已有辩论：{history}")
+                           f"需求：{question}\nArchitect方案：{arch_msg}\n已有辩论：\n" + "\n".join(history))
         args["reviewer"].append(rev_msg)
         history.append(f"[Reviewer] {rev_msg}")
 
@@ -199,23 +199,73 @@ def force_ship_node(state):
 
 ```python
 # team/guardrails.py
+import hashlib
+
 class TeamGuardrails:
     """统一护栏（L11-05 三层框架）——在 invoke 包装层每步检查"""
     def __init__(self, max_rounds=20):
         self.max_rounds = max_rounds
         self.round = 0
-        self.msg_hashes = []
+        self.code_hashes = []  # 代码内容的 hash 前缀，用于重复检测
 
     def check(self, state):
         self.round += 1
         if self.round > self.max_rounds:
             return {"action": "force_end", "reason": "超 max_rounds，强制结束"}
-        key = str(state.get("code", ""))[:100]
-        if key and key in self.msg_hashes[-2:]:
-            return {"action": "force_end", "reason": "代码重复疑似循环"}
-        if key:
-            self.msg_hashes.append(key)
+        code = state.get("code", "")
+        if code:
+            key = hashlib.md5(code.encode()).hexdigest()[:16]
+            if key in self.code_hashes[-2:]:
+                return {"action": "force_end", "reason": "代码内容重复疑似死循环"}
+            self.code_hashes.append(key)
         return {"action": "continue"}
+```
+
+**Step 5b：将护栏接入图（节点包装）**
+
+```python
+# team/graph.py（在 build_team 中追加）
+from .guardrails import TeamGuardrails
+
+def build_team_with_guardrails(checkpointer=None):
+    g = build_team(checkpointer)  # 复用 Step 6 的基础图
+
+    # 包装每个节点，在进入前检查护栏状态
+    gr = TeamGuardrails(max_rounds=20)
+
+    def make_guarded(inner_fn):
+        def guarded(state):
+            check = gr.check(state)
+            if check["action"] == "force_end":
+                return {"test_report": f"[护栏终止] {check['reason']}"}
+            return inner_fn(state)
+        return guarded
+
+    # 重建图，用护栏包装的节点
+    from langgraph.graph import StateGraph, START, END
+    from .state import TeamState
+    from .nodes import pm_node, coder_node, tester_node, force_ship_node
+    from .debate import debate_architecture
+    from .review_loop import reviewer_node, route_after_review
+
+    g2 = StateGraph(TeamState)
+    g2.add_node("pm", make_guarded(pm_node))
+    g2.add_node("debate", make_guarded(debate_architecture))
+    g2.add_node("coder", make_guarded(coder_node))
+    g2.add_node("reviewer", make_guarded(reviewer_node))
+    g2.add_node("force_ship", make_guarded(force_ship_node))
+    g2.add_node("tester", make_guarded(tester_node))
+
+    g2.add_edge(START, "pm")
+    g2.add_edge("pm", "debate")
+    g2.add_edge("debate", "coder")
+    g2.add_edge("coder", "reviewer")
+    g2.add_conditional_edges("reviewer", route_after_review,
+        {"tester": "tester", "coder": "coder", "force_ship": "force_ship"})
+    g2.add_edge("force_ship", "tester")
+    g2.add_edge("tester", END)
+
+    return g2.compile(checkpointer=checkpointer or InMemorySaver())
 ```
 
 **Step 6：组装 LangGraph**
@@ -223,7 +273,6 @@ class TeamGuardrails:
 ```python
 # team/graph.py
 from langgraph.graph import StateGraph, START, END
-from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.checkpoint.memory import InMemorySaver
 from .state import TeamState
 from .nodes import pm_node, coder_node, tester_node, force_ship_node
@@ -259,19 +308,15 @@ def build_team(checkpointer=None):
 **Step 7：运行示例（含护栏包装）**
 
 ```python
-from team.graph import build_team
-from team.guardrails import TeamGuardrails
+from team.graph import build_team_with_guardrails
 
-team = build_team()
+team = build_team_with_guardrails()
 config = {"configurable": {"thread_id": "cli_mood_1"}, "recursion_limit": 25}
-gr = TeamGuardrails(max_rounds=20)
 
-# 逐步跑可用 stream；此处示意 invoke 前后检查
 inputs = {
     "requirement": "做一个 CLI 工具：记录每日心情（1-5 分+备注），支持按周统计平均分",
     "revisions": 0,
 }
-# 护栏可挂在自定义节点包装或 stream 循环里；测试见 Step 8
 result = team.invoke(inputs, config=config)
 print("需求文档：", result["req_doc"])
 print("架构方案：", result["architecture"])

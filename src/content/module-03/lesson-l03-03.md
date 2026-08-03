@@ -125,61 +125,71 @@ print(f"预估 token 数: {count.input_tokens}")
 
 ```python
 class OverflowHandler:
-    """超限处理器：逐级降级"""
-
-    @staticmethod
-    def _count_list(items: list) -> int:
-        """统一把 list 序列化后再计 token"""
-        return count_tokens(str(items))
+    """超限处理器：逐级降级——从最温和的手段开始，逐步升级到激进裁剪"""
 
     @staticmethod
     def handle(history: list, tool_results: list, retrieved_docs: list,
-               budget: dict) -> tuple:
+               budget: dict, client=None) -> tuple:
         """按优先级从低到高裁剪，直到满足预算"""
 
-        # Level 1：裁剪对话历史——从最早的开始删除
-        while OverflowHandler._count_list(history) > budget["history"] and history:
-            removed = history.pop(0)
-            print(f"[降级] 删除最早的历史: {removed['content'][:30]}...")
-
-        # Level 2：截断工具结果——按 token 预算截断长输出
+        # Level 1：截断工具结果——长输出截断，保留前面部分
         for result in tool_results:
             output = result["output"]
-            while count_tokens(output) > 500 and len(output) > 20:
-                output = output[: int(len(output) * 0.8)]
-            if count_tokens(result["output"]) > 500:
-                result["output"] = output + "\n...(已截断)"
+            if count_tokens(output) > 500:
+                shortened = output[: int(len(output) * 0.8)]
+                result["output"] = shortened + "\n...(已截断)"
                 print("[降级] 截断工具结果")
 
-        # Level 3：减少检索文档数量——只保留 top-1
-        if OverflowHandler._count_list(retrieved_docs) > budget["retrieved_docs"]:
+        # Level 2：减少检索文档数量——只保留 top-1
+        if count_messages_tokens(retrieved_docs) > budget["retrieved_docs"]:
             retrieved_docs = retrieved_docs[:1] if retrieved_docs else []
             print("[降级] 只保留最相关的 1 个文档")
 
-        # Level 4：用摘要替代完整历史（历史较长时用 LLM 摘要旧轮次）
-        if len(history) > 6:
-            # 只对最早的部分做摘要，保留最近 2 轮（4 条消息）完整
-            summary = summarize_history(history[:-4])
+        # Level 3：用摘要替代完整历史（历史较长时用 LLM 摘要旧轮次）
+        if len(history) > 6 and client:
+            summary = summarize_history(history[:-4], client)
             history = [{"role": "user", "content": f"之前对话摘要：{summary}"}] + history[-4:]
             print("[降级] 用摘要替代旧历史")
 
+        # Level 4：裁剪对话历史——从最早的开始删除
+        while count_messages_tokens(history) > budget["history"] and history:
+            removed = history.pop(0)
+            print(f"[降级] 删除最早的历史: {removed['content'][:30]}...")
+
         # Level 5：放弃非核心内容
-        if OverflowHandler._count_list(tool_results) > budget["tool_results"]:
+        if count_messages_tokens(tool_results) > budget["tool_results"]:
             tool_results = []  # 完全放弃工具结果
             print("[降级] 放弃所有工具结果")
+        if count_messages_tokens(retrieved_docs) > budget["retrieved_docs"]:
+            retrieved_docs = []
+            print("[降级] 放弃所有检索文档")
 
         return history, tool_results, retrieved_docs
 ```
 
-**降级策略层次**：
+**降级策略层次**（从最温和到最激进，与 `handle()` 中的 Level 1→5 对应）：
 
 ```
-Level 1: 删除最早的对话历史（滑动窗口）
-Level 2: 截断长工具输出（保留前 500 字 + "已截断"标记）
-Level 3: 减少检索文档数量（top-5 → top-3 → top-1）
-Level 4: 用摘要替代完整历史（LLM 摘要旧对话）
-Level 5: 放弃非核心内容（工具结果、检索文档）
-Level 6: 缩短 System Prompt（最后手段，可能影响行为一致性）
+Level 1: 截断长工具输出（保留前 80% + "已截断"标记）
+Level 2: 减少检索文档数量（top-k → top-1）
+Level 3: 用摘要替代完整历史（LLM 摘要旧对话，需传入 client）
+Level 4: 删除最早的对话历史（滑动窗口裁剪）
+Level 5: 放弃非核心内容（工具结果、检索文档全部清空）
+Level 6: 缩短 System Prompt（最后手段，可能影响行为一致性；未在 handle() 中实现）
+```
+
+`summarize_history` 辅助函数（P3 的 `CompressionPipeline.summarize_text` 可复用）：
+
+```python
+def summarize_history(history: list, client) -> str:
+    """用 LLM 将旧对话历史压缩为摘要"""
+    old_text = "\n".join(f"[{m['role']}] {m['content']}" for m in history)
+    resp = client.chat.completions.create(
+        model="gpt-4.1-mini",
+        messages=[{"role": "user", "content": f"将以下对话压缩为一段摘要，保留关键信息：\n{old_text}"}],
+        max_tokens=200, temperature=0,
+    )
+    return resp.choices[0].message.content
 ```
 
 ### 成本监控与预警

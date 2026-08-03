@@ -98,7 +98,12 @@ class AgentResponse(BaseModel):
 @app.post("/agent/run", response_model=AgentResponse)
 async def run_agent(request: AgentRequest):
     # 实际实现：加载 Skill → 执行 Agent Loop → 返回结果
-    ...
+    # 此处为骨架示意，完整实现见 P17 项目
+    return AgentResponse(
+        output="[Agent 执行结果]",
+        tool_calls=[],
+        model_used="local:llama3.2:3b",
+    )
 ```
 
 ### 本地模型推理
@@ -143,15 +148,36 @@ class HybridAgent:
 
     def classify_task(self, user_input: str) -> str:
         """用 nano 档本地模型做任务分类。"""
-        return call_local_model(
-            f"分类以下任务：{user_input}"
+        result = call_local_model(
+            f"分类以下任务：{user_input}\n"
             f"选项：simple（简单查询/翻译/摘要）| complex（推理/规划/多步骤）"
+            "\n只输出 simple 或 complex。"
         )
+        return result.strip().lower()
+
+    def _check_internet(self) -> bool:
+        """检查是否能访问云端 API。"""
+        import socket
+        try:
+            socket.create_connection(("api.openai.com", 443), timeout=3)
+            return True
+        except OSError:
+            return False
+
+    async def _call_cloud_model(self, user_input: str) -> str:
+        """调用云端模型处理复杂推理。"""
+        import openai
+        client = openai.AsyncOpenAI()
+        response = await client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[{"role": "user", "content": user_input}],
+        )
+        return response.choices[0].message.content
 
     async def run(self, user_input: str):
         task_type = self.classify_task(user_input)
 
-        if task_type == "simple":
+        if "simple" in task_type:
             # 本地模型处理，数据不出本机
             return call_local_model(user_input)
         else:
@@ -175,7 +201,7 @@ class HybridAgent:
 
 ```typescript
 // Electron 主进程 —— 系统托盘 + 全局快捷键
-import { app, Tray, Menu, globalShortcut, clipboard } from 'electron'
+import { app, Tray, Menu, globalShortcut, clipboard, Notification } from 'electron'
 
 let tray: Tray
 

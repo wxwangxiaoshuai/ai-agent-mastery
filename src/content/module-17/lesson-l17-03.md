@@ -209,14 +209,18 @@ def check_file(filepath: Path, constraints: dict) -> list[str]:
                 if "ALTER TABLE" in node.value or "DROP COLUMN" in node.value:
                     issues.append(f"{filepath}:{node.lineno}: 疑似修改表结构，规格要求不改表")
 
-    # 约束2：不引入新依赖 → 检查是否有直接 import 非标准库
+    # 约束2：不引入新依赖 → 检查是否有直接 import 非标准库/项目模块
     if constraints.get("no_new_deps"):
-        stdlib = {"os", "sys", "json", "re", "pathlib", "datetime", "typing", "collections"}
+        stdlib = {"os", "sys", "json", "re", "pathlib", "datetime", "typing", "collections",
+                  "math", "functools", "itertools", "hashlib", "uuid", "logging", "io",
+                  "csv", "base64", "unittest", "argparse", "subprocess", "tempfile",
+                  "dataclasses", "enum", "abc", "copy", "asyncio", "textwrap", "time"}
+        project_prefixes = {"app", "src", "tests", "core", "models", "services", "routers", "utils"}
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    if alias.name.split(".")[0] not in stdlib:
-                        # 只告警，不做最终判断——标准库很大
+                    top = alias.name.split(".")[0]
+                    if top not in stdlib and top not in project_prefixes:
                         issues.append(f"{filepath}:{node.lineno}: import {alias.name} —— 是否为新依赖？")
 
     # 约束3：不出现特定模式（如裸 except）

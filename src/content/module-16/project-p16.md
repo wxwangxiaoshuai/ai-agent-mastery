@@ -1,6 +1,8 @@
 ## 毕业设计：生产级 Agent 产品
 
-全书 16 模块学完，P16 是最终大考——综合所学，设计并交付一个**可部署的生产级 Agent 产品**。这不是重做某个模块，而是证明你能把知识组织成系统、说清决策、落地生产。这是从"玩家"到"架构师"的最终跨越。
+技术主线（M1-M16）学完，P16 是最终大考——综合所学，设计并交付一个**可部署的生产级 Agent 产品**。这不是重做某个模块，而是证明你能把知识组织成系统、说清决策、落地生产。这是从"玩家"到"架构师"的最终跨越。
+
+> M17-M19 属于第七阶段「独立开发与商业化」，是把技术变成收入的延伸线——AI Coding 工作流、商业化和增长运营。P16 聚焦技术主线的收官，商业化的跨界能力在 M17-M19 里继续打磨。
 
 ### 项目目标
 
@@ -159,9 +161,13 @@ def retrieve_code(query): return hybrid_search(query)  # BM25+向量+rerank
 memory = LongTermMemory()   # 跨会话记住用户偏好（常用语言/项目）
 def chat(user_id, msg):
     related = memory.recall(user_id, msg)  # recall 偏好
-    # TODO: 将 related 注入到 LLM 调用的 context 中
-    # response = llm.invoke(msg, context=related)
+    # 将 related（用户偏好/项目上下文）注入到 LLM 调用的 context 中
+    context = "\n".join(f"用户偏好：{r['content']}" for r in related)
+    response = llm.invoke(
+        f"用户信息：{context}\n\n用户问题：{msg}"
+    )
     memory.remember(user_id, msg)  # 抽取新偏好
+    return response
 ```
 
 **Step 5：评测 + 可观测 + 安全（M13）**
@@ -249,7 +255,7 @@ function DevAssistant() {
 
 ### 要点回顾
 
-- 毕业设计是全书收口——综合 16 模块组织成可部署生产级 Agent 产品
+- 毕业设计是技术主线收口——综合 M1-M16 组织成可部署生产级 Agent 产品
 - 不是重做某模块，是证明能组织知识成系统、说清决策、落地生产
 - 示例研发助手：supervisor 调度（检索/文档/编码/运维）多 Agent
 - 全栈要求：多Agent(M11)+MCP(M6)+RAG(M4)+记忆(M8)+评测可观测安全(M13)+部署运维(M15)+架构ADR(M14)+前端(L10-05/L15-06)
@@ -262,7 +268,7 @@ function DevAssistant() {
 
 ### 毕业寄语
 
-走完 16 模块 + 16 个项目，你已经从"调一个 API"走到了"设计交付生产级 Agent 系统"。但你真正的成长发生在**把这些知识用到真实项目里反复打磨**的时候——地图不是领土，工具箱不等于手艺。
+走完技术主线（M1-M16 + 16 个项目），你已经从"调一个 API"走到了"设计交付生产级 Agent 系统"。但你真正的成长发生在**把这些知识用到真实项目里反复打磨**的时候——地图不是领土，工具箱不等于手艺。
 
 **接下来的路**：
 1. **做一个真东西**：挑一个真实业务，从 0 做一个 Agent 产品，别停在 demo

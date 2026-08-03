@@ -57,6 +57,8 @@ def coder(state: TeamState) -> dict:
     return {"messages": [{"role": "assistant", "name": "coder",
                           "content": f"代码：{code}"}]}
 
+OPTIONS = ["researcher", "coder", "FINISH"]
+
 # —— Supervisor（"大脑"）——
 def supervisor(state: TeamState) -> dict:
     """主管：看历史，决定下一步派给谁"""
@@ -176,7 +178,7 @@ def researcher(state):
             "content": f"研究异常：{e}，需要重试或降级"}]}
 
 def supervisor(state):
-    decision = llm_route(state["messages"], options=[...], prompt=
+    decision = llm_route(state["messages"], options=OPTIONS, prompt=
         "你是主管。如果下属报告失败，考虑重试（最多2次）或换人。"
         "多次失败则降级为'人工介入'或FINISH。"
         '只输出 JSON：{"next":"..."}')

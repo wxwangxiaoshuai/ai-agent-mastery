@@ -129,24 +129,22 @@ class ContextAssembler:
         tool_results: Optional[list] = None,
         retrieved_docs: Optional[list] = None,
         enable_cache: bool = False,
-    ) -> list:
-        """组装最终发送给 API 的 messages"""
+    ) -> dict:
+        """组装最终发送给 API 的 messages。
+
+        返回 {"system": str, "messages": list, "cache_system": bool}。
+        - system: system prompt 文本（Anthropic 作为顶层参数，OpenAI 放入 messages[0]）
+        - messages: 对话消息列表（user/assistant 角色）
+        - cache_system: 调用方是否应对 system 启用缓存（仅 Anthropic 支持）
+        """
         alloc = self.budget.allocate(self.system_tokens)
 
         # 1. System Prompt（最高优先级，不裁剪）
-        # 注意：Anthropic Claude 的 system 是顶层独立参数，不在 messages 里；
-        # OpenAI 的 system 在 messages[0] 中。cache_control 仅 Claude 支持。
-        # 此处组装为通用格式，调用方需按 provider 适配：
-        #   - OpenAI: messages 直接传入
-        #   - Anthropic: 提取 messages[0]["content"] 作为 system 参数，其余作为 messages
-        messages = []
+        # 返回分离的 system 文本，由调用方按 provider 适配：
+        #   - OpenAI: messages.insert(0, {"role": "system", "content": system})
+        #   - Anthropic: 作为 SDK 的 system 参数传入
+        # enable_cache 仅 Claude 支持（cache_control），OpenAI 忽略此标志
         system_content = self.system_prompt
-        if enable_cache:
-            # Claude 的 cache_control 需要放在 content block 中，并通过顶层 system 参数传入
-            # 此处仅标记；实际调用时需在 Anthropic SDK 的 system 参数中设置
-            system_content = [{"type": "text", "text": self.system_prompt,
-                               "cache_control": {"type": "ephemeral"}}]
-        messages.append({"role": "system", "content": system_content})
 
         # 2. 裁剪对话历史（从最早的开始删除）
         history = self._trim_history(history or [], alloc.history)
@@ -158,15 +156,15 @@ class ContextAssembler:
         tool_content = self._trim_tools(tool_results or [], alloc.tool_results)
 
         # 5. 组装顺序：历史 → 文档 → 工具 → 用户输入
-        messages.extend(history)
+        messages = list(history)
         if docs_content:
-            # 检索文档和工具结果用 user role 而非 system，兼容 Anthropic 和 OpenAI 两家
             messages.append({"role": "user", "content": f"参考资料：\n{docs_content}"})
         if tool_content:
             messages.append({"role": "user", "content": f"工具返回：\n{tool_content}"})
         messages.append({"role": "user", "content": user_input})
 
-        return messages
+        return {"system": system_content, "messages": messages,
+                "cache_system": enable_cache}
 
     def _trim_history(self, history: list, budget: int) -> list:
         trimmed = list(history)
@@ -281,19 +279,23 @@ class ContextManager:
     """完整的上下文管理系统：组装 + 预算 + 压缩 + 调试"""
 
     def __init__(self, system_prompt: str, model: str = "gpt-5",
-                 context_window: int = 128000):
+                 context_window: int = 128000,
+                 input_price: float = 3.0, output_price: float = 15.0):
         self.assembler = ContextAssembler(system_prompt, model, context_window)
+        self.input_price = input_price
+        self.output_price = output_price
         self.total_input_tokens = 0
         self.total_output_tokens = 0
 
     def prepare(self, user_input: str, history=None, tool_results=None,
-                retrieved_docs=None, enable_cache=False) -> list:
-        messages = self.assembler.assemble(
+                retrieved_docs=None, enable_cache=False) -> dict:
+        assembled = self.assembler.assemble(
             user_input, history, tool_results, retrieved_docs, enable_cache
         )
+        messages = [{"role": "system", "content": assembled["system"]}] + assembled["messages"]
         # 记录 token 消耗
         self.total_input_tokens += TokenCounter.count_messages(messages, self.assembler.model)
-        return messages
+        return assembled
 
     def record_output(self, output_tokens: int):
         self.total_output_tokens += output_tokens
@@ -303,7 +305,8 @@ class ContextManager:
 
     def report(self) -> str:
         return ContextDebugger.cost_report(
-            self.total_input_tokens, self.total_output_tokens
+            self.total_input_tokens, self.total_output_tokens,
+            self.input_price, self.output_price
         )
 ```
 
@@ -341,35 +344,38 @@ class TestContextAssembler:
         )
 
     def test_basic_assembly(self):
-        messages = self.assembler.assemble(user_input="你好")
-        assert messages[0]["role"] == "system"
+        result = self.assembler.assemble(user_input="你好")
+        messages = result["messages"]
+        assert result["system"] == "你是一个助手。"
         assert messages[-1]["role"] == "user"
         assert messages[-1]["content"] == "你好"
 
     def test_user_input_always_last(self):
-        messages = self.assembler.assemble(
+        result = self.assembler.assemble(
             user_input="最后的问题",
             history=[{"role": "user", "content": "旧问题"}],
             tool_results=[{"tool": "search", "output": "结果"}],
         )
+        messages = result["messages"]
         assert messages[-1]["content"] == "最后的问题"
 
     def test_history_trimming(self):
         long_history = [{"role": "user", "content": f"消息 {i} " * 50} for i in range(20)]
-        messages = self.assembler.assemble(user_input="最新", history=long_history)
+        result = self.assembler.assemble(user_input="最新", history=long_history)
+        messages = result["messages"]
         total = TokenCounter.count_messages(messages)
         input_budget = 4000 - 1024  # 窗口 - 输出预留
         assert total <= input_budget  # 输入部分不得超过输入预算
 
     def test_cache_control(self):
-        messages = self.assembler.assemble(user_input="test", enable_cache=True)
-        system_msg = messages[0]
-        if isinstance(system_msg["content"], list):
-            assert system_msg["content"][0].get("cache_control") is not None
+        result = self.assembler.assemble(user_input="test", enable_cache=True)
+        assert result["cache_system"] is True
+        assert result["system"] == "你是一个助手。"
 
     def test_tool_result_truncation(self):
         long_tool = [{"tool": "search", "output": "x" * 10000}]
-        messages = self.assembler.assemble(user_input="test", tool_results=long_tool)
+        result = self.assembler.assemble(user_input="test", tool_results=long_tool)
+        messages = result["messages"]
         # 工具结果应该被截断
         tool_msg = [m for m in messages if "工具" in m.get("content", "")]
         assert len(tool_msg) > 0
@@ -381,7 +387,7 @@ class TestContextAssembler:
 2. **压缩管道升级**：集成 LLMLingua 做 token 级压缩，对比摘要压缩的效果差异（主路径验收不要求）
 3. **实时监控仪表盘**：用 Streamlit/Gradio 做一个 Web 界面，实时显示每次调用的 token 分布
 4. **自动预算调优**：根据历史调用数据自动调整预算分配比例（如历史越长，history 预算占比越大）
-5. **多模型路由**：根据 token 预算自动选择模型（预算紧张用小档模型，预算充足用中档模型）
+5. **多模型路由**：根据 token 预算自动选择模型（预算紧张用 nano 档，预算充足用 mid 档）
 
 ### 常见问题
 

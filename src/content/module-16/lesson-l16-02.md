@@ -63,7 +63,8 @@ def discover_agents(skill_id: str):
 
 def delegate_to_agent(agent_card, task: str):
     """按 A2A 协议委托任务给另一个 Agent（示意）"""
-    resp = http.post(agent_card["url"], json={
+    import requests
+    resp = requests.post(agent_card["url"], json={
         "message": {"role": "user", "parts": [{"type": "text", "text": task}]},
         "auth": get_auth_token(agent_card),
     })

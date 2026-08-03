@@ -166,7 +166,8 @@ REDLINE_DIRS = ["billing/", "auth/", "permissions/"]
 REDLINE_PATTERNS = [
     ("# TODO: 完善错误处理", "占位注释——在红线代码里不允许"),
     ("except Exception:", "裸 except Exception——请指定具体异常类型"),
-    ("import ", "疑似引入新依赖——请确认是否在允许列表"),
+    ("import openai", "疑似引入 AI SDK——请确认是否在允许列表"),
+    ("import anthropic", "疑似引入 AI SDK——请确认是否在允许列表"),
 ]
 
 def check_file(filepath: Path) -> list[str]:

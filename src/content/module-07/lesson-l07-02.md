@@ -5,12 +5,12 @@
 ### 朴素的（错误的）重试
 
 ```python
-# ❌ 朴素重试：立即重试，无限重试
-while True:
-    try:
-        return api.call()
-    except Exception:
-        pass  # 立即重试，永不放弃
+# ❌ 朴素重试：立即重试，无限重试（反例，不可运行）
+# while True:
+#     try:
+#         return api.call()
+#     except Exception:
+#         pass  # 立即重试，永不放弃
 ```
 
 **问题**：
@@ -172,17 +172,17 @@ class Deadline:
         return Deadline(min(max_seconds, self.remaining))
 
 # 使用：Agent 一步操作的总超时是 60 秒
-def agent_step(deadline: Deadline):
+def agent_step(deadline: Deadline, messages: list):
     # LLM 调用：最多用 30 秒（但不超过 deadline 剩余时间）
     llm_deadline = deadline.child(30)
-    response = call_llm(timeout=llm_deadline.remaining)
+    response = call_llm(messages, timeout=llm_deadline.remaining)
 
     if deadline.is_expired:
         raise TimeoutError("步数总时间耗尽")
 
-    # 工具调用：用剩余时间
+    # 工具调用：用剩余时间（call_tool 需自行实现，此处示意）
     tool_deadline = deadline.child(deadline.remaining)
-    result = call_tool(timeout=tool_deadline.remaining)
+    result = call_tool("my_tool", timeout=tool_deadline.remaining)
 ```
 
 ### 完整的重试 + 超时工具

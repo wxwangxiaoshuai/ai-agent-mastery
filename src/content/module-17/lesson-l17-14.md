@@ -75,7 +75,7 @@ pnpm prettier --check .
 pnpm check --strict
 ```
 
-这是本项目的专属门禁。改课程数据或内容文件后，C1-C15 检查项全部通过才能提交。`--strict` 把 warning 也升级为 error。
+这是本项目的专属门禁。改课程数据或内容文件后，全部自动检查项通过才能提交。`--strict` 把 warning 也升级为 error。
 
 #### Gate 3：安全扫描（30 秒）
 
@@ -86,7 +86,9 @@ pnpm check --strict
 git diff --cached | grep -E "(API_KEY|SECRET|TOKEN|PASSWORD)\s*=\s*['\"][^$]" && exit 1
 
 # 检查是否有已知的恶意依赖
-pnpm audit --audit-level=high && exit 1
+# 注意：pnpm audit 发现高危漏洞时返回非 0，正常时返回 0
+# 所以用 || 而非 &&：有漏洞时才触发 exit 1
+pnpm audit --audit-level=high && echo "无高危漏洞" || exit 1
 ```
 
 **阻断规则**：
@@ -129,8 +131,9 @@ pnpm build
   run: |
     pnpm dev &
     sleep 5
-    curl -s http://localhost:5173 | grep "AI Agent"
-    curl -s http://localhost:5173/curriculum | grep "课程大纲"
+    curl -s http://localhost:5173 | grep "AI Agent" || exit 1
+    # 注意：Vite SPA 的 /curriculum 路由由客户端渲染，curl 只能拿到 index.html。
+    # 返回值验证针对的是 index.html 中的 title 文本，而非路由渲染内容。
 ```
 
 **阻断规则**：关键页面返回 404 或页面内容不包含预期的关键文本 → CI 红灯。
@@ -229,7 +232,7 @@ pnpm check --strict || exit 1
 
 echo "🔍 Gate 3: Security scan..."
 git diff --cached | grep -E "(API_KEY|SECRET|TOKEN)\s*=\s*['\"][^$]" && exit 1 || true
-pnpm audit --audit-level=high && exit 1 || true
+pnpm audit --audit-level=high && echo "无高危漏洞" || exit 1
 
 echo "✅ Pre-commit gates passed"
 EOF
