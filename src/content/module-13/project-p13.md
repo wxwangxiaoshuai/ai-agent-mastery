@@ -53,7 +53,6 @@ M13 八节课讲了评估、自动化评测、可观测性、护栏、注入攻�
 │        质量与安全报告（各项指标 + 上线建议）                   │
 └──────────────────────────────────────────────────────────────┘
 ```
-
 ### 实施步骤
 
 **Step 1：评测流水线（复用 L13-01/L13-02）**
@@ -316,6 +315,8 @@ jobs:
       - run: pip install -r requirements.txt
       - run: pytest tests/e2e/
 ```
+
+::interactive{type="acceptanceChecklist"}
 
 ### 进阶挑战
 

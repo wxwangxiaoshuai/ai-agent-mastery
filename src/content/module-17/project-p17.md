@@ -45,7 +45,6 @@ M17 讲了一整套一个人用 AI 造软件的工作流：边界判断、方案
 
 ```markdown
 # 一页纸方案
-
 ## 问题
 谁，在什么场景下，现在怎么解决，有多痛？
 
@@ -218,13 +217,28 @@ chmod +x .husky/pre-commit
 # .github/workflows/ci.yml
 name: CI
 on: [push, pull_request]
+
+# 防止同一分支多次 push 导致并发构建堆积
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-      - run: pnpm install
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Gate 3 - Curriculum Check
+        run: pnpm check
 
       - name: Gate 4 - Tests
         run: pnpm test -- --coverage
@@ -381,6 +395,8 @@ scripts/rollback.sh          # 回滚（附实测耗时）
 - UI Skills 审查跑过了吗？审查报告里有几个"不通过"？修了吗？
 - pre-commit hook 被触发过吗？有没有被 `--no-verify` 跳过？
 - 如果明天有人愿意付钱，我需要多久能加上收款？（这个问题引出 M18）
+
+::interactive{type="acceptanceChecklist"}
 
 ### 要点总结
 

@@ -29,7 +29,6 @@ P1 和 P2 解决了"能对话"和"能结构化"，但都假设上下文窗口是
 - [ ] 提供可视化方法，打印每条消息的角色、token 数、内容摘要
 - [ ] 提供成本统计方法，累计输入/输出 token 和费用
 - [ ] 通过 pytest 测试验证裁剪逻辑
-
 ### 实施步骤
 
 **Step 1：环境准备**
@@ -385,6 +384,8 @@ class TestContextAssembler:
         tool_msg = [m for m in messages if "工具" in m.get("content", "")]
         assert len(tool_msg) > 0
 ```
+
+::interactive{type="acceptanceChecklist"}
 
 ### 进阶挑战
 

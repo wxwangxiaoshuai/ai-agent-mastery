@@ -2,6 +2,8 @@
 
 L13-02 的评测是"上线前测"。但上线后呢？Agent 在生产里跑，你怎么知道某次回答为什么慢、为什么贵、为什么错？没有可观测性，生产 Agent 是黑盒——出了问题只能猜。这一节用 OpenTelemetry 思路给 Agent 接全链路 tracing，让每一步推理、每个工具调用都可追溯。
 
+::interactive{type="traceVisualizer"}
+
 ### 为什么 Agent 需要专门的可观测性
 
 普通服务的可观测性看指标（QPS/延迟/错误率）。Agent 不一样：

@@ -7,6 +7,8 @@ Function Calling 让模型能调工具，但每个 Agent 框架（LangChain、Cr
 ```
 没有 MCP 的世界：                有 MCP 的世界：
 
+
+::interactive{type="mcpStatus"}
 LangChain 工具 ──→ Agent A       MCP Server ──→ MCP 协议 ──→ 任何 MCP 客户端
 CrewAI 工具   ──→ Agent B        （搜索）           ↑         (Claude Desktop,
 自定义工具    ──→ Agent C                          ↑          Cursor, 自建 Agent)

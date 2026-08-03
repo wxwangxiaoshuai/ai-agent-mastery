@@ -6,6 +6,8 @@ M2 讲过：模糊的 Prompt 进，垃圾输出出。在 AI Coding 里，这条�
 
 规格驱动开发（Spec-Driven Development）就是把这件事倒过来：**先把"该做什么"写清楚，再让 AI 写"怎么做"**。
 
+::interactive{type="specTemplate"}
+
 ### 一次真实的对比
 
 需求："给笔记加个搜索功能。"

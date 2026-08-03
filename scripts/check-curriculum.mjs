@@ -1136,6 +1136,94 @@ function srcTsxFiles() {
   if (!bad) ok('C25', '代码块级语言定位与实际一致（非例外文件无非 Python 代码块）')
 }
 
+// ---------------------------------------------- C23 跨模块引用校验
+{
+  // 曾经 L18-05 写"M12 讲过路由"但 M12 是多模态。
+  // 本项扫描正文中的 M/L/P 引用，校验目标存在且模块主题不矛盾。
+  let bad = 0
+  let checked = 0
+
+  // 构建所有 lesson ID 和 project ID 集合
+  const allLessonIds = new Set(modules.flatMap((m) => m.lessonIds))
+  const allProjectIds = new Set(modules.filter((m) => m.projectId).map((m) => m.projectId))
+  // 构建 M→标题映射，用于主题匹配
+  const moduleTopics = Object.fromEntries(modules.map((m) => [m.id, m.title]))
+
+  // 已知的模块主题关键词，用于检测引用错位
+  const KEYWORD_MAP = {
+    M12: ['多模态', 'multimodal', '视觉', '语音', '图片', '图像', '视频'],
+    M7: ['健壮', 'resilien', '重试', '超时', '熔断', '降级', 'checkpoint'],
+    M8: ['记忆', 'memory', 'mem0', 'memgpt', 'letta'],
+    M6: ['工具', 'tool', 'mcp', 'function.?calling'],
+  }
+
+  for (const f of contentFiles) {
+    // 跳过项目文件（引用其他页面是正常的）
+    if (!f.isLesson) continue
+
+    // 匹配 "M\d+ 讲过" / "M\d+ 讲" 等引用模式
+    const refRE = /M(\d+)(?:\s*(?:讲过|讲过|教的|学过|讲了|学的|介绍的|里))\s*(\S{2,10})/g
+    for (const m of f.text.matchAll(refRE)) {
+      const refMod = Number(m[1])
+      const what = m[2]
+      const targetModule = moduleTopics[refMod]
+      if (!targetModule) continue // module 存在性由 C9 保证
+
+      // 检查已知的错位引用模式
+      const kw = KEYWORD_MAP[`M${refMod}`]
+      if (kw && f.module !== refMod) {
+        // 如果引用文本中的关键词不在目标模块的关键词列表中，可能是错位引用
+        const whatLower = what.toLowerCase()
+        const matchExpected = kw.some((k) => {
+          const re = new RegExp(k, 'i')
+          return re.test(targetModule) || re.test(whatLower)
+        })
+        if (!matchExpected) {
+          warn('C23', `${f.rel} 引用"M${refMod} 讲过${what}"，但 M${refMod} 主题是"${targetModule}"，关键词 "${what}" 不匹配`)
+          bad++
+        }
+      }
+      checked++
+    }
+
+    // 匹配 "L\d\d-\d\d" 格式的引用（不包含当前文件自己的引用）
+    const lessonRefRE = /L(\d{2})-(\d{2})(?!\d)/g
+    for (const m of f.text.matchAll(lessonRefRE)) {
+      const refMod = Number(m[1])
+      const refLes = Number(m[2])
+      const refId = `L${m[1]}-${m[2]}`
+      // 跳过对本节自身的引用
+      if (refId === f.id) continue
+      // 跳过对已通过 C9 校验的文件的重复检查
+      if (!allLessonIds.has(refId)) {
+        warn('C23', `${f.rel} 引用了不存在的课程 ${refId}`)
+        bad++
+      }
+      checked++
+    }
+
+    // 匹配项目引用（排除百分位等误报）
+    const projRefRE = /\bP([1-9]\d?)(?!\d|%)/g
+    for (const m of f.text.matchAll(projRefRE)) {
+      const num = Number(m[1])
+      if (num > 19) continue // 项目编号不超过 19
+      const refProj = `P${m[1]}`
+      if (refProj === `P${f.module}`) continue // 引用自己的项目
+      if (!allProjectIds.has(refProj)) {
+        warn('C23', `${f.rel} 引用了不存在的项目 ${refProj}`)
+        bad++
+      }
+      checked++
+    }
+  }
+
+  if (!bad && checked > 0) {
+    ok('C23', `跨模块引用校验通过（${checked} 处引用）`)
+  } else if (checked === 0) {
+    ok('C23', '正文中无 M/L/P 交叉引用（跳过校验）')
+  }
+}
+
 // ------------------------------------------------------------------ 输出
 const GREEN = '\x1b[32m'
 const YELLOW = '\x1b[33m'

@@ -26,7 +26,6 @@ P1 解决了"能对话"，P2 解决"能结构化"——让模型把一篇杂乱�
 - [ ] 可以对比两个 Prompt 版本的测试结果，生成对比报告
 - [ ] 处理一篇 3000 字文档的耗时 < 10 秒
 - [ ] API Key 通过 `.env` 管理
-
 ### 实施步骤
 
 **Step 1：环境准备**
@@ -274,6 +273,8 @@ echo "2024年10月，Anthropic发布Claude 3.5 Sonnet更新版..." > test_doc.tx
 # 运行抽取
 python -c "from src.analyzer import analyze_document; import json; print(json.dumps(analyze_document(open('test_doc.txt').read()).model_dump(), ensure_ascii=False, indent=2))"
 ```
+
+::interactive{type="acceptanceChecklist"}
 
 ### 进阶挑战
 

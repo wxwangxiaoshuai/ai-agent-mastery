@@ -56,7 +56,6 @@ M11 五节课讲了多 Agent 拓扑、supervisor 调度、debate 辩论、对话
 ```
 
 > 为何不用全程 Supervisor？P11 主路径是**可预测流水线**，固定边更清晰、更好测；动态分派见 L11-02，本项目进阶挑战再接。
-
 ### 实施步骤
 
 **Step 1：定义状态与角色 Agent**
@@ -366,6 +365,8 @@ class TestSoftwareTeam:
         assert third["action"] == "force_end"
         assert "max_rounds" in third["reason"]
 ```
+
+::interactive{type="acceptanceChecklist"}
 
 ### 进阶挑战
 

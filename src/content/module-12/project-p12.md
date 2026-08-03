@@ -62,7 +62,6 @@ M12 五节课讲了多模态选型、视觉理解、语音流水线、视频理�
 │  结构化 JSON 报告                                             │
 └──────────────────────────────────────────────────────────────┘
 ```
-
 ### 实施步骤
 
 **Step 1：模态路由**
@@ -360,6 +359,8 @@ class TestProcessors:
         assert r["modality"] == "video"
         assert len(r["content"].get("events", [])) > 0  # 至少有一个事件
 ```
+
+::interactive{type="acceptanceChecklist"}
 
 ### 进阶挑战
 

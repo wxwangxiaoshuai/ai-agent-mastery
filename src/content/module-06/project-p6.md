@@ -25,7 +25,6 @@ P5 的 ReAct Agent 只有搜索工具。P6 给它装上全套装备——搜索�
 - [ ] **对比报告**：同一个任务分别在"裸 Function Calling"和"Skills 系统"下执行，记录工具选择次数、总步数、最终结果质量
 - [ ] 工具调用追踪面板（MVP：CLI 打印完整调用链）显示完整调用链
 - [ ] API Key 通过 `.env` 管理
-
 ### 实施步骤
 
 **Step 1：环境准备**
@@ -359,8 +358,6 @@ DATA_SKILL = Skill(
 )
 
 ALL_SKILLS = [RESEARCH_SKILL, ANALYSIS_SKILL, DATA_SKILL]
-
-
 class SkillRegistry:
     """Skills 注册中心——启动时加载，运行时匹配。"""
 
@@ -393,8 +390,6 @@ class SkillRegistry:
     def get_tools_for_skill(self, skill_id: str) -> list[str]:
         skill = self._skills.get(skill_id)
         return skill.tools if skill else list(TOOL_MAP.keys())
-
-
 class SkillAwareAgent:
     """带 Skills 系统的 Agent——按意图匹配 Skill，只暴露匹配到的工具子集。"""
 
@@ -682,6 +677,8 @@ class TestSkills:
 
 （你的发现和判断）
 ```
+
+::interactive{type="acceptanceChecklist"}
 
 ### 进阶挑战
 

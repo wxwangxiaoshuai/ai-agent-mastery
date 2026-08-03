@@ -92,6 +92,21 @@ pnpm build        # 构建（check + tsc + vite）
 | growthFunnel | GrowthFunnelSim | 增长漏斗与留存复利模拟 |
 | patternSelector | PatternSelector | 设计模式选择决策树交互 |
 | gateConfigurator | GateConfigurator | 交互式门禁配置器 |
+| acceptanceChecklist | AcceptanceChecklist | 项目验收自检清单 |
+| aiCodingBoundary | AICodingBoundary | AI 编码边界决策树 |
+| refactorDiffer | RefactorDiffer | 重构前后代码快照对比 |
+| testPyramid | TestPyramidSim | 测试金字塔配比模拟器 |
+| contextAssemblyViz | ContextAssemblyViz | 上下文预算分配可视化 |
+| redTeamTarget | RedTeamTarget | 注入攻防红队靶场 |
+| mcpStatus | MCPStatusPanel | MCP 连接与发现状态面板 |
+| codeReviewFailures | CodeReviewFailureModes | AI 代码审查失败模式对照器 |
+| specTemplate | SpecTemplateBuilder | 规格六段式模板生成器 |
+| sandboxCompare | SandboxStrategyCompare | 沙箱方案谱系对比 |
+| a11yCheck | A11yChecker | 无障碍自检清单 |
+| conventionCheck | ConventionChecker | 代码约定检查配置器 |
+| llmJudgeBias | LLMJudgeBias | LLM-as-Judge 偏倚对照器 |
+| traceVisualizer | TraceVisualizer | Trace 调用链可���化 |
+| sandboxPolicy | SandboxPolicyConfigurator | 沙箱安全策略配置器 |
 | reActLoop | ReActLoopDiagram | ReAct 循环状态图 |
 | ragPipelineDiagram | RAGPipelineDiagram | RAG 数据流架构图 |
 | contextAssembly | ContextAssemblyDiagram | Context 组装流程图 |

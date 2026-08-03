@@ -27,7 +27,6 @@ P2 解决了"让模型输出结构化数据"，P3 解决了"上下文怎么组�
 - [ ] RAGAS 评估输出四项指标（faithfulness / context_precision / context_recall / answer_relevancy）
 - [ ] 生成分块策略 AB 对比报告（表格 + 结论）
 - [ ] API Key 通过 `.env` 管理
-
 ### 实施步骤
 
 **Step 1：环境准备**
@@ -447,6 +446,8 @@ class TestRAG:
         output = self.generator.answer("公司食堂菜单是什么？")
         assert "无法回答" in output["answer"] or "未找到" in output["answer"]
 ```
+
+::interactive{type="acceptanceChecklist"}
 
 ### 进阶挑战
 

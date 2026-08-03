@@ -32,7 +32,6 @@
 - [ ] 重新启动程序后能加载上次保存的对话
 - [ ] 网络错误时打印友好提示而不是崩溃
 - [ ] API Key 通过环境变量或 `.env` 文件读取，不硬编码
-
 ### 实施步骤
 
 按以下顺序增量开发，每步独立可运行。
@@ -215,22 +214,14 @@ ROLES = {
 }
 
 HISTORY_FILE = Path.home() / ".cli_assistant_history.json"
-
-
 def load_history() -> list:
     if HISTORY_FILE.exists():
         return json.loads(HISTORY_FILE.read_text())
     return []
-
-
 def save_history(messages: list):
     HISTORY_FILE.write_text(json.dumps(messages, ensure_ascii=False, indent=2))
-
-
 def clear_history():
     save_history([])
-
-
 def chat():
     current_role = "default"
     messages = load_history()  # 启动时加载上次对话
@@ -311,8 +302,6 @@ def chat():
         except APIError as e:
             print(f"\n[错误] {e}")
             messages.pop()
-
-
 if __name__ == "__main__":
     chat()
 ```
@@ -363,6 +352,8 @@ python assistant.py
 AI: [等待几秒后]
 [超时] 请重试。
 ```
+
+::interactive{type="acceptanceChecklist"}
 
 ### 进阶挑战（可选）
 

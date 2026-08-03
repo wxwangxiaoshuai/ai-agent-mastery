@@ -2,6 +2,8 @@
 
 L03-01 讲了 System Prompt 的设计，但 System Prompt 只是 Agent 上下文的一部分。一次 API 调用实际发送给模型的，是一个**组装好的 context**——它包含系统指令、用户输入、对话历史、工具结果、检索到的知识……如何把这些内容组装成一个高效的 context，就是本节的核心。
 
+::interactive{type="contextAssemblyViz"}
+
 ### Context 的五大组成部分
 
 每次调用 LLM API，你发送的 context 通常包含五类内容：

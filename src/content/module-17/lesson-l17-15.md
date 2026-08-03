@@ -1,3 +1,5 @@
+
+::interactive{type="a11yCheck"}
 ## 生产级 UI 约束：用 Skills 让 AI 产出美观可用的前端
 
 L17-13 讲了用 Superpowers skills 控制 AI 的行为流程。这一节讲一个更具体的场景：**用 Skills 让 AI 产出的 UI 代码不是"能跑就行"，而是美观、可访问、响应式、符合设计规范。**

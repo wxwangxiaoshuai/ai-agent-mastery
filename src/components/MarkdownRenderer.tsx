@@ -28,6 +28,21 @@ import { UnitEconomicsModel } from './interactive/UnitEconomicsModel'
 import { GrowthFunnelSim } from './interactive/GrowthFunnelSim'
 import { PatternSelector } from './interactive/PatternSelector'
 import { GateConfigurator } from './interactive/GateConfigurator'
+import { AcceptanceChecklist } from './interactive/AcceptanceChecklist'
+import { AICodingBoundary } from './interactive/AICodingBoundary'
+import { RefactorDiffer } from './interactive/RefactorDiffer'
+import { TestPyramidSim } from './interactive/TestPyramidSim'
+import { ContextAssemblyViz } from './interactive/ContextAssemblyViz'
+import { RedTeamTarget } from './interactive/RedTeamTarget'
+import { MCPStatusPanel } from './interactive/MCPStatusPanel'
+import { CodeReviewFailureModes } from './interactive/CodeReviewFailureModes'
+import { SpecTemplateBuilder } from './interactive/SpecTemplateBuilder'
+import { SandboxStrategyCompare } from './interactive/SandboxStrategyCompare'
+import { A11yChecker } from './interactive/A11yChecker'
+import { ConventionChecker } from './interactive/ConventionChecker'
+import { LLMJudgeBias } from './interactive/LLMJudgeBias'
+import { TraceVisualizer } from './interactive/TraceVisualizer'
+import { SandboxPolicyConfigurator } from './interactive/SandboxPolicyConfigurator'
 
 // Diagrams are static + pull in @xyflow/react — lazy-load so lessons without
 // diagrams don't pay the chunk cost on first paint.
@@ -121,6 +136,21 @@ const componentMap: Record<string, React.ComponentType<Record<string, string>>> 
   growthFunnel: GrowthFunnelSim,
   patternSelector: PatternSelector,
   gateConfigurator: GateConfigurator,
+  acceptanceChecklist: AcceptanceChecklist,
+  aiCodingBoundary: AICodingBoundary,
+  refactorDiffer: RefactorDiffer,
+  testPyramid: TestPyramidSim,
+  contextAssemblyViz: ContextAssemblyViz,
+  redTeamTarget: RedTeamTarget,
+  mcpStatus: MCPStatusPanel,
+  codeReviewFailures: CodeReviewFailureModes,
+  specTemplate: SpecTemplateBuilder,
+  sandboxCompare: SandboxStrategyCompare,
+  a11yCheck: A11yChecker,
+  conventionCheck: ConventionChecker,
+  llmJudgeBias: LLMJudgeBias,
+  traceVisualizer: TraceVisualizer,
+  sandboxPolicy: SandboxPolicyConfigurator,
   reActLoop: ReActLoopDiagram,
   ragPipelineDiagram: RAGPipelineDiagram,
   contextAssembly: ContextAssemblyDiagram,

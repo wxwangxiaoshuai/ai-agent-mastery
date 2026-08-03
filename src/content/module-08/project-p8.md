@@ -51,7 +51,6 @@ M8 五节课讲了记忆的分类、短期窗口、长期架构、程序记忆�
 │                       └→ 触发记忆写入(抽取/更新)    │
 └──────────────────────────────────────────────────┘
 ```
-
 ### 实施步骤
 
 **Step 1：短期窗口管理（复用 L08-02）**
@@ -387,6 +386,8 @@ class TestLongTermMemory:
         self.ltm.forget(days=90)
         assert self.ltm.recall("u1", "外卖") == []
 ```
+
+::interactive{type="acceptanceChecklist"}
 
 ### 进阶挑战
 

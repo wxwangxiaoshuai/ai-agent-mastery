@@ -53,7 +53,6 @@ M9 四节课讲了代码执行全景、Docker 沙箱、云端沙箱、安全审�
         │ SDK 封装
    Agent / 用户
 ```
-
 ### 实施步骤
 
 **Step 1：Docker 沙箱执行器（复用 L09-02）**
@@ -366,6 +365,8 @@ print(f"并发100次，成功{sum(1 for r in results if r==0)}次")
 
 结论：上表为**报告模板**（需自行跑测填写 ✅/❌），勿直接当作实测结果。
 ```
+
+::interactive{type="acceptanceChecklist"}
 
 ### 进阶挑战
 

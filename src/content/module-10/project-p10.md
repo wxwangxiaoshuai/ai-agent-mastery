@@ -56,7 +56,6 @@ M10 六节课讲了框架选型、LangGraph 状态机、人工介入、CrewAI �
 │   SSE stream：token + 步骤推前端                         │
 └─────────────────────────────────────────────────────────┘
 ```
-
 ### 实施步骤
 
 **Step 1：定义状态与节点**
@@ -357,6 +356,8 @@ class TestResearchAgent:
         history = list(self.app.get_state_history(self.config))
         assert len(history) > 0   # 有多个 checkpoint
 ```
+
+::interactive{type="acceptanceChecklist"}
 
 ### 进阶挑战
 

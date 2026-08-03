@@ -20,7 +20,6 @@ M7 五节课分别讲了重试、超时、Checkpoint、熔断、降级。P7 把�
 - [ ] 所有故障有日志记录
 - [ ] 包含压力测试脚本（模拟 429/503/超时）
 - [ ] 包含故障注入测试（验证降级链触发）
-
 ### 实施步骤
 
 **Step 1：实现核心装饰器**
@@ -85,8 +84,6 @@ class CircuitBreaker:
         elif self.failure_count >= self.failure_threshold:
             self.state = CircuitState.OPEN
             logger.warning(f"CircuitBreaker: → Open (失败 {self.failure_count} 次)")
-
-
 def resilient(
     max_retries: int = 3,
     base_delay: float = 1.0,
@@ -217,8 +214,6 @@ class FallbackChain:
                 logger.warning(f"[{self.name}] {provider['label']} 失败: {e}")
                 continue
         raise RuntimeError(f"[{self.name}] 所有方案不可用")
-
-
 def _call_model(model: str, messages: list, **kw):
     from openai import OpenAI
     client = OpenAI()
@@ -417,6 +412,8 @@ def test_fallback_on_exhaustion():
         raise ConnectionError("持续故障")
     assert always_fail() == "降级回复"
 ```
+
+::interactive{type="acceptanceChecklist"}
 
 ### 进阶挑战
 

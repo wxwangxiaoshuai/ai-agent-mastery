@@ -26,7 +26,6 @@
 - [ ] 有发散保护（偏离主题时系统提示回到主题）
 - [ ] 工具接口可插拔（新增工具只需注册，不改 Agent 内核）
 - [ ] API Key 通过 `.env` 管理
-
 ### 实施步骤
 
 **Step 1：环境准备**
@@ -85,8 +84,6 @@ class ToolRegistry:
                 },
             },
         } for t in self._tools.values()]
-
-
 tools = ToolRegistry()
 
 def _search(query: str) -> str:
@@ -370,6 +367,8 @@ class TestReActAgent:
         tool = self.tools.get("nonexistent")
         assert tool is None
 ```
+
+::interactive{type="acceptanceChecklist"}
 
 ### 进阶挑战
 
