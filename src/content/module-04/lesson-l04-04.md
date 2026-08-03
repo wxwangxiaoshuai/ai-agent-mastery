@@ -161,9 +161,26 @@ class HybridRetriever:
         self.bm25 = BM25Okapi([list(jieba.cut(doc)) for doc in documents])
         self.reranker = CrossEncoder("BAAI/bge-reranker-base")  # 中文默认
 
+    def _rrf_merge(self, bm25_scores, dense_docs, top_k):
+        """RRF 融合 BM25 和向量检索结果（简化版，生产应完整实现）"""
+        merged = {}
+        for i, doc in enumerate(self.documents):
+            merged[i] = {"content": doc, "score": 1.0 / (60 + i + 1)}
+        for i, doc_id in enumerate(dense_docs if isinstance(dense_docs[0], str) else [d["id"] for d in dense_docs]):
+            idx = self.documents.index(doc_id) if doc_id in self.documents else None
+            if idx is not None:
+                merged[idx]["score"] += 1.0 / (60 + i + 1)
+        return sorted(merged.values(), key=lambda x: x["score"], reverse=True)[:top_k]
+
     def retrieve(self, query: str, top_k: int = 5, rerank_top_n: int = 3) -> list:
-        # Stage 1: 混合检索（召回阶段）
-        candidates = hybrid_search(query, self.documents, self.collection, top_k=top_k)
+        import jieba
+        # Stage 1: 混合检索（召回阶段）—— 复用已预建的 bm25 索引
+        tokenized_query = list(jieba.cut(query))
+        bm25_scores = self.bm25.get_scores(tokenized_query)
+        dense_results = self.collection.query(query_texts=[query], n_results=top_k)
+        dense_docs = dense_results["documents"][0] if dense_results["documents"] else []
+        # RRF 融合（简化版）
+        candidates = self._rrf_merge(bm25_scores, dense_docs, top_k)
         docs = [c["content"] for c in candidates]
 
         # Stage 2: Cross-encoder Reranking（复用已加载的模型，避免重复下载）

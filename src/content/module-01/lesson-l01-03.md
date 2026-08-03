@@ -196,7 +196,7 @@ print()
 ```python
 import os
 from dotenv import load_dotenv
-from openai import OpenAI, RateLimitError, APIError, APITimeoutError
+from openai import OpenAI, RateLimitError, APIStatusError, APITimeoutError
 
 load_dotenv()
 client = OpenAI(timeout=30.0)  # 设置 30 秒超时
@@ -248,7 +248,7 @@ def chat():
         except RateLimitError:
             print("\n[限流] 请求过于频繁，请稍后再试。")
             messages.pop()
-        except APIError as e:
+        except APIStatusError as e:
             print(f"\n[错误] API 调用失败: {e}")
             messages.pop()
 
@@ -271,7 +271,7 @@ API 调用最常见的两类错误是**速率限制（429）**和**服务端错�
 
 ```python
 import time, random
-from openai import OpenAI, RateLimitError, APIError
+from openai import OpenAI, RateLimitError, APIStatusError
 
 client = OpenAI(timeout=30.0)
 
@@ -290,8 +290,8 @@ def call_with_retry(messages, max_retries=3, base_delay=1):
                 time.sleep(delay)
             else:
                 raise
-        except APIError as e:
-            if e.status_code and e.status_code >= 500:
+        except APIStatusError as e:  # APIStatusError 有 .status_code；APIConnectionError 等不可重试
+            if e.status_code >= 500:
                 if attempt < max_retries - 1:
                     time.sleep(base_delay + random.random())
                 else:

@@ -97,8 +97,9 @@ def index_documents(documents: list[str], metadatas: list[dict] = None):
         input=documents,
     ).data
 
+    import uuid
     collection.add(
-        ids=[f"doc_{i}" for i in range(len(documents))],
+        ids=[f"doc_{uuid.uuid4().hex[:8]}" for _ in documents],
         embeddings=[e.embedding for e in embeddings],
         documents=documents,
         metadatas=metadatas or [{} for _ in documents],

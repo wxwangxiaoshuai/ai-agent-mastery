@@ -163,7 +163,7 @@ def extract_symbols(file_path: str) -> list[dict]:
 
     symbols = []
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             symbols.append({
                 "type": "function",
                 "name": node.name,
@@ -178,7 +178,7 @@ def extract_symbols(file_path: str) -> list[dict]:
                 "file": file_path,
                 "lineno": node.lineno,
                 "docstring": ast.get_docstring(node) or "",
-                "methods": [m.name for m in node.body if isinstance(m, ast.FunctionDef)],
+                "methods": [m.name for m in node.body if isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef))],
             })
     return symbols
 

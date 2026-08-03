@@ -37,7 +37,7 @@ class ToolCallTrace:
             "step": self.step,
             "tool": self.tool_name,
             "args": self.arguments,
-            "result": str(self.result)[:200] if self.result else None,
+            "result": str(self.result) if self.result else None,  # 存完整结果，保证重放精确
             "error": self.error,
             "duration_ms": round(self.duration_ms, 1),
         }

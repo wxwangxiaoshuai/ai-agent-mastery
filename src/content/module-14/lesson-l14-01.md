@@ -145,6 +145,11 @@ class Weights:
     reliability: float = 0.4
     maintainability: float = 0.3
 
+    def __post_init__(self):
+        total = self.cost + self.latency + self.reliability + self.maintainability
+        if abs(total - 1.0) > 1e-9:
+            raise ValueError(f"权重之和必须为 1.0，当前为 {total}")
+
 def score(opt: Option, w: Weights) -> float:
     return (
         w.cost * opt.cost
@@ -173,7 +178,7 @@ print("研究 Agent（质量优先）:", rank(options, research_weights))
 print("客服 Agent（延迟优先）:", rank(options, customer_weights))
 # 输出：
 # 研究 Agent（质量优先）: [('LangGraph', 3.8), ('CrewAI', 3.6), ('手写', 3.3), ('AutoGen', 2.9)]
-# 客服 Agent（延迟优先）: [('手写', 4.2), ('CrewAI', 3.8), ('LangGraph', 3.4), ('AutoGen', 3.0)]
+# 客服 Agent（延迟优先）: [('手写', 4.0), ('CrewAI', 3.8), ('LangGraph', 3.4), ('AutoGen', 2.6)]
 ```
 
 **关键**：同一组方案，切了权重后排名变了——手写在延迟优先的客服场景排第一，在质量优先的研究场景排第三。这就是架构决策的本质：**没有绝对最好的方案，只有匹配当前权重的方案**。用代码算比用表格算更容易做"what-if"——改一个权重，跑一次，看排名怎么变。

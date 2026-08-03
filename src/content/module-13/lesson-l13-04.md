@@ -110,9 +110,15 @@ def output_guardrail(agent_output: str, context: dict = None) -> tuple[str, list
             clean = re.sub(pat, f"[已脱敏-{name}]", clean)
             findings.append(f"输出含{name}，已脱敏")
     # 安全审查（简化：实际用分类器/强模型）
-    SAFETY_VIOLATIONS = ["暴力", "自残", "违法"]  # 简化
+    # 注意：子串匹配会误杀否定语境（如"不含暴力"），生产环境应使用语义分类器
+    SAFETY_VIOLATIONS = ["暴力", "自残", "违法"]
     for w in SAFETY_VIOLATIONS:
         if w in clean:
+            # 排除否定语境：不以"不含""避免""杜绝"开头
+            idx = clean.index(w)
+            prefix = clean[max(0, idx-4):idx]
+            if any(neg in prefix for neg in ['不含', '避免', '杜绝', '请勿', '禁止']):
+                continue  # 否定语境，跳过
             findings.append(f"输出含安全风险内容：{w}")
             # 严重违规直接拒绝
             return "抱歉，我无法提供此类内容。", findings
@@ -146,13 +152,22 @@ def output_guardrail(agent_output: str, context: dict = None) -> tuple[str, list
 
 ```python
 def classify_topic(question: str) -> str:
-    """话题分类"""
+    """话题分类（带相似度阈值，避免误分类）"""
     # 用 embedding 相似度匹配预定义话题
     topics = {"医疗": ["问诊", "用药", "症状"], "股票": ["涨跌", "仓位", "行情"],
               "客服": ["订单", "退款", "物流"]}
     q_emb = embed(question)
-    best = max(topics.items(), key=lambda t: similarity(q_emb, embed(t[1][0])))
-    return best[0]
+    # 取话题所有关键词 embedding 的平均值做匹配
+    best_topic, best_score = None, 0
+    SIMILARITY_THRESHOLD = 0.6  # 低于此阈值视为未知话题
+    for name, keywords in topics.items():
+        kw_embs = [embed(kw) for kw in keywords]
+        avg_emb = [sum(x)/len(x) for x in zip(*kw_embs)]
+        score = similarity(q_emb, avg_emb)
+        if score > best_score:
+            best_score = score
+            best_topic = name
+    return best_topic if best_score >= SIMILARITY_THRESHOLD else "未知"
 
 def topic_guard(question: str, allowed: list) -> tuple[bool, str]:
     topic = classify_topic(question)

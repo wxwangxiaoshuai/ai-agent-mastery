@@ -174,6 +174,9 @@ class VersionManager:
     def deploy(self, new_config, version_id):
         """部署新版本（先存快照再切）"""
         self.versions[version_id] = {**new_config, "time": now()}
+        # 首次部署时，把当前配置也作为 "stable" 的快照
+        if "stable" not in self.versions:
+            self.versions["stable"] = {**new_config, "time": now(), "label": "初始稳定版"}
         self.current = version_id
 
     def rollback(self, to_version="stable"):
@@ -182,11 +185,14 @@ class VersionManager:
             self.current = to_version
             log_rollback(to_version)
             return True
-        return False
+        raise RuntimeError(f"回滚失败：版本 {to_version} 的快照不存在，无法回滚")
 
 # 灰度中出问题
 if quality_drop_detected():
-    version_mgr.rollback()   # 秒级切回稳定版
+    try:
+        version_mgr.rollback()   # 秒级切回稳定版
+    except RuntimeError:
+        alert_ops("回滚失败！须人工介入")
 ```
 
 **回滚的工程要求**：

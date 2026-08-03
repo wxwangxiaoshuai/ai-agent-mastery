@@ -70,7 +70,8 @@ class TenantScopedMemory:
     def remember(self, user_id, dialog):
         # 写入时强制带 tenant_id；每条 fact 配独立 id/metadata
         facts = extract(dialog)  # extract() 为业务侧事实抽取
-        ids = [f"{self.tenant_id}:{user_id}:{i}" for i in range(len(facts))]
+        import uuid
+        ids = [f"{self.tenant_id}:{user_id}:{uuid.uuid4().hex[:8]}" for _ in facts]
         metas = [{"tenant_id": self.tenant_id, "user_id": user_id,
                   "fact_type": "dialog"} for _ in facts]
         self.collection.add(ids=ids, documents=facts, metadatas=metas)
@@ -143,7 +144,7 @@ class StatelessAgent:
     def run(self, tenant_id, user_id, question):
         # 每次从外部加载状态，不在本机存
         history = load_history_from_db(tenant_id, user_id)   # 外部DB
-        memory = TenantScopedMemory(tenant_id).recall(question, user_id)  # 外部向量库
+        memory = TenantScopedMemory(tenant_id, collection).recall(question, user_id)  # 外部向量库
         
         result = self._llm(history, memory, question)
         

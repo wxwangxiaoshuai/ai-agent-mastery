@@ -253,7 +253,7 @@ if tool_uses:
     response2 = claude.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=1024,
-        tools=[...],  # 同上
+        tools=tools,  # 同上（见上方 tools 定义）
         messages=[
             {"role": "user", "content": "北京天气怎么样？"},
             {"role": "assistant", "content": response.content},

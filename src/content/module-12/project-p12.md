@@ -231,7 +231,7 @@ def process_pdf(pdf_path: str, max_pages: int = 10) -> dict:
     doc = fitz.open(pdf_path)
     pages = []
     for i in range(min(len(doc), max_pages)):
-        pix = doc[i].get_pixmap()
+        pix = doc[i].get_pixmap(dpi=150)
         pages.append(pix.tobytes("png"))
 
     content = [{"type": "text", "text":

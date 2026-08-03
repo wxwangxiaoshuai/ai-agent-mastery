@@ -103,7 +103,7 @@ class SkillRegistry:
         """用 LLM 做意图 → Skill 匹配。返回匹配度最高的 Skill 列表。"""
         # 实际实现：把 user_intent 和所有 Skill 的 description
         # 一起发给 nano 档模型做语义匹配
-        ...
+        pass  # 实际实现：用 LLM 做语义匹配（见上方注释）
 
     def get_tools_for_skill(self, skill_id: str) -> list[str]:
         """返回加载此 Skill 时应激活的工具列表。"""

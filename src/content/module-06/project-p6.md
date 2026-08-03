@@ -78,19 +78,18 @@ def execute_code(code: str) -> str:
     except subprocess.TimeoutExpired:
         return "错误: 代码执行超时（10秒）"
 
-# 3. SQLite 查询工具
+# 3. SQLite 查询工具（只读连接）
 DB_PATH = "./workspace/agent.db"
 def query_db(sql: str) -> str:
-    """执行 SQL 查询（仅 SELECT）"""
+    """执行 SQL 查询（仅 SELECT，使用只读连接）"""
     sql_stripped = sql.strip().upper()
-    if not sql_stripped.startswith("SELECT") and not sql_stripped.startswith("PRAGMA"):
+    if not sql_stripped.startswith("SELECT"):
         return "错误: 仅支持 SELECT 查询。不允许修改数据。"
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.execute(sql)
-        rows = cursor.fetchall()
-        columns = [d[0] for d in cursor.description]
-        conn.close()
+        with sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True) as conn:
+            cursor = conn.execute(sql)
+            rows = cursor.fetchall()
+            columns = [d[0] for d in cursor.description]
         result = [dict(zip(columns, row)) for row in rows]
         return json.dumps(result[:20], ensure_ascii=False)  # 最多 20 行
     except Exception as e:
@@ -100,7 +99,7 @@ def query_db(sql: str) -> str:
 def read_file(path: str) -> str:
     """读取工作区内的文件"""
     full_path = (ALLOWED_FILE_DIR / path).resolve()
-    if not str(full_path).startswith(str(ALLOWED_FILE_DIR)):
+    if not full_path.is_relative_to(ALLOWED_FILE_DIR):
         return f"错误: 只能读取 {ALLOWED_FILE_DIR} 目录下的文件"
     if not full_path.exists():
         return f"错误: 文件 '{path}' 不存在"
@@ -109,7 +108,7 @@ def read_file(path: str) -> str:
 def write_file(path: str, content: str) -> str:
     """写入工作区内的文件"""
     full_path = (ALLOWED_FILE_DIR / path).resolve()
-    if not str(full_path).startswith(str(ALLOWED_FILE_DIR)):
+    if not full_path.is_relative_to(ALLOWED_FILE_DIR):
         return f"错误: 只能写入 {ALLOWED_FILE_DIR} 目录下的文件"
     full_path.parent.mkdir(parents=True, exist_ok=True)
     full_path.write_text(content)
@@ -317,6 +316,7 @@ asyncio.run(test_db_server())
 
 ```python
 # skills.py — Skills 注册中心
+# 本文件依赖 Step 2 中定义的 TOOLS_SCHEMA、TOOL_MAP、client
 from dataclasses import dataclass, field
 from typing import Any
 

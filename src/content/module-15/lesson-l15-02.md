@@ -61,7 +61,7 @@ L15-01 的缓存/限流是"堵"和"省"的工程。这一节谈生产环境永�
 ```
 
 ```python
-def route_model(question: str, history: list) -> str:
+def route_model(question: str) -> str:
     """模型路由：按复杂度选模型"""
     # 规则路由（简单）
     if is_simple_faq(question):

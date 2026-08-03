@@ -41,7 +41,7 @@ client = OpenAI()
 
 def render_page_image(doc, page_index: int) -> bytes:
     """渲染一页为 PNG bytes（供 base64 编码）"""
-    return doc[page_index].get_pixmap().tobytes("png")
+    return doc[page_index].get_pixmap(dpi=150).tobytes("png")
 
 def parse_long_pdf(pdf_path: str, schema: dict, batch_size: int = 5) -> dict:
     """长 PDF 分批理解"""
@@ -164,7 +164,7 @@ def extract_table(image_path: str) -> dict:
 def render_page_image_pdf(pdf_path: str, page: int) -> bytes:
     """PDF 指定页 → PNG bytes"""
     doc = fitz.open(pdf_path)
-    return doc[page].get_pixmap().tobytes("png")
+    return doc[page].get_pixmap(dpi=150).tobytes("png")
 
 def extract_table_from_image(png_bytes: bytes) -> dict:
     """路1：多模态从页面图提表（复用 extract_table 的 prompt）"""

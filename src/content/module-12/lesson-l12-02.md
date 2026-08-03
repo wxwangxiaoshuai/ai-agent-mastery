@@ -39,19 +39,27 @@ L12-01 讲了模型怎么选、图怎么传。这一节真正让 Agent"看懂"�
 让 Agent 描述图片内容——这是无障碍、内容审核、图片检索的基础：
 
 ```python
-import base64
+import base64, mimetypes
 from openai import OpenAI
 client = OpenAI()
 
+def image_to_data_url(image_path: str) -> str:
+    """按文件后缀推导 MIME 并返回 data URL。"""
+    mime, _ = mimetypes.guess_type(image_path)
+    if not mime:
+        mime = "image/png"  # 默认
+    b64 = base64.b64encode(open(image_path, "rb").read()).decode()
+    return f"data:{mime};base64,{b64}"
+
 def describe_image(image_path: str, focus: str = None) -> str:
     """生成图片描述。focus 可指定关注点。"""
-    b64 = base64.b64encode(open(image_path, "rb").read()).decode()
+    url = image_to_data_url(image_path)
     prompt = focus or "详细描述这张图片的内容，包括主体、场景、细节。"
     resp = client.chat.completions.create(
         model="gpt-4.1-mini",
         messages=[{"role": "user", "content": [
             {"type": "text", "text": prompt},
-            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
+            {"type": "image_url", "image_url": {"url": url}},
         ]}],
         temperature=0,
     )
@@ -86,7 +94,7 @@ def extract_chart_data(image_path: str) -> dict:
                 "x_label:..., y_label:..., "
                 "data:[{label:..., value:...}]}。"
                 "只输出确定读到的数值，读不准的标 null。"},
-            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
+            {"type": "image_url", "image_url": {"url": image_to_data_url(image_path)}},
         ]}],
         temperature=0,
         response_format={"type": "json_object"},
@@ -132,7 +140,7 @@ def ocr_understand(image_path: str, schema: dict) -> dict:
             {"type": "text", "text":
                 f"识别图中的文字，按以下 JSON schema 提取：{json.dumps(schema)}。"
                 f"认不准的字用 [?] 标注，不要猜。"},
-            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
+            {"type": "image_url", "image_url": {"url": image_to_data_url(image_path)}},
         ]}],
         temperature=0,
         response_format={"type": "json_object"},
@@ -172,7 +180,7 @@ def pdf_to_images(pdf_path: str) -> list[str]:
     doc = fitz.open(pdf_path)
     paths = []
     for i, page in enumerate(doc):
-        pix = page.get_pixmap()
+        pix = page.get_pixmap(dpi=150)  # 150 DPI 保证文字清晰可读
         path = os.path.join(tempfile.gettempdir(), f"pdf_page_{i}.png")
         pix.save(path)
         paths.append(path)
@@ -187,9 +195,8 @@ def understand_document(pdf_path: str, schema: dict) -> dict:
         f"理解这份多页文档，按 schema 提取：{json.dumps(schema)}。"
         "标注每个字段的来源页码。认不准标 [?]。"}]
     for img in page_images:
-        b64 = base64.b64encode(open(img, "rb").read()).decode()
         content.append({"type": "image_url",
-                        "image_url": {"url": f"data:image/png;base64,{b64}"}})
+                        "image_url": {"url": image_to_data_url(img)}})
 
     resp = client.chat.completions.create(
         model="gpt-5", messages=[{"role": "user", "content": content}],

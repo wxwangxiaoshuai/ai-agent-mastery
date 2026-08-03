@@ -102,9 +102,38 @@ response = client.chat.completions.create(
 
 **Anthropic 结构化输出**：
 
-Anthropic 没有类似 `response_format` 的参数，但有两种方式实现结构化输出：
+Anthropic 在 Claude 4.5+ 已提供原生 Structured Outputs（`output_format` 参数，语法约束式 JSON 生成）。以下是两种通用方式：
 
-**方式 A：Tool Use（推荐）**——利用工具调用机制返回结构化数据：
+**方式 A：原生 Structured Outputs（推荐，Claude 4.5+）**：
+
+```python
+from anthropic import Anthropic
+
+client = Anthropic()
+
+response = client.messages.create(
+    model="claude-sonnet-5",
+    max_tokens=1024,
+    output_format={
+        "type": "json_schema",
+        "json_schema": {
+            "name": "review",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "sentiment": {"type": "string", "enum": ["positive", "negative", "neutral"]},
+                    "score": {"type": "integer", "minimum": 1, "maximum": 5},
+                    "summary": {"type": "string"}
+                },
+                "required": ["sentiment", "score"]
+            }
+        }
+    },
+    messages=[{"role": "user", "content": "评价：这个产品功能强大但价格太高"}],
+)
+```
+
+**方式 B：Tool Use（兼容旧版 Claude）**——利用工具调用机制返回结构化数据：
 
 ```python
 from anthropic import Anthropic
@@ -147,7 +176,7 @@ tool_result = next(
 fruits_data = tool_result.input  # 已是 dict，无需 json.loads
 ```
 
-**方式 B：Prefill（预填充）**——在 assistant 消息中预填 `{`，强制模型以 JSON 开头：
+**方式 C：Prefill（预填充）**——在 assistant 消息中预填 `{`，强制模型以 JSON 开头：
 
 ```python
 response = client.messages.create(
@@ -163,7 +192,7 @@ response = client.messages.create(
 json_str = "{" + response.content[0].text
 ```
 
-> **对比**：Tool Use 方式更可靠（有 Schema 约束），Prefill 方式更轻量但不保证 Schema。生产环境推荐 Tool Use。
+> **对比**：原生 Structured Outputs 最可靠（有 Schema 约束且返回保证合法 JSON），Tool Use 次之，Prefill 方式最轻量但不保证 Schema。生产环境推荐原生 Structured Outputs。
 
 ### 方法 3：Function Calling / Tool Use
 

@@ -193,12 +193,19 @@ async def weekly_report(db, week_start: str):
     ''', week_start)
 
     # 打印报告
-    total_cost = sum(r['total'] for r in cost_by_model)
+    total_inference_cost = sum(r['total'] for r in cost_by_model)
+    # 支付抽成（Stripe 约 2.9% + $0.30，此处简化取 3%）
+    payment_fee = revenue * 0.03
+    # 重试损耗（失败调用也有成本，按推理成本的 5% 估算）
+    retry_cost = total_inference_cost * 0.05
+    total_cost = total_inference_cost + payment_fee + retry_cost
     active_users = sum(r['users'] for r in tiers)
     gross_margin = (revenue - total_cost) / revenue * 100 if revenue > 0 else 0
 
     print(f"=== 周报 {week_start} ===")
-    print(f"收入: ${revenue:.2f} | 推理成本: ${total_cost:.2f} | 毛利率: {gross_margin:.0f}%")
+    print(f"收入: ${revenue:.2f} | 总成本: ${total_cost:.2f}")
+    print(f"  推理: ${total_inference_cost:.2f} | 支付: ${payment_fee:.2f} | 重试: ${retry_cost:.2f}")
+    print(f"毛利率: {gross_margin:.0f}%")
     print(f"活跃付费用户: {active_users}")
     print(f"\n按模型成本:")
     for r in cost_by_model:

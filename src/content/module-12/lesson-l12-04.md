@@ -179,7 +179,8 @@ def locate_event(video_path: str, event_desc: str, segment_sec: float = 3.0) -> 
                 {"type":"text","text":f"这帧画面是否包含：{event_desc}？只回是/否。"},
                 {"type":"image_url","image_url":{"url":f"data:image/jpeg;base64,{b64}"}}]}],
             temperature=0)
-        if "是" in resp.choices[0].message.content:
+        content = resp.choices[0].message.content.strip()
+        if content == "是" or content.startswith("是，"):
             located.append((start, end))
     return located   # [(12.0, 15.0)] 等
 ```
