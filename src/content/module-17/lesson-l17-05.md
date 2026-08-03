@@ -1,5 +1,4 @@
 
-::interactive{type="uiStateMatrix"}
 ## AI 生成生产级前端 UI（上）：设计系统与组件约束
 
 > 本课标注"前端特例"——涉及 UI 组件与设计系统，使用 TypeScript/React。

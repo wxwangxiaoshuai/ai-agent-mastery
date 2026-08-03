@@ -1,8 +1,9 @@
 
-::interactive{type="a11yCheck"}
 ## 生产级 UI 约束：用 Skills 让 AI 产出美观可用的前端
 
 L17-13 讲了用 Superpowers skills 控制 AI 的行为流程。这一节讲一个更具体的场景：**用 Skills 让 AI 产出的 UI 代码不是"能跑就行"，而是美观、可访问、响应式、符合设计规范。**
+
+::interactive{type="a11yCheck"}
 
 这是 AI Coding 最大的痛点之一：AI 生成的后端逻辑通常能用，但生成的 UI 往往"功能对但丑"——间距不对、颜色不一致、没有 loading 状态、没有 error 状态、键盘不可用、屏幕缩小就崩。
 
